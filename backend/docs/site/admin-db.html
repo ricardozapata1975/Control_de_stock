@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Editor de tablas — Inventario</title>
+  <style>
+    :root { --bg: #0f172a; --card: #1e293b; --border: #475569; --accent: #f59e0b; --text: #f8fafc; --muted: #94a3b8; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: system-ui, sans-serif; background: var(--bg); color: var(--text); }
+    header { padding: 1rem 1.5rem; border-bottom: 1px solid var(--border); display: flex; flex-wrap: wrap; gap: 1rem; align-items: center; justify-content: space-between; }
+    h1 { margin: 0; font-size: 1.25rem; color: var(--accent); }
+    main { padding: 1rem 1.5rem; max-width: 1400px; margin: 0 auto; }
+    .card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 1rem; margin-bottom: 1rem; }
+    label { display: block; font-size: 0.85rem; color: var(--muted); margin-bottom: 0.25rem; }
+    input, select, textarea { width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid var(--border); background: #0f172a; color: var(--text); }
+    button { cursor: pointer; border: none; border-radius: 6px; padding: 0.5rem 1rem; font-weight: 600; }
+    .btn-primary { background: var(--accent); color: #0f172a; }
+    .btn-secondary { background: #334155; color: var(--text); }
+    .btn-danger { background: #b91c1c; color: #fff; }
+    .row { display: flex; flex-wrap: wrap; gap: 0.75rem; align-items: flex-end; }
+    .row > * { flex: 1; min-width: 140px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    th, td { border: 1px solid var(--border); padding: 0.4rem 0.5rem; text-align: left; vertical-align: top; }
+    th { background: #334155; position: sticky; top: 0; }
+    .scroll { overflow-x: auto; max-height: 60vh; }
+    .error { color: #fca5a5; }
+    .ok { color: #86efac; }
+    #loginPanel { max-width: 360px; }
+    .hidden { display: none !important; }
+    td input { font-size: 0.8rem; min-width: 80px; }
+    .actions { display: flex; gap: 0.35rem; flex-wrap: wrap; }
+    .actions button { padding: 0.25rem 0.5rem; font-size: 0.75rem; }
+    a { color: var(--accent); }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1>Editor de tablas (demo / Supabase)</h1>
+      <p style="margin:0.25rem 0 0;color:var(--muted);font-size:0.9rem">
+        Catálogo, contenedores, ítems y stock. Requiere sesión admin.
+        <a href="/docs/">Documentación</a>
+      </p>
+    </div>
+    <button type="button" class="btn-secondary hidden" id="btnLogout">Cerrar sesión</button>
+  </header>
+  <main>
+    <section id="loginPanel" class="card">
+      <h2>Iniciar sesión admin</h2>
+      <div class="row">
+        <div><label>Usuario</label><input id="user" value="admin" autocomplete="username" /></div>
+        <div><label>Contraseña</label><input id="pass" type="password" autocomplete="current-password" /></div>
+      </div>
+      <p id="loginErr" class="error"></p>
+      <button type="button" class="btn-primary" id="btnLogin" style="margin-top:0.75rem">Entrar</button>
+    </section>
+
+    <section id="appPanel" class="hidden">
+      <div class="card row">
+        <div>
+          <label>Tabla</label>
+          <select id="tableSelect"></select>
+        </div>
+        <div style="flex:0">
+          <button type="button" class="btn-secondary" id="btnRefresh">Actualizar</button>
+        </div>
+        <div style="flex:0">
+          <button type="button" class="btn-primary" id="btnNew">Nueva fila</button>
+        </div>
+      </div>
+      <p id="status" class="ok"></p>
+      <div class="card scroll">
+        <table id="dataTable"><thead></thead><tbody></tbody></table>
+      </div>
+      <div id="editor" class="card hidden">
+        <h3 id="editorTitle">Editar fila</h3>
+        <div id="editorFields"></div>
+        <div class="row" style="margin-top:1rem">
+          <button type="button" class="btn-primary" id="btnSave">Guardar</button>
+          <button type="button" class="btn-secondary" id="btnCancel">Cancelar</button>
+        </div>
+      </div>
+    </section>
+  </main>
+  <script>
+    const TOKEN_KEY = 'inventario_admin_token';
+    let schema = [];
+    let currentTable = '';
+    let rows = [];
+    let editingId = null;
+
+    function token() { return sessionStorage.getItem(TOKEN_KEY); }
+    function setToken(t) { sessionStorage.setItem(TOKEN_KEY, t); }
+    function clearToken() { sessionStorage.removeItem(TOKEN_KEY); }
+
+    async function api(path, opts = {}) {
+      const headers = { 'Content-Type': 'application/json', ...(opts.headers || {}) };
+      if (token()) headers.Authorization = 'Bearer ' + token();
+      const res = await fetch(path, { ...opts, headers });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || res.statusText);
+      return data;
+    }
+
+    function showApp(on) {
+      document.getElementById('loginPanel').classList.toggle('hidden', on);
+      document.getElementById('appPanel').classList.toggle('hidden', !on);
+      document.getElementById('btnLogout').classList.toggle('hidden', !on);
+    }
+
+    document.getElementById('btnLogin').onclick = async () => {
+      const loginErr = document.getElementById('loginErr');
+      loginErr.textContent = '';
+      try {
+        const { token: t } = await api('/api/auth/login', {
+          method: 'POST',
+          body: JSON.stringify({
+            username: document.getElementById('user').value,
+            password: document.getElementById('pass').value,
+          }),
+        });
+        setToken(t);
+        showApp(true);
+        await loadSchema();
+      } catch (e) {
+        loginErr.textContent = e.message;
+      }
+    };
+
+    document.getElementById('btnLogout').onclick = () => {
+      clearToken();
+      showApp(false);
+    };
+
+    async function loadSchema() {
+      const data = await api('/api/admin/db/schema');
+      schema = data.tables || [];
+      const sel = document.getElementById('tableSelect');
+      sel.innerHTML = schema.map((t) => `<option value="${t.name}">${t.label || t.name}</option>`).join('');
+      sel.onchange = () => loadTable(sel.value);
+      if (schema.length) loadTable(schema[0].name);
+    }
+
+    function metaFor(name) {
+      return schema.find((t) => t.name === name) || {};
+    }
+
+    async function loadTable(name) {
+      currentTable = name;
+      document.getElementById('status').textContent = 'Cargando…';
+      const data = await api('/api/admin/db/' + encodeURIComponent(name));
+      rows = data.rows || [];
+      if (name === 'catalogo' && rows[0]) rows = [rows[0]];
+      renderTable();
+      document.getElementById('status').textContent = rows.length + ' fila(s)';
+      document.getElementById('editor').classList.add('hidden');
+    }
+
+    function columnsForTable() {
+      const m = metaFor(currentTable);
+      if (currentTable === 'catalogo') {
+        return ['armarios', 'estanteMin', 'estanteMax', 'contenedorReglas', 'contenedorEspecial'];
+      }
+      if (rows.length) {
+        const keys = new Set();
+        rows.forEach((r) => Object.keys(r).forEach((k) => keys.add(k)));
+        return [...keys];
+      }
+      return m.fields || ['id'];
+    }
+
+    function renderTable() {
+      const cols = columnsForTable();
+      const thead = document.querySelector('#dataTable thead');
+      const tbody = document.querySelector('#dataTable tbody');
+      thead.innerHTML = '<tr>' + cols.map((c) => `<th>${c}</th>`).join('') + '<th>Acciones</th></tr>';
+      const readOnly = metaFor(currentTable).readOnly;
+      tbody.innerHTML = rows.map((row, idx) => {
+        const id = row.id || idx;
+        const cells = cols.map((c) => {
+          const v = row[c];
+          const disp = typeof v === 'object' ? JSON.stringify(v) : (v ?? '');
+          return `<td title="${escapeHtml(String(disp))}">${escapeHtml(String(disp).slice(0, 80))}${String(disp).length > 80 ? '…' : ''}</td>`;
+        }).join('');
+        const acts = readOnly
+          ? '<td>—</td>'
+          : `<td class="actions"><button type="button" class="btn-secondary" data-edit="${escapeAttr(id)}">Editar</button><button type="button" class="btn-danger" data-del="${escapeAttr(id)}">Borrar</button></td>`;
+        return `<tr>${cells}${acts}</tr>`;
+      }).join('');
+      tbody.querySelectorAll('[data-edit]').forEach((btn) => {
+        btn.onclick = () => openEditor(btn.dataset.edit);
+      });
+      tbody.querySelectorAll('[data-del]').forEach((btn) => {
+        btn.onclick = () => deleteRow(btn.dataset.del);
+      });
+    }
+
+    function escapeHtml(s) {
+      return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+    function escapeAttr(s) { return String(s).replace(/"/g, '&quot;'); }
+
+    function openEditor(id) {
+      editingId = id === 'new' ? null : id;
+      const row = editingId ? rows.find((r) => String(r.id) === String(editingId)) : {};
+      const cols = columnsForTable();
+      const fields = document.getElementById('editorFields');
+      document.getElementById('editorTitle').textContent = editingId ? 'Editar fila' : 'Nueva fila';
+      fields.innerHTML = cols.map((c) => {
+        const v = row?.[c];
+        const val = typeof v === 'object' ? JSON.stringify(v, null, 2) : (v ?? '');
+        const isJson = typeof v === 'object' || c === 'armarios';
+        return `<div style="margin-bottom:0.75rem"><label>${c}</label><${isJson ? 'textarea rows="4"' : 'input'} data-field="${c}" ${isJson ? '' : `value="${escapeAttr(String(val))}"`}>${isJson ? escapeHtml(String(val)) : ''}</${isJson ? 'textarea' : 'input'}></div>`;
+      }).join('');
+      document.getElementById('editor').classList.remove('hidden');
+    }
+
+    document.getElementById('btnNew').onclick = () => openEditor('new');
+    document.getElementById('btnCancel').onclick = () => document.getElementById('editor').classList.add('hidden');
+    document.getElementById('btnRefresh').onclick = () => loadTable(currentTable);
+
+    document.getElementById('btnSave').onclick = async () => {
+      const payload = {};
+      document.querySelectorAll('#editorFields [data-field]').forEach((el) => {
+        const k = el.dataset.field;
+        let v = el.value.trim();
+        if (k === 'armarios' || v.startsWith('{') || v.startsWith('[')) {
+          try { v = JSON.parse(v); } catch { /* keep string */ }
+        } else if (/^\d+$/.test(v) && ['estanteMin','estanteMax'].includes(k)) {
+          v = parseInt(v, 10);
+        }
+        payload[k] = v;
+      });
+      try {
+        if (currentTable === 'catalogo') {
+          await api(`/api/admin/db/catalogo/config`, {
+            method: 'PUT', body: JSON.stringify(payload),
+          });
+        } else if (editingId) {
+          await api(`/api/admin/db/${encodeURIComponent(currentTable)}/${encodeURIComponent(editingId)}`, {
+            method: 'PUT', body: JSON.stringify(payload),
+          });
+        } else {
+          await api(`/api/admin/db/${encodeURIComponent(currentTable)}`, {
+            method: 'POST', body: JSON.stringify(payload),
+          });
+        }
+        await loadTable(currentTable);
+        document.getElementById('editor').classList.add('hidden');
+      } catch (e) {
+        alert(e.message);
+      }
+    };
+
+    async function deleteRow(id) {
+      if (!confirm('¿Eliminar este registro?')) return;
+      try {
+        await api(`/api/admin/db/${encodeURIComponent(currentTable)}/${encodeURIComponent(id)}`, { method: 'DELETE' });
+        await loadTable(currentTable);
+      } catch (e) {
+        alert(e.message);
+      }
+    }
+
+    if (token()) {
+      showApp(true);
+      loadSchema().catch(() => { clearToken(); showApp(false); });
+    }
+  </script>
+</body>
+</html>

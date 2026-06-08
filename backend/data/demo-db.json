@@ -1,0 +1,3825 @@
+{
+  "contenedores": [
+    {
+      "id": "cnt-a01-e01-c01",
+      "codigo": "A01-E01-C01",
+      "armario": "A01",
+      "estante": "E01",
+      "contenedor": "C01",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e01-c02",
+      "codigo": "A01-E01-C02",
+      "armario": "A01",
+      "estante": "E01",
+      "contenedor": "C02",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e02-sc",
+      "codigo": "A01-E02-SC",
+      "armario": "A01",
+      "estante": "E02",
+      "contenedor": "SC",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e02-c04",
+      "codigo": "A01-E02-C04",
+      "armario": "A01",
+      "estante": "E02",
+      "contenedor": "C04",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e01-c06",
+      "codigo": "A01-E01-C06",
+      "armario": "A01",
+      "estante": "E01",
+      "contenedor": "C06",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e01-h03",
+      "codigo": "A01-E01-H03",
+      "armario": "A01",
+      "estante": "E01",
+      "contenedor": "H03",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e01-h04",
+      "codigo": "A01-E01-H04",
+      "armario": "A01",
+      "estante": "E01",
+      "contenedor": "H04",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e01-h05",
+      "codigo": "A01-E01-H05",
+      "armario": "A01",
+      "estante": "E01",
+      "contenedor": "H05",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e02-h02",
+      "codigo": "A01-E02-H02",
+      "armario": "A01",
+      "estante": "E02",
+      "contenedor": "H02",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e01-b02",
+      "codigo": "A01-E01-B02",
+      "armario": "A01",
+      "estante": "E01",
+      "contenedor": "B02",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e02-b01",
+      "codigo": "A01-E02-B01",
+      "armario": "A01",
+      "estante": "E02",
+      "contenedor": "B01",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e02-h06",
+      "codigo": "A01-E02-H06",
+      "armario": "A01",
+      "estante": "E02",
+      "contenedor": "H06",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e02-c03",
+      "codigo": "A01-E02-C03",
+      "armario": "A01",
+      "estante": "E02",
+      "contenedor": "C03",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e02-h01",
+      "codigo": "A01-E02-H01",
+      "armario": "A01",
+      "estante": "E02",
+      "contenedor": "H01",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e04-c07",
+      "codigo": "A01-E04-C07",
+      "armario": "A01",
+      "estante": "E04",
+      "contenedor": "C07",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e04-c09",
+      "codigo": "A01-E04-C09",
+      "armario": "A01",
+      "estante": "E04",
+      "contenedor": "C09",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e02-c22",
+      "codigo": "A01-E02-C22",
+      "armario": "A01",
+      "estante": "E02",
+      "contenedor": "C22",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e05-c11",
+      "codigo": "A01-E05-C11",
+      "armario": "A01",
+      "estante": "E05",
+      "contenedor": "C11",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e03-c08",
+      "codigo": "A01-E03-C08",
+      "armario": "A01",
+      "estante": "E03",
+      "contenedor": "C08",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e03-c10",
+      "codigo": "A01-E03-C10",
+      "armario": "A01",
+      "estante": "E03",
+      "contenedor": "C10",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e03-c05",
+      "codigo": "A01-E03-C05",
+      "armario": "A01",
+      "estante": "E03",
+      "contenedor": "C05",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a01-e01-sc",
+      "codigo": "A01-E01-SC",
+      "armario": "A01",
+      "estante": "E01",
+      "contenedor": "SC",
+      "ubicacion": "Armario Herramientas"
+    },
+    {
+      "id": "cnt-a02-e01-c12",
+      "codigo": "A02-E01-C12",
+      "armario": "A02",
+      "estante": "E01",
+      "contenedor": "C12",
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e01-c13",
+      "codigo": "A02-E01-C13",
+      "armario": "A02",
+      "estante": "E01",
+      "contenedor": "C13",
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e01-c14",
+      "codigo": "A02-E01-C14",
+      "armario": "A02",
+      "estante": "E01",
+      "contenedor": "C14",
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e02",
+      "codigo": "A02-E02",
+      "armario": "A02",
+      "estante": "E02",
+      "contenedor": null,
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e01",
+      "codigo": "A02-E01",
+      "armario": "A02",
+      "estante": "E01",
+      "contenedor": null,
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e02-c15",
+      "codigo": "A02-E02-C15",
+      "armario": "A02",
+      "estante": "E02",
+      "contenedor": "C15",
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e03-c16",
+      "codigo": "A02-E03-C16",
+      "armario": "A02",
+      "estante": "E03",
+      "contenedor": "C16",
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e03-b03",
+      "codigo": "A02-E03-B03",
+      "armario": "A02",
+      "estante": "E03",
+      "contenedor": "B03",
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e04-c17",
+      "codigo": "A02-E04-C17",
+      "armario": "A02",
+      "estante": "E04",
+      "contenedor": "C17",
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e05",
+      "codigo": "A02-E05",
+      "armario": "A02",
+      "estante": "E05",
+      "contenedor": null,
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a02-e03-c18",
+      "codigo": "A02-E03-C18",
+      "armario": "A02",
+      "estante": "E03",
+      "contenedor": "C18",
+      "ubicacion": "Armario Electrónica"
+    },
+    {
+      "id": "cnt-a00-e01",
+      "codigo": "A00-E01",
+      "armario": "A00",
+      "estante": "E01",
+      "contenedor": null,
+      "ubicacion": "Armario Papelería"
+    },
+    {
+      "id": "cnt-a02-e04",
+      "codigo": "A02-E04",
+      "armario": "A02",
+      "estante": "E04",
+      "contenedor": null,
+      "ubicacion": "Armario Electrónica"
+    }
+  ],
+  "items": [
+    {
+      "id": "item-soldador-de-esta-o-mpybi7w1",
+      "nombre": "SOLDADOR DE ESTAÑO",
+      "marca": "ZURICH",
+      "modelo": "NWR000124",
+      "tipo": "ELECTRONICA",
+      "detalle": "SOLDADOR TIPO LAPIZ",
+      "calibracion": "N/A",
+      "comentario": "AMARILLO",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-saca-esta-o-mpybi7w2",
+      "nombre": "SACA ESTAÑO",
+      "marca": "",
+      "modelo": "",
+      "tipo": "ELECTRONICA",
+      "detalle": "QUITA ESTAÑO - DE PLACA",
+      "calibracion": "N/A",
+      "comentario": "AZUL",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-pasta-termica-mpybi7w2",
+      "nombre": "PASTA TERMICA",
+      "marca": "DELTA",
+      "modelo": "MX-2",
+      "tipo": "COMSUMIBLE",
+      "detalle": "PASTA TERMICA- BLANCA",
+      "calibracion": "N/A",
+      "comentario": "GR",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-esta-o-mpybi7w2",
+      "nombre": "ESTAÑO",
+      "marca": "XIMETAL",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "GRANDE",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-adaptador-usb-dh485-mpybi7w2",
+      "nombre": "ADAPTADOR USB-DH485",
+      "marca": "ITE",
+      "modelo": "1747-UIC",
+      "tipo": "ELECTRONICA",
+      "detalle": "INTERFACE CONVERTER",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-smart-access-g120-mpybi7w2",
+      "nombre": "SMART ACCESS - G120",
+      "marca": "SIEMENS",
+      "modelo": "5AA0",
+      "tipo": "ELECTRONICA",
+      "detalle": "SINAMICS G120 SMART ACCESS",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-sinamics-v20-mpybi7w2",
+      "nombre": "SINAMICS V20",
+      "marca": "SIEMENS",
+      "modelo": "0UA1",
+      "tipo": "ELECTRONICA",
+      "detalle": "SINAMICS V20 PARAMETERS",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-converter-r422-rs485-mpybi7w2",
+      "nombre": "CONVERTER R422/RS485",
+      "marca": "STM",
+      "modelo": "STM8522",
+      "tipo": "ELECTRONICA",
+      "detalle": "CONVERTIDOR 485 A 422",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-de-alimentacion-mpybi7w2",
+      "nombre": "FUENTE DE ALIMENTACION",
+      "marca": "ABLEX",
+      "modelo": "118A",
+      "tipo": "ELECTRONICA",
+      "detalle": "FUENTE 220V -9V",
+      "calibracion": "N/A",
+      "comentario": "SIN FICHA DE SALIDA",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-adaptador-usb-cable-mpybi7w2",
+      "nombre": "ADAPTADOR USB-CABLE",
+      "marca": "SIEMENS",
+      "modelo": "0AA00-0",
+      "tipo": "ELECTRONICA",
+      "detalle": "ADAPTADOR DE USB A SIRIUS",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-adaptador-usb-x-mpybi7w2",
+      "nombre": "ADAPTADOR USB-X",
+      "marca": "",
+      "modelo": "",
+      "tipo": "ELECTRONICA",
+      "detalle": "ADAPTADOR",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-pc-adapter-usb-a2-mpybi7w2",
+      "nombre": "PC-ADAPTER USB A2",
+      "marca": "SIEMENS",
+      "modelo": "0AA00",
+      "tipo": "ELECTRONICA",
+      "detalle": "ADAPTADOR DE PC USB A",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-de-consola-mpybi7w2",
+      "nombre": "CABLE DE CONSOLA",
+      "marca": "FORTI",
+      "modelo": "10831",
+      "tipo": "ELECTRONICA",
+      "detalle": "CABLE DE CONSOLA RJ45-USB",
+      "calibracion": "N/A",
+      "comentario": "NUEVO",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-plug-rj45-metalica-cat5e-mpybi7w3",
+      "nombre": "PLUG RJ45 METALICA CAT5E",
+      "marca": "",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "FICHAS RJ45",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-capuchones-rj45-verdes-mpybi7w3",
+      "nombre": "CAPUCHONES RJ45 - VERDES",
+      "marca": "",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "CAPUCHONES PARA FIHAS RJ45",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-fichas-rj45-metalicas-mpybi7w3",
+      "nombre": "FICHAS RJ45 METALICAS",
+      "marca": "SIEMENS",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "PARA CABLE PROFINET",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-plug-rj45-plasticas-cat--mpybi7w3",
+      "nombre": "PLUG RJ45 PLASTICAS CAT 5E",
+      "marca": "",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "FICHAS RJ45 COMUNES",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-jack-cat-6-mpybi7w3",
+      "nombre": "JACK CAT-6",
+      "marca": "COMMSCOPE",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-viru-viru-cable-tracker-mpybi7w3",
+      "nombre": "VIRU-VIRU Cable Tracker",
+      "marca": "VICTOR",
+      "modelo": "668A",
+      "tipo": "HERRAMIENTA",
+      "detalle": "WIRE TRACKER",
+      "calibracion": "N/A",
+      "comentario": "HERRAMIENTA DE RED C/ ACCESORIOS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-multimetro-mpybi7w3",
+      "nombre": "MULTIMETRO",
+      "marca": "GRALF PREMIUM",
+      "modelo": "GMF-39D",
+      "tipo": "HERRAMIENTA",
+      "detalle": "MULTIMETRO DIGITAL",
+      "calibracion": "N/A",
+      "comentario": "C/ACCESORIOS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-radio-x2-mpybi7w3",
+      "nombre": "RADIO X2",
+      "marca": "BAOFENG",
+      "modelo": "BF-888S",
+      "tipo": "HERRAMIENTA",
+      "detalle": "RADIOS PORTATILES",
+      "calibracion": "N/A",
+      "comentario": "C/ACCESORIOS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-etiquetadora-manual-mpybi7w3",
+      "nombre": "ETIQUETADORA MANUAL",
+      "marca": "BROTHER",
+      "modelo": "E110",
+      "tipo": "HERRAMIENTA",
+      "detalle": "ETIQUETADORA MANUAL",
+      "calibracion": "N/A",
+      "comentario": "C/ACCESORIOS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-kit-de-herramientas-de-f-mpybi7w3",
+      "nombre": "KIT DE HERRAMIENTAS DE FIBRA OPTICA",
+      "marca": "COMMSCOPE",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "EHERRAMIENTAS MANULES PARA F0",
+      "calibracion": "N/A",
+      "comentario": "C/ACCESORIOS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-alicate-mpybi7w3",
+      "nombre": "ALICATE",
+      "marca": "STANLY",
+      "modelo": "84054",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-alicate-peque-o-mpybi7w3",
+      "nombre": "ALICATE -PEQUEÑO",
+      "marca": "NISUTA",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-pinza-de-punta-peque-o-mpybi7w3",
+      "nombre": "PINZA DE PUNTA - PEQUEÑO",
+      "marca": "NISUTA",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-jugo-de-llave-alem-mpybi7w3",
+      "nombre": "JUGO DE LLAVE ALEM",
+      "marca": "NISUTA",
+      "modelo": "CRV",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-jugo-de-llave-torx-mpybi7w3",
+      "nombre": "JUGO DE LLAVE TORX",
+      "marca": "NISUTA",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-linterna-peque-a-mpybi7w3",
+      "nombre": "LINTERNA - PEQUEÑA",
+      "marca": "NISUTA",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-pelacable-mpybi7w3",
+      "nombre": "PELACABLE",
+      "marca": "NISUTA",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-juego-de-destornilladore-mpybi7w3",
+      "nombre": "JUEGO DE DESTORNILLADORES DE PRESICION",
+      "marca": "NISUTA",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "6 DESTORNILLADORES",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-juego-de-destornilladore-mpybi7w3",
+      "nombre": "JUEGO DE DESTORNILLADORES",
+      "marca": "NISUTA",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "3 - PLANOS 3- PHILIPS 2 TIPO TUBO  1 TORX",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-kit-de-fichas-varias-rj4-mpybi7w3",
+      "nombre": "KIT DE FICHAS VARIAS RJ45",
+      "marca": "NISUTA",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-kit-de-destornilladores-mpybi7w3",
+      "nombre": "KIT DE DESTORNILLADORES",
+      "marca": "ZEEX",
+      "modelo": "258",
+      "tipo": "HERRAMIENTA",
+      "detalle": "DESTORNILLADORES AISLADOS 5 PIEZAS",
+      "calibracion": "N/A",
+      "comentario": "FALTAN 2 DESTORNILLADORES",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-visual-fault-locator-mpybi7w3",
+      "nombre": "VISUAL FAULT LOCATOR",
+      "marca": "",
+      "modelo": "HT-15",
+      "tipo": "HERRAMIENTA",
+      "detalle": "VISUALIZADOR DE FALLOS",
+      "calibracion": "N/A",
+      "comentario": "HERRAMIENTA DE REDES",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-tool-kit-grimpiadora-sl--mpybi7w3",
+      "nombre": "TOOL KIT (GRIMPIADORA SL)",
+      "marca": "COMMSCOPE",
+      "modelo": "1725150",
+      "tipo": "HERRAMIENTA",
+      "detalle": "CRIMPIADORA PARA FICHA JACK",
+      "calibracion": "N/A",
+      "comentario": "HERRAMIENTA DE REDES",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-crimpiadora-rj11-mpybi7w4",
+      "nombre": "CRIMPIADORA RJ11",
+      "marca": "PROSKIT",
+      "modelo": "CP-376C",
+      "tipo": "HERRAMIENTA",
+      "detalle": "CRIMPIADORA DE FICHA MACHO RJ45",
+      "calibracion": "N/A",
+      "comentario": "HERRAMIENTA DE REDES",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-crimpiadora-rj45-rj11-mpybi7w4",
+      "nombre": "CRIMPIADORA RJ45 -RJ11",
+      "marca": "",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "CRIMPIADORA DE FICHA MACHO RJ45",
+      "calibracion": "N/A",
+      "comentario": "HERRAMIENTA DE REDES",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-impactadora-mpybi7w4",
+      "nombre": "IMPACTADORA",
+      "marca": "",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "CRIMPIADORA DE IMPACTO 1 ESTA SIN PUNTA",
+      "calibracion": "N/A",
+      "comentario": "HERRAMIENTA DE REDES",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-tester-de-red-mpybi7w4",
+      "nombre": "TESTER DE RED",
+      "marca": "",
+      "modelo": "ST-M820",
+      "tipo": "HERRAMIENTA",
+      "detalle": "CABLE TESTER",
+      "calibracion": "N/A",
+      "comentario": "HERRAMIENTA DE REDES",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cinta-aisladora-negro-mpybi7w4",
+      "nombre": "CINTA AISLADORA NEGRO",
+      "marca": "3M",
+      "modelo": "165",
+      "tipo": "COMSUMIBLE",
+      "detalle": "ASILACION ELECTRICA",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cinta-aisladora-blanco-mpybi7w5",
+      "nombre": "CINTA AISLADORA BLANCO",
+      "marca": "FLEX-PRO",
+      "modelo": "180",
+      "tipo": "COMSUMIBLE",
+      "detalle": "ASILACION ELECTRICA",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-destornilladores-philips-mpybi7w5",
+      "nombre": "DESTORNILLADORES PHILIPS",
+      "marca": "",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "VARIAS MEDIDAS Y MARCAS",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-destornilladores-planos-mpybi7w5",
+      "nombre": "DESTORNILLADORES PLANOS",
+      "marca": "",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "VARIAS MEDIDAS Y MARCAS",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-destornilladores-estrell-mpybi7w5",
+      "nombre": "DESTORNILLADORES ESTRELLA",
+      "marca": "",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "VARIAS MEDIDAS Y MARCAS",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-crimpiadora-mpybi7w5",
+      "nombre": "CRIMPIADORA",
+      "marca": "ZOLODA",
+      "modelo": "CRIMP-1",
+      "tipo": "HERRAMIENTA",
+      "detalle": "CRIMPIADORA",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-pinza-mpybi7w5",
+      "nombre": "PINZA",
+      "marca": "",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-pinza-de-punta-mpybi7w5",
+      "nombre": "PINZA DE PUNTA",
+      "marca": "",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-pinza-de-punta-curva-mpybi7w5",
+      "nombre": "PINZA DE PUNTA CURVA",
+      "marca": "",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-llave-francesa-mpybi7w5",
+      "nombre": "LLAVE FRANCESA",
+      "marca": "PUMPKIN",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "8 200MM",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-pico-de-loro-mpybi7w5",
+      "nombre": "PICO DE LORO",
+      "marca": "PUMPKIN",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-juego-de-mecha-de-copa-2-mpybi7w5",
+      "nombre": "JUEGO DE MECHA DE COPA 22",
+      "marca": "VENTURO",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "22MM 1/8",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-extractor-de-integrados-mpybi7w5",
+      "nombre": "EXTRACTOR DE INTEGRADOS",
+      "marca": "PROSKIT",
+      "modelo": "",
+      "tipo": "HERRAMIENTA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CAJA DE HERRAMIENTAS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cables-interlock-mpybi7w5",
+      "nombre": "CABLES INTERLOCK",
+      "marca": "FOXCONN",
+      "modelo": "FM-026A",
+      "tipo": "CABLE",
+      "detalle": "INTERLOCK C13-C5",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-utp-cat-5e-mpybi7w5",
+      "nombre": "CABLE UTP CAT 5E",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "PATCHCORD DE 1.5M LARGO",
+      "calibracion": "N/A",
+      "comentario": "AZUL",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-utp-cat-6-mpybi7w6",
+      "nombre": "CABLE UTP CAT 6",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "PATCHCORD DE 3M LARGO",
+      "calibracion": "N/A",
+      "comentario": "NARANJA",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-utp-cat-6a-mpybi7w6",
+      "nombre": "CABLE UTP CAT 6A",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "PATCHCORD DE 1.5M LARGO",
+      "calibracion": "N/A",
+      "comentario": "GRIS",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-profinet-mpybi7w6",
+      "nombre": "CABLE PROFINET",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "5 METROS DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "VERDES",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-usb-a-serial-mpybi7w6",
+      "nombre": "USB A SERIAL",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "INTERFASES",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-frofibus-mpybi7w6",
+      "nombre": "CABLE FROFIBUS",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "PATCHCORD DE 5M LARGO",
+      "calibracion": "N/A",
+      "comentario": "VIOLETA",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-serial-mpybi7w6",
+      "nombre": "CABLE SERIAL",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "1 METRO DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "NEGRO",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-generador-de-se-ales-mpybi7w6",
+      "nombre": "GENERADOR DE SEÑALES",
+      "marca": "Fnirsi",
+      "modelo": "SG-003A",
+      "tipo": "HERRAMIENTA",
+      "detalle": "GENERADOR CON 4 PUNTAS BANANA COCODRILO Y CABLE DE CARGA DE USB A a TIPO C",
+      "calibracion": "N/A",
+      "comentario": "CAJA NEGRA EQUIPO AZUL",
+      "fecha_relevamiento": "2026-06-02",
+      "activo": true
+    },
+    {
+      "id": "item-cable-consola-mpybi7w6",
+      "nombre": "CABLE CONSOLA",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "1 METRO DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "NEGRO",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-vga-mpybi7w6",
+      "nombre": "CABLE VGA",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "1.5 METROS DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "NEGRO",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-serial-plc-rockwel-mpybi7w6",
+      "nombre": "CABLE SERIAL PLC ROCKWEL",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "1.5 METROS DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-seria-a-ciee-mpybi7w6",
+      "nombre": "CABLE SERIA A CIEE",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "1.5 METROS DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-serial-para-impres-mpybi7w6",
+      "nombre": "CABLE SERIAL PARA IMPRESORA",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "1.5 METROS DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-con-ficha-rara-mpybi7w6",
+      "nombre": "CABLE CON FICHA RARA",
+      "marca": "ABB",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "NO SE SABE DE QUE ES -  COLOR BLANCO",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-ficha-db9-cortado-mpybi7w6",
+      "nombre": "FICHA DB9 CORTADO",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "2 METROS DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "TIPO SIWAREX U",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-seria-db25-mpybi7w6",
+      "nombre": "CABLE SERIA DB25",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "3METROS DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "CORTADO",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-bolsa-de-cables-unipolar-mpybi7w6",
+      "nombre": "BOLSA DE CABLES UNIPOLARES VARIOS",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "VARIOS",
+      "calibracion": "N/A",
+      "comentario": "PARA CONEXIONES",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-profinet-m12-mpybi7w6",
+      "nombre": "CABLE PROFINET M12",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "2 METROS DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "CORTADO",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-s7-1200-simatic-mpybi7w6",
+      "nombre": "S7 1200 SIMATIC",
+      "marca": "SIEMENS",
+      "modelo": "0XB0",
+      "tipo": "AUTOMATISMO",
+      "detalle": "CPU 1212C DC/DC/DC",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-switch-de-vibraciones-mpybi7w7",
+      "nombre": "SWITCH DE VIBRACIONES",
+      "marca": "VIBRATOR S.A",
+      "modelo": "VS-302",
+      "tipo": "AUTOMATISMO",
+      "detalle": "SWITCH",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-gateway-as-i-mpybi7w7",
+      "nombre": "GATEWAY AS-I",
+      "marca": "PEPPERL+FUCHS",
+      "modelo": "K20-DMD",
+      "tipo": "AUTOMATISMO",
+      "detalle": "PROFIBUS GATEWAY",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-simatic-iot-2050-mpybi7w7",
+      "nombre": "SIMATIC IOT 2050",
+      "marca": "SIEMENS",
+      "modelo": "0YA2",
+      "tipo": "AUTOMATISMO",
+      "detalle": "SIMATIC IOT 2000",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-plc-m241-mpybi7w7",
+      "nombre": "PLC M241",
+      "marca": "SCHNEIDER",
+      "modelo": "CE24T",
+      "tipo": "AUTOMATISMO",
+      "detalle": "PLC M241",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-as-interface-mpybi7w7",
+      "nombre": "AS-INTERFACE",
+      "marca": "SIEMENS",
+      "modelo": "0XA0",
+      "tipo": "AUTOMATISMO",
+      "detalle": "SIMATIC NET CP AS - INTERFACE",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-modulo-entrada-digital-mpybi7w7",
+      "nombre": "MODULO ENTRADA DIGITAL",
+      "marca": "SCHNEIDER",
+      "modelo": "3202K",
+      "tipo": "AUTOMATISMO",
+      "detalle": "DDI 3202K",
+      "calibracion": "N/A",
+      "comentario": "MODULO ENTRADA 24V",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-ap-ot-mpybi7w7",
+      "nombre": "AP OT",
+      "marca": "ADVANTECH",
+      "modelo": "WISE-4051",
+      "tipo": "AUTOMATISMO",
+      "detalle": "ACCES POINT",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-de-alimentacion-p-mpybi7w7",
+      "nombre": "FUENTE DE ALIMENTACION PANEL VIEW PLUS",
+      "marca": "ALLEN-BRADLEY",
+      "modelo": "RSACDIN",
+      "tipo": "AUTOMATISMO",
+      "detalle": "FUENTE EDE 24V",
+      "calibracion": "N/A",
+      "comentario": "CON CABLE Y CONECTOR",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-encoder-profibus-mpybi7w7",
+      "nombre": "ENCODER PROFIBUS",
+      "marca": "ELECTRONIC GMBH",
+      "modelo": "10157",
+      "tipo": "AUTOMATISMO",
+      "detalle": "DE 11 A 27V RESOLUCION 4096 CUENTAS 8192",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-sensor-de-presion-mpybi7w7",
+      "nombre": "SENSOR DE PRESION",
+      "marca": "GEA",
+      "modelo": "512151",
+      "tipo": "AUTOMATISMO",
+      "detalle": "5BAR 24VDC",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-modulo-control-de-corrie-mpybi7w7",
+      "nombre": "MODULO CONTROL DE CORRIENTE",
+      "marca": "SIEMENS",
+      "modelo": "1AA00-0",
+      "tipo": "AUTOMATISMO",
+      "detalle": "0.3 A - 3.0 A 60/75° COPPER WIRE ONLY",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-modulo-de-mando-mpybi7w7",
+      "nombre": "MODULO DE MANDO",
+      "marca": "SIEMENS",
+      "modelo": "1AA01-0",
+      "tipo": "AUTOMATISMO",
+      "detalle": "PARA FRENTE DE TABLERO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-plc-s7-400-mpybi7w7",
+      "nombre": "PLC S7 400",
+      "marca": "SIEMENS",
+      "modelo": "0AB0",
+      "tipo": "AUTOMATISMO",
+      "detalle": "CPU 417-4H",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-escanner-codigo-de-barra-mpybi7w7",
+      "nombre": "ESCANNER CODIGO DE BARRA",
+      "marca": "NITSUTA",
+      "modelo": "NS-LC931W",
+      "tipo": "AUTOMATISMO",
+      "detalle": "WIRELESS BARCODE SCANNER",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-mordasas-as-i-mpybi7w7",
+      "nombre": "MORDASAS AS-I",
+      "marca": "",
+      "modelo": "",
+      "tipo": "AUTOMATISMO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-sensor-de-proximidad-mpybi7w7",
+      "nombre": "SENSOR DE PROXIMIDAD",
+      "marca": "OMRON",
+      "modelo": "E2B",
+      "tipo": "AUTOMATISMO",
+      "detalle": "SENSOR",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-converter-dvi-vga-mpybi7w7",
+      "nombre": "CONVERTER DVI-VGA",
+      "marca": "",
+      "modelo": "SPLR005",
+      "tipo": "ADAPTADORES",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-sensor-de-temperatura-mpybi7w7",
+      "nombre": "SENSOR DE TEMPERATURA",
+      "marca": "EXTECH",
+      "modelo": "",
+      "tipo": "AUTOMATISMO",
+      "detalle": "SENSOR",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-modulo-interface-mpybi7w7",
+      "nombre": "MODULO INTERFACE",
+      "marca": "GEA",
+      "modelo": "589.24",
+      "tipo": "AUTOMATISMO",
+      "detalle": "MODULO INTERFACE 24V",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cable-hdmi-mpybi7w7",
+      "nombre": "CABLE HDMI",
+      "marca": "COXOC",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "CABLE HDMI 0",
+      "calibracion": "N/A",
+      "comentario": "5M",
+      "fecha_relevamiento": "2026-06-03",
+      "activo": true
+    },
+    {
+      "id": "item-cables-dvi-mpybi7w7",
+      "nombre": "CABLES DVI",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-adaptadores-de-display-p-mpybi7w8",
+      "nombre": "ADAPTADORES DE DISPLAY PORT A DVI",
+      "marca": "BIZLINK",
+      "modelo": "",
+      "tipo": "ADAPTADORES",
+      "detalle": "0",
+      "calibracion": "",
+      "comentario": "03METROS DE LARGO",
+      "fecha_relevamiento": "2026-06-03",
+      "activo": true
+    },
+    {
+      "id": "item-cable-display-port-a-dvi-mpybi7w8",
+      "nombre": "CABLE DISPLAY PORT A DVI",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "1.5M DE LARGO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-adaptador-hdmi-a-diplay--mpybi7w8",
+      "nombre": "ADAPTADOR HDMI A DIPLAY PORT + USB",
+      "marca": "",
+      "modelo": "",
+      "tipo": "ADAPTADORES",
+      "detalle": "0",
+      "calibracion": "",
+      "comentario": "5 M DE LARGO",
+      "fecha_relevamiento": "2026-06-03",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-220-19v-mpybi7w8",
+      "nombre": "FUENTE 220 19V",
+      "marca": "HIPRO",
+      "modelo": "A0652R3B",
+      "tipo": "FUENTE",
+      "detalle": "FUENTE DE ALIMENTACION",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-12vdc-12a-120w-mpybi7w8",
+      "nombre": "FUENTE 12VDC 12A 120W",
+      "marca": "MEGALITE",
+      "modelo": "MI2173",
+      "tipo": "FUENTE",
+      "detalle": "FUENTE DE ALIMENTACION",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-220-5v-1-5a-mpybi7w8",
+      "nombre": "FUENTE 220 5V 1.5A",
+      "marca": "",
+      "modelo": "F05JP",
+      "tipo": "FUENTE",
+      "detalle": "FUENTE DE ALIMENTACION",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-220-9v-0-6a-mpybi7w8",
+      "nombre": "FUENTE 220 9V 0.6A",
+      "marca": "TPLINK",
+      "modelo": "2F1",
+      "tipo": "FUENTE",
+      "detalle": "FUENTE DE ALIMENTACION",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-220-12v-1a-mpybi7w8",
+      "nombre": "FUENTE 220 12V 1A",
+      "marca": "TPLINK",
+      "modelo": "2F1",
+      "tipo": "FUENTE",
+      "detalle": "FUENTE DE ALIMENTACION",
+      "calibracion": "N/A",
+      "comentario": "FUENTE DE ALIMENTACION",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-220-12v-3a-mpybi7w8",
+      "nombre": "FUENTE 220 12V 3A",
+      "marca": "LG",
+      "modelo": "P07F",
+      "tipo": "FUENTE",
+      "detalle": "FUENTE DE ALIMENTACION",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-alcohol-isopropilico-1l-mpybi7w8",
+      "nombre": "ALCOHOL ISOPROPILICO 1L",
+      "marca": "",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-cinta-de-peligro-mpybi7w9",
+      "nombre": "CINTA DE PELIGRO",
+      "marca": "",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-precintos-400mm-mpybi7wa",
+      "nombre": "PRECINTOS 400MM",
+      "marca": "",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-adaptadores-pata-plana-a-mpybi7wa",
+      "nombre": "ADAPTADORES PATA PLANA A PATA REDONDA",
+      "marca": "MICROLUZ",
+      "modelo": "",
+      "tipo": "ELECTRICIDAD",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-grasa-de-litio-mpybi7wa",
+      "nombre": "GRASA DE LITIO",
+      "marca": "TF3",
+      "modelo": "",
+      "tipo": "COMSUMIBLE",
+      "detalle": "CAVAL GT450",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-21",
+      "activo": true
+    },
+    {
+      "id": "item-disco-mecanico-160gb-3-5-mpybi7wa",
+      "nombre": "DISCO MECANICO  160GB 3,5",
+      "marca": "WETER DIGITAL BLUE",
+      "modelo": "B4A0 -9012",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "USADO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-disco-mecanico-320gb-3-5-mpybi7wa",
+      "nombre": "DISCO MECANICO  320GB 3,5",
+      "marca": "WETER DIGITAL BLUE",
+      "modelo": "L7A0 -1427",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "USADO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-disco-mecanico-500gb-3-5-mpybi7wa",
+      "nombre": "DISCO MECANICO  500GB 3,5",
+      "marca": "WETER DIGITAL BLUE",
+      "modelo": "B6A0 -7568",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "USADO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-disco-mecanico-1t-3-5-mpybi7wa",
+      "nombre": "DISCO MECANICO 1T 3,5",
+      "marca": "TOSHIBA",
+      "modelo": "KBE -ACA100",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "USADO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-disco-mecanico-250gb-3-5-mpybi7wa",
+      "nombre": "DISCO MECANICO 250GB 3,5",
+      "marca": "SIGATE",
+      "modelo": "H5Z9X -13015",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "USADO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-disco-mecanico-1t-2-5-mpybi7wa",
+      "nombre": "DISCO MECANICO 1T 2,5",
+      "marca": "TOSHIBA",
+      "modelo": "3180 -MMA01T",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "USADO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-disco-mecanico-500gb-2-5-mpybi7wa",
+      "nombre": "DISCO MECANICO 500GB 2,5",
+      "marca": "SAMNSUNG",
+      "modelo": "M500MBB -19953",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "USADO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-disco-m2-2230-mpybi7wa",
+      "nombre": "DISCO M2 2230",
+      "marca": "ADATA",
+      "modelo": "256GB",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "USADO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-disco-mecanico-2-5-240gb-mpybi7wa",
+      "nombre": "DISCO MECANICO 2,5 240GB",
+      "marca": "SAMNSUNG",
+      "modelo": "5B16E -18445",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "USADO",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-convertidores-hdmi-a-dvi-mpybi7wa",
+      "nombre": "CONVERTIDORES HDMI A DVI",
+      "marca": "",
+      "modelo": "",
+      "tipo": "ADAPTADORES",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-convertidores-de-hvi-a-d-mpybi7wb",
+      "nombre": "CONVERTIDORES DE HVI A DISPLAY PORT",
+      "marca": "",
+      "modelo": "",
+      "tipo": "ADAPTADORES",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-convertidor-de-display-p-mpybi7wb",
+      "nombre": "CONVERTIDOR DE DISPLAY PORT A DVI",
+      "marca": "NISUTA",
+      "modelo": "DVBL",
+      "tipo": "ADAPTADORES",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-convertidor-usb-a-hdmi-mpybi7wb",
+      "nombre": "CONVERTIDOR USB A HDMI",
+      "marca": "",
+      "modelo": "",
+      "tipo": "ADAPTADORES",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-convertidor-display-port-mpybi7wb",
+      "nombre": "CONVERTIDOR DISPLAY PORT A HDMI 0.5M",
+      "marca": "",
+      "modelo": "",
+      "tipo": "ADAPTADORES",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-convertido-seria-a-displ-mpybi7wb",
+      "nombre": "CONVERTIDO SERIA A DISPLAY PORT 0.5M",
+      "marca": "",
+      "modelo": "",
+      "tipo": "ADAPTADORES",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-convertidor-serial-a-hdm-mpybi7wb",
+      "nombre": "CONVERTIDOR SERIAL A HDMI 0.5M",
+      "marca": "",
+      "modelo": "",
+      "tipo": "ADAPTADORES",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cable-hdmi-1m-mpybi7wb",
+      "nombre": "CABLE HDMI 1M",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cable-hdmii-a-mini-hdmi--mpybi7wb",
+      "nombre": "CABLE HDMII A MINI HDMI 1M",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-switchin-240-19v--mpybi7wb",
+      "nombre": "FUENTE SWITCHIN 240 19V 3A",
+      "marca": "DELL",
+      "modelo": "PM111 -A02",
+      "tipo": "FUENTE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "VIENE CON ABLE INTERLOK",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-switchin-240-19v--mpybi7wb",
+      "nombre": "FUENTE SWITCHIN 240 19V 1",
+      "marca": "3A",
+      "modelo": "LG",
+      "tipo": "19025G -8723",
+      "detalle": "FUENTE",
+      "calibracion": "N/A",
+      "comentario": "VIENE CON ABLE INTERLOK",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-switchin-240-19v--mpybi7wb",
+      "nombre": "FUENTE SWITCHIN 240 19V 3.42A",
+      "marca": "ACER",
+      "modelo": "65VHF - 6BLW",
+      "tipo": "FUENTE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "VIENE CON ABLE INTERLOK",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-switchin-240-12v--mpybi7wb",
+      "nombre": "FUENTE SWITCHIN 240 12V 3A",
+      "marca": "OPTI",
+      "modelo": "225S - 1104",
+      "tipo": "FUENTE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "VIENE CON ABLE INTERLOK",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cable-usb-a-a-usb-b-0-mpybi7wc",
+      "nombre": "CABLE USB A A USB B 0",
+      "marca": "5M",
+      "modelo": "HP",
+      "tipo": "1741",
+      "detalle": "CABLE",
+      "calibracion": "N/A",
+      "comentario": "CABLE PARA IMPRESORA",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cable-usb-a-a-usb-b-1m-mpybi7wc",
+      "nombre": "CABLE USB A A USB B 1M",
+      "marca": "HP",
+      "modelo": "1816",
+      "tipo": "CABLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CABLE PARA IMPRESORA",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cable-usb-a-a-usb-b-5m-mpybi7wc",
+      "nombre": "CABLE USB A A USB B 5M",
+      "marca": "NISUTA",
+      "modelo": "CUSB5",
+      "tipo": "CABLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CABLE PARA IMPRESORA -SUELTO NO SE MARCA NI MODELO",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cable-varios-celulares-mpybi7wc",
+      "nombre": "CABLE VARIOS CELULARES",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "VARIADO",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-memory-cards-mpybi7wc",
+      "nombre": "MEMORY CARDS",
+      "marca": "SIEMENS",
+      "modelo": "",
+      "tipo": "MEMORIAS",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "USADAS",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-memorias-din-8gb-ddr3-16-mpybi7wc",
+      "nombre": "MEMORIAS DIN 8GB DDR3 1600MHZ",
+      "marca": "CKHYNIX",
+      "modelo": "",
+      "tipo": "MEMORIAS",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "USADAS",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-memorias-din-2gb-ddr3-16-mpybi7wc",
+      "nombre": "MEMORIAS DIN 2GB DDR3 1600MHZ",
+      "marca": "SAMNSUNG",
+      "modelo": "",
+      "tipo": "MEMORIAS",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "USADAS",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-sodin-8gb-ddr4-mpybi7wc",
+      "nombre": "SODIN 8GB DDR4",
+      "marca": "KINGTON",
+      "modelo": "",
+      "tipo": "MEMORIAS",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "NUEVO",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-sodin-1gb-ddr3-mpybi7wc",
+      "nombre": "SODIN 1GB DDR3",
+      "marca": "KINGTON",
+      "modelo": "",
+      "tipo": "MEMORIAS",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "USADAS",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-sodin-4gb-ddr4-mpybi7wd",
+      "nombre": "SODIN 4GB DDR4",
+      "marca": "LENOVO",
+      "modelo": "",
+      "tipo": "MEMORIAS",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "USADAS",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-licencia-key-serial-fisi-mpybi7wd",
+      "nombre": "LICENCIA KEY SERIAL FISICO",
+      "marca": "WONDER",
+      "modelo": "218174",
+      "tipo": "LICENCIA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-teclado-inalambrico-mpybi7wd",
+      "nombre": "TECLADO INALAMBRICO",
+      "marca": "NOBLEX",
+      "modelo": "",
+      "tipo": "ACCESORIO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "FALTA RESSEPTOR",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-teclado-ps2-mpybi7wd",
+      "nombre": "TECLADO PS2",
+      "marca": "TONOMAC",
+      "modelo": "",
+      "tipo": "ACCESORIO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "PARA PC VIEJA",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-discos-de-damiana-server-mpybi7wd",
+      "nombre": "DISCOS DE DAMIANA SERVER VIEJO",
+      "marca": "DAMIAN",
+      "modelo": "DAMIAN",
+      "tipo": "ALAMACENAMIENTO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "BACKUPS SERVER DAMIAN",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-zero-client-mpybi7wd",
+      "nombre": "ZERO CLIENT",
+      "marca": "VCLOUDPOINT",
+      "modelo": "V1 -12986",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-carri-para-remplazo-de-l-mpybi7wd",
+      "nombre": "CARRI PARA REMPLAZO DE LECTIORA POR HD",
+      "marca": "ASUS",
+      "modelo": "4160 -1012227",
+      "tipo": "ACCESORIO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-fichas-y-terminales-mpybi7wd",
+      "nombre": "FICHAS Y TERMINALES",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CONSUMIBLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cartuchos-de-tonner-mpybi7wd",
+      "nombre": "CARTUCHOS DE TONNER",
+      "marca": "GLOBAL",
+      "modelo": "TN1060COMP",
+      "tipo": "CONSUMIBLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cable-de-fuentes-modulab-mpybi7wd",
+      "nombre": "CABLE DE FUENTES MODULABLE DE PC",
+      "marca": "",
+      "modelo": "",
+      "tipo": "CABLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cables-abb-serial-db25-mpybi7wd",
+      "nombre": "CABLES ABB SERIAL DB25",
+      "marca": "",
+      "modelo": "TV805 - 36R1",
+      "tipo": "CABLE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-interface-mpybi7we",
+      "nombre": "INTERFACE",
+      "marca": "BEICHEN",
+      "modelo": "BCNET-AB",
+      "tipo": "AUTOMATISMO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-switch-16p-gb-mpybi7we",
+      "nombre": "SWITCH 16P GB",
+      "marca": "TPLINK",
+      "modelo": "16DE -0810",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-router-doble-banda-wiffi-mpybi7we",
+      "nombre": "ROUTER DOBLE BANDA WIFFI6",
+      "marca": "TPLINK",
+      "modelo": "AX3000 -3636",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-router-board-mpybi7we",
+      "nombre": "ROUTER BOARD",
+      "marca": "MICROTIK",
+      "modelo": "HEXLITE -542",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "NO ESTA LA FUENTE",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-switch-8p-fast-etherner-mpybi7we",
+      "nombre": "SWITCH 8P FAST ETHERNER",
+      "marca": "TPLINK",
+      "modelo": "1008D -2188",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "NO ESTA LA FUENTE",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-switch-5p-giga-mpybi7we",
+      "nombre": "SWITCH 5P GIGA",
+      "marca": "TPLINK",
+      "modelo": "1005D -1260",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "NO ESTA LA FUENTE",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-switch-5p-fast-ethernet--mpybi7we",
+      "nombre": "SWITCH 5P FAST ETHERNET 9/30V DC",
+      "marca": "TELTONIKA",
+      "modelo": "TSW110 -8470",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "SWITCH INDUSTRIAL",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-router-giga-bit-4p-1pdmz-mpybi7we",
+      "nombre": "ROUTER GIGA BIT 4P 1PDMZ",
+      "marca": "CISCO",
+      "modelo": "RV042G -01UM",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "SIN FUENTE",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-626w-para-pc-mpybi7we",
+      "nombre": "FUENTE 626W PARA PC",
+      "marca": "SENTEY",
+      "modelo": "XPP625-PS-0065",
+      "tipo": "FUENTE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "REVISAR FUNCIONAMIENTO",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-700w-para-pc-mpybi7wf",
+      "nombre": "FUENTE 700W PARA PC",
+      "marca": "THERMALTAKE",
+      "modelo": "PSSPRO700 -0064",
+      "tipo": "FUENTE",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "REVISAR FUNCIONAMIENTO",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-router-doble-banda-wiffi-mpybi7wf",
+      "nombre": "ROUTER DOBLE BANDA WIFFI",
+      "marca": "TPLINK",
+      "modelo": "WR841HP",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-mochila-con-pg-mpybi7wf",
+      "nombre": "MOCHILA CON PG",
+      "marca": "SIEMENS",
+      "modelo": "PGM -0AC4",
+      "tipo": "AUTOMATISMO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CON ACCESORIOS",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-switch-5p-gb-mpybi7wg",
+      "nombre": "SWITCH 5P GB",
+      "marca": "TPLINK",
+      "modelo": "TL-SG105",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "CON FUENTES",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-nass-de-enrique-mpybi7wg",
+      "nombre": "NASS DE ENRIQUE",
+      "marca": "LENOVO",
+      "modelo": "IX2-NG  -2334",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "COSAS DE ENRIQUE",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cinta-siemens-mpybi7wg",
+      "nombre": "CINTA SIEMENS",
+      "marca": "SIEMENS",
+      "modelo": "",
+      "tipo": "AUTOMATISMO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cinta-de-embalar-traspar-mpybi7wg",
+      "nombre": "CINTA DE EMBALAR TRASPARENTE",
+      "marca": "FIJAPEL",
+      "modelo": "",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-caja-de-bandas-elasticas-mpybi7wg",
+      "nombre": "CAJA DE BANDAS ELASTICAS",
+      "marca": "SUPER BANDS",
+      "modelo": "",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-saca-ganchos-mpybi7wg",
+      "nombre": "SACA GANCHOS",
+      "marca": "",
+      "modelo": "",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-abrochadora-mpybi7wg",
+      "nombre": "ABROCHADORA",
+      "marca": "MIT",
+      "modelo": "FX50",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-repuestos-de-abrochadora-mpybi7wg",
+      "nombre": "REPUESTOS DE ABROCHADORA",
+      "marca": "MIT",
+      "modelo": "",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "10 UIDADES",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-tijera-mpybi7wg",
+      "nombre": "TIJERA",
+      "marca": "PIZZINI",
+      "modelo": "",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-perforadora-de-papel-mpybi7wg",
+      "nombre": "PERFORADORA DE PAPEL",
+      "marca": "MAPED",
+      "modelo": "",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-carpetas-a3-mpybi7wg",
+      "nombre": "CARPETAS A3",
+      "marca": "",
+      "modelo": "",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-juego-folios-mpybi7wg",
+      "nombre": "JUEGO FOLIOS",
+      "marca": "",
+      "modelo": "",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cinta-de-papel-mpybi7wh",
+      "nombre": "CINTA DE PAPEL",
+      "marca": "",
+      "modelo": "",
+      "tipo": "LIBRERÍA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-semaforo-mpybi7wh",
+      "nombre": "SEMAFORO",
+      "marca": "TBCIN",
+      "modelo": "LTA205",
+      "tipo": "AUTOMATISMO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-antena-enrique-mpybi7wh",
+      "nombre": "ANTENA ENRIQUE",
+      "marca": "STARLINK",
+      "modelo": "",
+      "tipo": "ELECTRONICA",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-zapatilla-de-tension-10a-mpybi7wh",
+      "nombre": "ZAPATILLA DE TENSION 10A",
+      "marca": "",
+      "modelo": "55Z",
+      "tipo": "ELECTRICIDAD",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-bastidor-rack-de-9-zocal-mpybi7wh",
+      "nombre": "BASTIDOR RACK DE 9 ZOCALOS SISTEMATIC S7-400",
+      "marca": "SIEMENS",
+      "modelo": "UR2 -0AA0",
+      "tipo": "AUTOMATISMO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-fuente-s7-400-mpybi7wh",
+      "nombre": "FUENTE S7- 400",
+      "marca": "SIEMENS",
+      "modelo": "PS40710A -0AA0",
+      "tipo": "AUTOMATISMO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    },
+    {
+      "id": "item-cpu-s7-400-mpybi7wh",
+      "nombre": "CPU S7 -400",
+      "marca": "SIEMENS",
+      "modelo": "417-4H -0AB0",
+      "tipo": "AUTOMATISMO",
+      "detalle": "",
+      "calibracion": "N/A",
+      "comentario": "",
+      "fecha_relevamiento": "2026-05-26",
+      "activo": true
+    }
+  ],
+  "stock": [
+    {
+      "id": "stk-mpybi7w1-x1gm",
+      "item_id": "item-soldador-de-esta-o-mpybi7w1",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-vjpo",
+      "item_id": "item-saca-esta-o-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-4e3u",
+      "item_id": "item-pasta-termica-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-90rj",
+      "item_id": "item-esta-o-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-xstp",
+      "item_id": "item-adaptador-usb-dh485-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-lba9",
+      "item_id": "item-smart-access-g120-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-iz85",
+      "item_id": "item-sinamics-v20-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-jnfx",
+      "item_id": "item-converter-r422-rs485-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-pl93",
+      "item_id": "item-fuente-de-alimentacion-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-opbk",
+      "item_id": "item-adaptador-usb-cable-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c02",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w2-p77x",
+      "item_id": "item-adaptador-usb-x-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-zjs5",
+      "item_id": "item-pc-adapter-usb-a2-mpybi7w2",
+      "contenedor_id": "cnt-a01-e02-sc",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w2-5m3k",
+      "item_id": "item-cable-de-consola-mpybi7w2",
+      "contenedor_id": "cnt-a01-e02-c04",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7w3-388k",
+      "item_id": "item-plug-rj45-metalica-cat5e-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-c06",
+      "cantidad": 26
+    },
+    {
+      "id": "stk-mpybi7w3-dxoz",
+      "item_id": "item-capuchones-rj45-verdes-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-c06",
+      "cantidad": 33
+    },
+    {
+      "id": "stk-mpybi7w3-e38l",
+      "item_id": "item-fichas-rj45-metalicas-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-c06",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w3-ir23",
+      "item_id": "item-plug-rj45-plasticas-cat--mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-c06",
+      "cantidad": 54
+    },
+    {
+      "id": "stk-mpybi7w3-yf4w",
+      "item_id": "item-jack-cat-6-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-c06",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w3-wnr0",
+      "item_id": "item-viru-viru-cable-tracker-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-h03",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-ie0j",
+      "item_id": "item-multimetro-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-h04",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-qhgj",
+      "item_id": "item-radio-x2-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-h05",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-cnsg",
+      "item_id": "item-etiquetadora-manual-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-h02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-qvru",
+      "item_id": "item-kit-de-herramientas-de-f-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-b02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-n0gc",
+      "item_id": "item-alicate-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-cmv4",
+      "item_id": "item-alicate-peque-o-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-crfu",
+      "item_id": "item-pinza-de-punta-peque-o-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-bqng",
+      "item_id": "item-jugo-de-llave-alem-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-lerv",
+      "item_id": "item-jugo-de-llave-torx-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-gnh2",
+      "item_id": "item-linterna-peque-a-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-bp2l",
+      "item_id": "item-pelacable-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-cr76",
+      "item_id": "item-juego-de-destornilladore-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-gr4a",
+      "item_id": "item-kit-de-fichas-varias-rj4-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-zj3k",
+      "item_id": "item-kit-de-destornilladores-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-h06",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w3-utfu",
+      "item_id": "item-visual-fault-locator-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-c03",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w4-wbm6",
+      "item_id": "item-tool-kit-grimpiadora-sl--mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-c03",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w4-rmv0",
+      "item_id": "item-crimpiadora-rj11-mpybi7w4",
+      "contenedor_id": "cnt-a01-e02-c03",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w4-1y7d",
+      "item_id": "item-crimpiadora-rj45-rj11-mpybi7w4",
+      "contenedor_id": "cnt-a01-e02-c03",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w4-1gbb",
+      "item_id": "item-impactadora-mpybi7w4",
+      "contenedor_id": "cnt-a01-e02-c03",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7w4-1w4g",
+      "item_id": "item-tester-de-red-mpybi7w4",
+      "contenedor_id": "cnt-a01-e02-c03",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w4-1rnh",
+      "item_id": "item-cinta-aisladora-negro-mpybi7w4",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w5-dn4g",
+      "item_id": "item-cinta-aisladora-blanco-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w5-2ru7",
+      "item_id": "item-destornilladores-philips-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 9
+    },
+    {
+      "id": "stk-mpybi7w5-459p",
+      "item_id": "item-destornilladores-planos-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 7
+    },
+    {
+      "id": "stk-mpybi7w5-3jeu",
+      "item_id": "item-destornilladores-estrell-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w5-6ifp",
+      "item_id": "item-crimpiadora-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w5-axw7",
+      "item_id": "item-pinza-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7w5-vvqx",
+      "item_id": "item-pinza-de-punta-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 4
+    },
+    {
+      "id": "stk-mpybi7w5-5iif",
+      "item_id": "item-pinza-de-punta-curva-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w5-0zmb",
+      "item_id": "item-alicate-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w5-v3fe",
+      "item_id": "item-llave-francesa-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w5-yk2s",
+      "item_id": "item-pico-de-loro-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w5-iywf",
+      "item_id": "item-juego-de-mecha-de-copa-2-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w5-r7hq",
+      "item_id": "item-extractor-de-integrados-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w5-vcsb",
+      "item_id": "item-cables-interlock-mpybi7w5",
+      "contenedor_id": "cnt-a01-e04-c07",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7w5-d34s",
+      "item_id": "item-cable-utp-cat-5e-mpybi7w5",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7w6-m3fi",
+      "item_id": "item-cable-utp-cat-6-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-1an0",
+      "item_id": "item-cable-utp-cat-6a-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w6-ogas",
+      "item_id": "item-cable-profinet-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w6-js1r",
+      "item_id": "item-usb-a-serial-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w6-r0n6",
+      "item_id": "item-cable-frofibus-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-x46l",
+      "item_id": "item-cable-serial-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 8
+    },
+    {
+      "id": "stk-mpybi7w6-4xll",
+      "item_id": "item-generador-de-se-ales-mpybi7w6",
+      "contenedor_id": "cnt-a01-e02-c22",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-gv1r",
+      "item_id": "item-cable-consola-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 4
+    },
+    {
+      "id": "stk-mpybi7w6-4eu8",
+      "item_id": "item-cable-vga-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-h0nn",
+      "item_id": "item-cable-serial-plc-rockwel-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-dn2l",
+      "item_id": "item-cable-seria-a-ciee-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-7kam",
+      "item_id": "item-cable-serial-para-impres-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-na7j",
+      "item_id": "item-cable-con-ficha-rara-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-yhlt",
+      "item_id": "item-ficha-db9-cortado-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-mdgl",
+      "item_id": "item-cable-seria-db25-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-wnlj",
+      "item_id": "item-bolsa-de-cables-unipolar-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w6-7fn4",
+      "item_id": "item-cable-profinet-m12-mpybi7w6",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w6-vuvy",
+      "item_id": "item-s7-1200-simatic-mpybi7w6",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-ko07",
+      "item_id": "item-switch-de-vibraciones-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-t1iu",
+      "item_id": "item-gateway-as-i-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-qqd9",
+      "item_id": "item-simatic-iot-2050-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-kmd4",
+      "item_id": "item-plc-m241-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-x71v",
+      "item_id": "item-as-interface-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-s974",
+      "item_id": "item-modulo-entrada-digital-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-obsr",
+      "item_id": "item-ap-ot-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-h32n",
+      "item_id": "item-fuente-de-alimentacion-p-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-x0xv",
+      "item_id": "item-encoder-profibus-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w7-wfvd",
+      "item_id": "item-sensor-de-presion-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-i8a9",
+      "item_id": "item-modulo-control-de-corrie-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-9d28",
+      "item_id": "item-modulo-de-mando-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-9la6",
+      "item_id": "item-plc-s7-400-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-zi0x",
+      "item_id": "item-escanner-codigo-de-barra-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-ngfd",
+      "item_id": "item-mordasas-as-i-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w7-xj16",
+      "item_id": "item-sensor-de-proximidad-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-hxcw",
+      "item_id": "item-converter-dvi-vga-mpybi7w7",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-rh58",
+      "item_id": "item-sensor-de-temperatura-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-2kh0",
+      "item_id": "item-cable-profinet-mpybi7w6",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-telr",
+      "item_id": "item-modulo-interface-mpybi7w7",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-le77",
+      "item_id": "item-cable-hdmi-mpybi7w7",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w7-qe6a",
+      "item_id": "item-cables-dvi-mpybi7w7",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7w8-t6dm",
+      "item_id": "item-adaptadores-de-display-p-mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7w8-f8wm",
+      "item_id": "item-cable-display-port-a-dvi-mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w8-gjzk",
+      "item_id": "item-adaptador-hdmi-a-diplay--mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w8-y84e",
+      "item_id": "item-fuente-220-19v-mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c10",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w8-vxka",
+      "item_id": "item-fuente-12vdc-12a-120w-mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c10",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w8-yqn0",
+      "item_id": "item-fuente-220-5v-1-5a-mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c10",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w8-o9vd",
+      "item_id": "item-fuente-220-9v-0-6a-mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c10",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w8-6hpi",
+      "item_id": "item-fuente-220-12v-1a-mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c10",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w8-319v",
+      "item_id": "item-fuente-220-12v-3a-mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c10",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w8-q5zk",
+      "item_id": "item-alcohol-isopropilico-1l-mpybi7w8",
+      "contenedor_id": "cnt-a01-e03-c05",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7w9-o79s",
+      "item_id": "item-cinta-de-peligro-mpybi7w9",
+      "contenedor_id": "cnt-a01-e03-c05",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-4r2x",
+      "item_id": "item-precintos-400mm-mpybi7wa",
+      "contenedor_id": "cnt-a01-e03-c05",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-nggb",
+      "item_id": "item-adaptadores-pata-plana-a-mpybi7wa",
+      "contenedor_id": "cnt-a01-e03-c05",
+      "cantidad": 4
+    },
+    {
+      "id": "stk-mpybi7wa-toku",
+      "item_id": "item-grasa-de-litio-mpybi7wa",
+      "contenedor_id": "cnt-a01-e01-sc",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-z0u3",
+      "item_id": "item-disco-mecanico-160gb-3-5-mpybi7wa",
+      "contenedor_id": "cnt-a02-e01-c12",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-4oho",
+      "item_id": "item-disco-mecanico-320gb-3-5-mpybi7wa",
+      "contenedor_id": "cnt-a02-e01-c12",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-1gk1",
+      "item_id": "item-disco-mecanico-500gb-3-5-mpybi7wa",
+      "contenedor_id": "cnt-a02-e01-c12",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-chzv",
+      "item_id": "item-disco-mecanico-1t-3-5-mpybi7wa",
+      "contenedor_id": "cnt-a02-e01-c12",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-5gbd",
+      "item_id": "item-disco-mecanico-250gb-3-5-mpybi7wa",
+      "contenedor_id": "cnt-a02-e01-c12",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-7647",
+      "item_id": "item-disco-mecanico-1t-2-5-mpybi7wa",
+      "contenedor_id": "cnt-a02-e01-c12",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-l58c",
+      "item_id": "item-disco-mecanico-500gb-2-5-mpybi7wa",
+      "contenedor_id": "cnt-a02-e01-c12",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-7ina",
+      "item_id": "item-disco-m2-2230-mpybi7wa",
+      "contenedor_id": "cnt-a02-e01-c12",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wa-irnz",
+      "item_id": "item-disco-mecanico-2-5-240gb-mpybi7wa",
+      "contenedor_id": "cnt-a02-e01-c12",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wa-gadq",
+      "item_id": "item-convertidores-hdmi-a-dvi-mpybi7wa",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7wb-qacs",
+      "item_id": "item-convertidores-de-hvi-a-d-mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wb-ufgv",
+      "item_id": "item-convertidor-de-display-p-mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wb-4uz3",
+      "item_id": "item-convertidor-usb-a-hdmi-mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wb-w26r",
+      "item_id": "item-convertidor-display-port-mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7wb-lgou",
+      "item_id": "item-convertido-seria-a-displ-mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wb-6cfb",
+      "item_id": "item-convertidor-serial-a-hdm-mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wb-0ls2",
+      "item_id": "item-cable-hdmi-1m-mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7wb-i4jz",
+      "item_id": "item-cable-hdmii-a-mini-hdmi--mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c08",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wb-hz4k",
+      "item_id": "item-fuente-switchin-240-19v--mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c10",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7wb-dr6i",
+      "item_id": "item-fuente-switchin-240-12v--mpybi7wb",
+      "contenedor_id": "cnt-a01-e03-c10",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wc-9fld",
+      "item_id": "item-cable-usb-a-a-usb-b-0-mpybi7wc",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wc-i4b9",
+      "item_id": "item-cable-usb-a-a-usb-b-1m-mpybi7wc",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wc-stdo",
+      "item_id": "item-cable-usb-a-a-usb-b-5m-mpybi7wc",
+      "contenedor_id": "cnt-a01-e04-c09",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wc-7o02",
+      "item_id": "item-cable-varios-celulares-mpybi7wc",
+      "contenedor_id": "cnt-a02-e01-c13",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wc-gbrh",
+      "item_id": "item-memory-cards-mpybi7wc",
+      "contenedor_id": "cnt-a02-e01-c14",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wc-aiyi",
+      "item_id": "item-memorias-din-8gb-ddr3-16-mpybi7wc",
+      "contenedor_id": "cnt-a02-e01-c14",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wc-n9dk",
+      "item_id": "item-memorias-din-2gb-ddr3-16-mpybi7wc",
+      "contenedor_id": "cnt-a02-e01-c14",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wc-ipoa",
+      "item_id": "item-sodin-8gb-ddr4-mpybi7wc",
+      "contenedor_id": "cnt-a02-e01-c14",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wc-dbye",
+      "item_id": "item-sodin-1gb-ddr3-mpybi7wc",
+      "contenedor_id": "cnt-a02-e01-c14",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-s5g2",
+      "item_id": "item-sodin-4gb-ddr4-mpybi7wd",
+      "contenedor_id": "cnt-a02-e01-c14",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-xk8y",
+      "item_id": "item-licencia-key-serial-fisi-mpybi7wd",
+      "contenedor_id": "cnt-a02-e01-c14",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-mg1s",
+      "item_id": "item-teclado-inalambrico-mpybi7wd",
+      "contenedor_id": "cnt-a02-e02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-2x1j",
+      "item_id": "item-teclado-ps2-mpybi7wd",
+      "contenedor_id": "cnt-a02-e02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-abjv",
+      "item_id": "item-discos-de-damiana-server-mpybi7wd",
+      "contenedor_id": "cnt-a02-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-d1sk",
+      "item_id": "item-zero-client-mpybi7wd",
+      "contenedor_id": "cnt-a02-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-rug6",
+      "item_id": "item-carri-para-remplazo-de-l-mpybi7wd",
+      "contenedor_id": "cnt-a02-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-u6vj",
+      "item_id": "item-fichas-y-terminales-mpybi7wd",
+      "contenedor_id": "cnt-a02-e02-c15",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-mb1h",
+      "item_id": "item-cartuchos-de-tonner-mpybi7wd",
+      "contenedor_id": "cnt-a02-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-dviv",
+      "item_id": "item-cable-de-fuentes-modulab-mpybi7wd",
+      "contenedor_id": "cnt-a02-e03-c16",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wd-asp3",
+      "item_id": "item-cables-abb-serial-db25-mpybi7wd",
+      "contenedor_id": "cnt-a02-e03-b03",
+      "cantidad": 3
+    },
+    {
+      "id": "stk-mpybi7we-5opr",
+      "item_id": "item-interface-mpybi7we",
+      "contenedor_id": "cnt-a01-e05-c11",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7we-ik1x",
+      "item_id": "item-switch-16p-gb-mpybi7we",
+      "contenedor_id": "cnt-a02-e04-c17",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7we-zgit",
+      "item_id": "item-router-doble-banda-wiffi-mpybi7we",
+      "contenedor_id": "cnt-a02-e04-c17",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7we-uq62",
+      "item_id": "item-router-board-mpybi7we",
+      "contenedor_id": "cnt-a02-e04-c17",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7we-h8iu",
+      "item_id": "item-switch-8p-fast-etherner-mpybi7we",
+      "contenedor_id": "cnt-a02-e04-c17",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7we-clhl",
+      "item_id": "item-switch-5p-giga-mpybi7we",
+      "contenedor_id": "cnt-a02-e04-c17",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7we-fmb8",
+      "item_id": "item-switch-5p-fast-ethernet--mpybi7we",
+      "contenedor_id": "cnt-a02-e04-c17",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7we-rtq2",
+      "item_id": "item-router-giga-bit-4p-1pdmz-mpybi7we",
+      "contenedor_id": "cnt-a02-e04-c17",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7we-b9a2",
+      "item_id": "item-fuente-626w-para-pc-mpybi7we",
+      "contenedor_id": "cnt-a02-e05",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wf-jexr",
+      "item_id": "item-fuente-700w-para-pc-mpybi7wf",
+      "contenedor_id": "cnt-a02-e05",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wf-j1m5",
+      "item_id": "item-router-doble-banda-wiffi-mpybi7wf",
+      "contenedor_id": "cnt-a02-e03-c18",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wf-wbfs",
+      "item_id": "item-mochila-con-pg-mpybi7wf",
+      "contenedor_id": "cnt-a02-e05",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wg-94yq",
+      "item_id": "item-switch-5p-gb-mpybi7wg",
+      "contenedor_id": "cnt-a02-e03-c18",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wg-1f4z",
+      "item_id": "item-nass-de-enrique-mpybi7wg",
+      "contenedor_id": "cnt-a02-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wg-193k",
+      "item_id": "item-cinta-siemens-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wg-yjee",
+      "item_id": "item-cinta-de-embalar-traspar-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wg-me3h",
+      "item_id": "item-caja-de-bandas-elasticas-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wg-iifs",
+      "item_id": "item-saca-ganchos-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wg-xc37",
+      "item_id": "item-abrochadora-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wg-4tqr",
+      "item_id": "item-repuestos-de-abrochadora-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 2
+    },
+    {
+      "id": "stk-mpybi7wg-1gfu",
+      "item_id": "item-tijera-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wg-veq6",
+      "item_id": "item-perforadora-de-papel-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wg-5twa",
+      "item_id": "item-carpetas-a3-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 5
+    },
+    {
+      "id": "stk-mpybi7wg-1bz6",
+      "item_id": "item-juego-folios-mpybi7wg",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wh-bmga",
+      "item_id": "item-cinta-de-papel-mpybi7wh",
+      "contenedor_id": "cnt-a00-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wh-mr8k",
+      "item_id": "item-semaforo-mpybi7wh",
+      "contenedor_id": "cnt-a02-e04",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wh-9c5u",
+      "item_id": "item-antena-enrique-mpybi7wh",
+      "contenedor_id": "cnt-a02-e01",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wh-6v5m",
+      "item_id": "item-zapatilla-de-tension-10a-mpybi7wh",
+      "contenedor_id": "cnt-a02-e02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wh-0z0v",
+      "item_id": "item-bastidor-rack-de-9-zocal-mpybi7wh",
+      "contenedor_id": "cnt-a02-e02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wh-h5q6",
+      "item_id": "item-fuente-s7-400-mpybi7wh",
+      "contenedor_id": "cnt-a02-e02",
+      "cantidad": 1
+    },
+    {
+      "id": "stk-mpybi7wh-5rsd",
+      "item_id": "item-cpu-s7-400-mpybi7wh",
+      "contenedor_id": "cnt-a02-e02",
+      "cantidad": 1
+    }
+  ],
+  "movimientos": [
+    {
+      "id": "mov-1780506395311",
+      "item_id": "item-destornilladores-philips-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:06:35.311Z",
+      "offline_id": "direct-1780506395289"
+    },
+    {
+      "id": "mov-1780507304974",
+      "item_id": "item-soldador-de-esta-o-mpybi7w1",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:21:44.974Z",
+      "offline_id": "direct-1780507304920"
+    },
+    {
+      "id": "mov-1780508483031",
+      "item_id": "item-saca-esta-o-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:41:23.031Z",
+      "offline_id": "direct-1780508482971"
+    },
+    {
+      "id": "mov-1780508488934",
+      "item_id": "item-pasta-termica-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:41:28.934Z",
+      "offline_id": "direct-1780508488847"
+    },
+    {
+      "id": "mov-1780508495020",
+      "item_id": "item-esta-o-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:41:35.020Z",
+      "offline_id": "direct-1780508494995"
+    },
+    {
+      "id": "mov-1780508532969",
+      "item_id": "item-pasta-termica-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:42:12.969Z",
+      "egreso_movimiento_id": "mov-1780508488934",
+      "offline_id": "direct-1780508532946"
+    },
+    {
+      "id": "mov-1780508538900",
+      "item_id": "item-esta-o-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:42:18.900Z",
+      "egreso_movimiento_id": "mov-1780508495020",
+      "offline_id": "direct-1780508538874"
+    },
+    {
+      "id": "mov-1780508542259",
+      "item_id": "item-saca-esta-o-mpybi7w2",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:42:22.259Z",
+      "egreso_movimiento_id": "mov-1780508483031",
+      "offline_id": "direct-1780508542241"
+    },
+    {
+      "id": "mov-1780508545424",
+      "item_id": "item-soldador-de-esta-o-mpybi7w1",
+      "contenedor_id": "cnt-a01-e01-c01",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:42:25.424Z",
+      "egreso_movimiento_id": "mov-1780507304974",
+      "offline_id": "direct-1780508545405"
+    },
+    {
+      "id": "mov-1780508579505",
+      "item_id": "item-destornilladores-philips-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Administrador",
+      "fecha": "2026-06-03T17:42:59.505Z",
+      "egreso_movimiento_id": "mov-1780506395311",
+      "offline_id": "direct-1780508579486"
+    },
+    {
+      "id": "mov-1780512446165",
+      "item_id": "item-pc-adapter-usb-a2-mpybi7w2",
+      "contenedor_id": "cnt-a01-e02-sc",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Andres",
+      "fecha": "2026-06-03T18:47:26.165Z",
+      "offline_id": "direct-1780512446117"
+    },
+    {
+      "id": "mov-1780512517624",
+      "item_id": "item-pc-adapter-usb-a2-mpybi7w2",
+      "contenedor_id": "cnt-a01-e02-sc",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Carlos Ruiz",
+      "fecha": "2026-06-03T18:48:37.624Z",
+      "offline_id": "direct-1780512517601"
+    },
+    {
+      "id": "mov-1780512539316",
+      "item_id": "item-pc-adapter-usb-a2-mpybi7w2",
+      "contenedor_id": "cnt-a01-e02-sc",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Andres",
+      "fecha": "2026-06-03T18:48:59.316Z",
+      "egreso_movimiento_id": "mov-1780512517624",
+      "offline_id": "direct-1780512539304"
+    },
+    {
+      "id": "mov-1780512824708",
+      "item_id": "item-pc-adapter-usb-a2-mpybi7w2",
+      "contenedor_id": "cnt-a01-e02-sc",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Andres",
+      "fecha": "2026-06-03T18:53:44.708Z",
+      "egreso_movimiento_id": "mov-1780512446165",
+      "offline_id": "direct-1780512824688"
+    },
+    {
+      "id": "mov-1780512834993",
+      "item_id": "item-pc-adapter-usb-a2-mpybi7w2",
+      "contenedor_id": "cnt-a01-e02-sc",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Andres",
+      "fecha": "2026-06-03T18:53:54.993Z",
+      "offline_id": "direct-1780512834974"
+    },
+    {
+      "id": "mov-1780513090021",
+      "item_id": "item-capuchones-rj45-verdes-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-c06",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Felipe",
+      "fecha": "2026-06-03T18:58:10.021Z",
+      "offline_id": "direct-1780513090001"
+    },
+    {
+      "id": "mov-1780513109066",
+      "item_id": "item-capuchones-rj45-verdes-mpybi7w3",
+      "contenedor_id": "cnt-a01-e01-c06",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Felipe",
+      "fecha": "2026-06-03T18:58:29.066Z",
+      "egreso_movimiento_id": "mov-1780513090021",
+      "offline_id": "direct-1780513109045"
+    },
+    {
+      "id": "mov-1780514486234",
+      "item_id": "item-destornilladores-estrell-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "tipo": "egreso",
+      "cantidad": 2,
+      "usuario": "Javier",
+      "fecha": "2026-06-03T19:21:26.234Z",
+      "offline_id": "direct-1780514488075"
+    },
+    {
+      "id": "mov-1780514659134",
+      "item_id": "item-memorias-din-8gb-ddr3-16-mpybi7wc",
+      "contenedor_id": "cnt-a02-e01-c14",
+      "tipo": "egreso",
+      "cantidad": 2,
+      "usuario": "raul",
+      "fecha": "2026-06-03T19:24:19.134Z",
+      "offline_id": "direct-1780514659121"
+    },
+    {
+      "id": "mov-1780514853469",
+      "item_id": "item-memorias-din-8gb-ddr3-16-mpybi7wc",
+      "contenedor_id": "cnt-a02-e01-c14",
+      "tipo": "ingreso",
+      "cantidad": 2,
+      "usuario": "raul",
+      "fecha": "2026-06-03T19:27:33.469Z",
+      "egreso_movimiento_id": "mov-1780514659134",
+      "offline_id": "direct-1780514853458"
+    },
+    {
+      "id": "mov-1780516253213",
+      "item_id": "item-destornilladores-estrell-mpybi7w5",
+      "contenedor_id": "cnt-a01-e02-h01",
+      "tipo": "ingreso",
+      "cantidad": 2,
+      "usuario": "Javier",
+      "fecha": "2026-06-03T19:50:53.213Z",
+      "egreso_movimiento_id": "mov-1780514486234",
+      "offline_id": "direct-1780516253202"
+    },
+    {
+      "id": "mov-1780516727628",
+      "item_id": "item-kit-de-destornilladores-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-h06",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Javier",
+      "fecha": "2026-06-03T19:58:47.628Z",
+      "offline_id": "direct-1780516729453"
+    },
+    {
+      "id": "mov-1780516771623",
+      "item_id": "item-jugo-de-llave-torx-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Javier",
+      "fecha": "2026-06-03T19:59:31.623Z",
+      "offline_id": "direct-1780516773483"
+    },
+    {
+      "id": "mov-1780523830099",
+      "item_id": "item-tester-de-red-mpybi7w4",
+      "contenedor_id": "cnt-a01-e02-c03",
+      "tipo": "egreso",
+      "cantidad": 1,
+      "usuario": "Javier",
+      "fecha": "2026-06-03T21:57:10.099Z",
+      "offline_id": "direct-1780523831420"
+    },
+    {
+      "id": "mov-1780523864075",
+      "item_id": "item-tester-de-red-mpybi7w4",
+      "contenedor_id": "cnt-a01-e02-c03",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Javier",
+      "fecha": "2026-06-03T21:57:44.075Z",
+      "egreso_movimiento_id": "mov-1780523830099",
+      "offline_id": "direct-1780523865461"
+    },
+    {
+      "id": "mov-1780524130841",
+      "item_id": "item-jugo-de-llave-torx-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-b01",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Javier",
+      "fecha": "2026-06-03T22:02:10.841Z",
+      "egreso_movimiento_id": "mov-1780516771623",
+      "offline_id": "direct-1780524132666"
+    },
+    {
+      "id": "mov-1780657964026",
+      "item_id": "item-kit-de-destornilladores-mpybi7w3",
+      "contenedor_id": "cnt-a01-e02-h06",
+      "tipo": "ingreso",
+      "cantidad": 1,
+      "usuario": "Javier",
+      "fecha": "2026-06-05T11:12:44.026Z",
+      "egreso_movimiento_id": "mov-1780516727628",
+      "offline_id": "direct-1780657963988"
+    }
+  ]
+}

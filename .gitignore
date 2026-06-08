@@ -1,0 +1,8 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+data/demo-lock.json
+backend/data/sync-ledger.json

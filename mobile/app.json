@@ -1,0 +1,29 @@
+{
+  "expo": {
+    "name": "Inventario Taller",
+    "slug": "inventario-taller",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "scheme": "inventario",
+    "userInterfaceStyle": "dark",
+    "splash": {
+      "backgroundColor": "#0f172a"
+    },
+    "plugins": [
+      [
+        "expo-barcode-scanner",
+        {
+          "cameraPermission": "Cámara para escanear QR de contenedores en el taller"
+        }
+      ],
+      "expo-router"
+    ],
+    "ios": {
+      "bundleIdentifier": "com.taller.inventario"
+    },
+    "android": {
+      "package": "com.taller.inventario",
+      "permissions": ["VIBRATE", "CAMERA"]
+    }
+  }
+}

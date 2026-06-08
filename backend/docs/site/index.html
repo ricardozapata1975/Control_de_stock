@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Documentación — Inventario Px Control</title>
+    <link rel="stylesheet" href="/docs/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Inventario Px Control — Documentación API</h1>
+      <nav>
+        <a href="/docs/">Inicio</a>
+        <a href="/docs/import-csv.html">Importar CSV</a>
+        <a href="/docs/api/import-spec.json">Especificación JSON</a>
+        <a href="/api/health">Health</a>
+      </nav>
+    </header>
+    <main>
+      <div class="card">
+        <h2>Base de datos</h2>
+        <p>
+          Modo actual configurable en <code>backend/.env</code> con
+          <code>DEMO_MODE=true</code> (archivo local) o Supabase PostgreSQL.
+        </p>
+        <ul>
+          <li><strong>Demo local:</strong> <code>backend/data/demo-db.json</code></li>
+          <li><strong>Supabase:</strong> ejecutar <code>supabase/schema.sql</code>, <code>schema-admin.sql</code>, <code>schema-ubicacion.sql</code></li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Modelo de datos</h2>
+        <pre>
+items          → herramienta (nombre, marca, modelo, tipo, detalle, activo)
+contenedores   → ubicación (armario + estante + contenedor opcional)
+stock          → cantidad por ítem en una ubicación
+movimientos    → egreso / ingreso (historial)
+        </pre>
+      </div>
+
+      <div class="card">
+        <h2>Ubicación física</h2>
+        <table>
+          <thead>
+            <tr><th>Código</th><th>Significado</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>A00</td><td>Armario Papelería</td></tr>
+            <tr><td>A01</td><td>Armario Herramientas</td></tr>
+            <tr><td>A02</td><td>Armario Electrónica</td></tr>
+            <tr><td>E01–E09</td><td>Estante (obligatorio)</td></tr>
+            <tr><td>C01–C99</td><td>Caja tipo C (opcional)</td></tr>
+            <tr><td>B00–B99</td><td>Caja tipo B (opcional)</td></tr>
+            <tr><td>H01–H99</td><td>Caja tipo H (opcional)</td></tr>
+            <tr><td>SC</td><td>Sin contenedor (explícito en QR/código)</td></tr>
+          </tbody>
+        </table>
+        <p class="muted">Código generado: <code>A01-E03</code> o <code>A01-E03-C05</code></p>
+      </div>
+
+      <div class="card">
+        <h2>Variables de entorno (backend/.env)</h2>
+        <pre>
+PORT=3001
+DEMO_MODE=true
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
+JWT_SECRET=...
+SUPABASE_URL=...          (si DEMO_MODE=false)
+SUPABASE_SERVICE_ROLE_KEY=...
+LOW_STOCK_THRESHOLD=2
+FRONTEND_URL=http://localhost:5173
+        </pre>
+      </div>
+
+      <div class="card">
+        <h2>API principal</h2>
+        <table>
+          <thead>
+            <tr><th>Método</th><th>Ruta</th><th>Descripción</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>GET</td><td>/api/health</td><td>Estado del servidor</td></tr>
+            <tr><td>GET</td><td>/api/inventario</td><td>Listado con filtros q, armario, tipo</td></tr>
+            <tr><td>POST</td><td>/api/egreso</td><td>Retiro de herramienta</td></tr>
+            <tr><td>POST</td><td>/api/ingreso</td><td>Devolución</td></tr>
+            <tr><td>POST</td><td>/api/auth/login</td><td>Login operario o admin</td></tr>
+            <tr><td>POST</td><td>/api/admin/stock/alta</td><td>Alta stock (admin)</td></tr>
+            <tr><td>POST</td><td>/api/admin/import/csv</td><td>Importar CSV (admin)</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Importación masiva CSV</h2>
+        <p>
+          Ver guía completa en <a href="/docs/import-csv.html">Importar CSV</a>.
+          Plantilla: <a href="/api/admin/import/plantilla.csv">descargar plantilla.csv</a>
+          (requiere token admin en la app).
+        </p>
+      </div>
+    </main>
+  </body>
+</html>

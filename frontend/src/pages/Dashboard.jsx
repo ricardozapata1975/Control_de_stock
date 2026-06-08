@@ -1,0 +1,121 @@
+import { useEffect, useMemo, useState } from 'react';
+import { useStore } from '../store/useStore';
+import { useAuth } from '../auth/AuthProvider';
+import { api } from '../api/client';
+import LowStockAlert from '../components/LowStockAlert';
+import SearchFilters from '../components/SearchFilters';
+import InventoryTable from '../components/InventoryTable';
+import ItemEditModal from '../components/ItemEditModal';
+
+export default function Dashboard() {
+  const { isAdmin } = useAuth();
+  const {
+    inventario,
+    lowStock,
+    loading,
+    error,
+    filters,
+    setFilters,
+    fetchInventario,
+    clearError,
+  } = useStore();
+
+  const [editItem, setEditItem] = useState(null);
+  const [saving, setSaving] = useState(false);
+  const [actionError, setActionError] = useState('');
+
+  useEffect(() => {
+    fetchInventario();
+  }, [filters.q, filters.armario, filters.tipo]);
+
+  const armarios = useMemo(
+    () => [...new Set(inventario.map((i) => i.armario).filter(Boolean))].sort(),
+    [inventario]
+  );
+  const tipos = useMemo(
+    () => [...new Set(inventario.map((i) => i.tipo).filter(Boolean))].sort(),
+    [inventario]
+  );
+
+  const handleSave = async (form) => {
+    if (!editItem?.itemId) return;
+    setSaving(true);
+    setActionError('');
+    try {
+      await api.adminUpdateItem(editItem.itemId, form);
+      setEditItem(null);
+      await fetchInventario();
+    } catch (e) {
+      setActionError(e.message);
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleDelete = async (item) => {
+    if (
+      !window.confirm(
+        `¿Eliminar "${item.nombre}" del inventario?\nSe ocultará en todas sus ubicaciones.`
+      )
+    ) {
+      return;
+    }
+    setActionError('');
+    try {
+      await api.adminBajaItem(item.itemId);
+      await fetchInventario();
+    } catch (e) {
+      setActionError(e.message);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-4 flex items-center justify-between">
+        <h2 className="page-title">Inventario</h2>
+        <button
+          type="button"
+          className="btn-secondary py-2 text-base"
+          onClick={() => fetchInventario()}
+          disabled={loading}
+        >
+          {loading ? 'Actualizando...' : 'Actualizar'}
+        </button>
+      </div>
+
+      {(error || actionError) && (
+        <div className="alert-error mb-4">
+          {error || actionError}
+          {error && (
+            <button type="button" className="ml-2 underline hover:text-white" onClick={clearError}>
+              Cerrar
+            </button>
+          )}
+        </div>
+      )}
+
+      <LowStockAlert items={lowStock} />
+      <SearchFilters
+        filters={filters}
+        onChange={(f) => setFilters(f)}
+        armarios={armarios}
+        tipos={tipos}
+      />
+      <InventoryTable
+        items={inventario}
+        isAdmin={isAdmin}
+        onEdit={setEditItem}
+        onDelete={handleDelete}
+      />
+
+      {editItem && (
+        <ItemEditModal
+          item={editItem}
+          onClose={() => setEditItem(null)}
+          onSave={handleSave}
+          saving={saving}
+        />
+      )}
+    </div>
+  );
+}

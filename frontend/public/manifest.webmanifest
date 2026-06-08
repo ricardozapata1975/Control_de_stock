@@ -1,0 +1,20 @@
+{
+  "name": "Inventario Px Control",
+  "short_name": "Inventario",
+  "description": "F-M-02 Control de Herramientas Compartidas",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#020617",
+  "theme_color": "#38bdf8",
+  "lang": "es",
+  "icons": [
+    {
+      "src": "/px-control-icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

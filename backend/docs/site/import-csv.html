@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Importar CSV — Inventario Px Control</title>
+    <link rel="stylesheet" href="/docs/style.css" />
+  </head>
+  <body>
+    <header>
+      <h1>Importación CSV</h1>
+      <nav>
+        <a href="/docs/">← Documentación</a>
+        <a href="/docs/api/import-spec.json">JSON spec</a>
+      </nav>
+    </header>
+    <main>
+      <div class="card">
+        <h2>Formato del archivo</h2>
+        <ul>
+          <li>Archivo <strong>CSV UTF-8</strong>, separador <strong>coma (,)</strong></li>
+          <li>Primera fila: nombres de columnas (encabezados)</li>
+          <li>Una fila = un ítem en una ubicación con su cantidad</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2>Columnas</h2>
+        <table>
+          <thead>
+            <tr>
+              <th>Columna</th>
+              <th>Obligatorio</th>
+              <th>Descripción</th>
+              <th>Ejemplo</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>nombre</td>
+              <td class="required">Sí</td>
+              <td>Nombre de la herramienta</td>
+              <td>Llave allen 10mm</td>
+            </tr>
+            <tr>
+              <td>marca</td>
+              <td>No</td>
+              <td>Marca</td>
+              <td>Stanley</td>
+            </tr>
+            <tr>
+              <td>modelo</td>
+              <td>No</td>
+              <td>Modelo</td>
+              <td>SA10</td>
+            </tr>
+            <tr>
+              <td>tipo</td>
+              <td>No</td>
+              <td>Categoría</td>
+              <td>Herramienta</td>
+            </tr>
+            <tr>
+              <td>detalle</td>
+              <td>No</td>
+              <td>Notas</td>
+              <td>Juego métrico</td>
+            </tr>
+            <tr>
+              <td>armario</td>
+              <td class="required">Sí</td>
+              <td>A00, A01 o A02</td>
+              <td>A01</td>
+            </tr>
+            <tr>
+              <td>estante</td>
+              <td class="required">Sí</td>
+              <td>E01 a E09 (o 1–9)</td>
+              <td>E01</td>
+            </tr>
+            <tr>
+              <td>contenedor</td>
+              <td>No</td>
+              <td>C01–C99, B00–B99, H01–H99 o SC. Vacío = suelto en estante</td>
+              <td>C01</td>
+            </tr>
+            <tr>
+              <td>cantidad</td>
+              <td class="required">Sí</td>
+              <td>Entero ≥ 0</td>
+              <td>8</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="card">
+        <h2>Ejemplo</h2>
+        <pre>
+nombre,marca,modelo,tipo,detalle,armario,estante,contenedor,cantidad
+Llave allen 10mm,Stanley,SA10,Herramienta,Juego métrico,A01,E01,C01,8
+Multímetro digital,Fluke,115,Medición,,A01,E02,C03,2
+Resma A4,,,Consumible,,A00,E03,,50
+        </pre>
+      </div>
+
+      <div class="card">
+        <h2>Modos de importación</h2>
+        <p><span class="badge">agregar</span> Suma cantidades si el ítem ya está en la misma ubicación. Crea ítems y ubicaciones nuevas si no existen.</p>
+        <p><span class="badge">reemplazar</span> Solo con <code>DEMO_MODE=true</code>: borra inventario demo y carga solo lo del CSV.</p>
+      </div>
+
+      <div class="card">
+        <h2>Desde la aplicación</h2>
+        <p>
+          Iniciá sesión como <strong>administrador</strong> → menú <strong>Importar</strong> → subí el CSV o pegá el contenido.
+        </p>
+        <p class="muted">API: <code>POST /api/admin/import/csv</code> con body JSON <code>{ "csv": "...", "modo": "agregar" }</code> y header <code>Authorization: Bearer &lt;token&gt;</code></p>
+      </div>
+    </main>
+  </body>
+</html>

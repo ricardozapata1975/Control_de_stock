@@ -1,0 +1,116 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-slate-950 text-slate-50 antialiased;
+  }
+
+  /* Opciones de select legibles en tema oscuro */
+  select option {
+    background-color: #1e293b;
+    color: #f8fafc;
+  }
+
+  /* Controles del escáner QR (librería html5-qrcode) */
+  #qr-reader,
+  #qr-reader * {
+    color: #e2e8f0 !important;
+  }
+  #qr-reader button {
+    background-color: #334155 !important;
+    border-color: #64748b !important;
+  }
+}
+
+@layer components {
+  .btn-industrial {
+    @apply min-h-[56px] rounded-lg px-6 text-lg font-bold tracking-wide transition active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply btn-industrial bg-amber-500 text-slate-950 hover:bg-amber-400;
+  }
+  .btn-secondary {
+    @apply btn-industrial border-2 border-slate-500 bg-slate-800 text-slate-100 hover:border-slate-400 hover:bg-slate-700;
+  }
+  .btn-danger {
+    @apply btn-industrial bg-red-600 text-white hover:bg-red-500;
+  }
+  .input-field {
+    @apply w-full rounded-lg border-2 border-slate-500 bg-slate-800 px-4 py-3 text-lg text-slate-50 placeholder-slate-300 focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/40;
+  }
+  .card {
+    @apply rounded-xl border border-slate-500 bg-slate-900 p-4 text-slate-100 shadow-lg;
+  }
+  .badge-stock {
+    @apply inline-flex min-w-[2.5rem] items-center justify-center rounded-md px-2 py-1 text-base font-bold;
+  }
+
+  /* Tipografía legible sobre fondo oscuro */
+  .page-title {
+    @apply text-2xl font-bold text-amber-400;
+  }
+  .section-title {
+    @apply text-lg font-bold text-slate-100;
+  }
+  .text-label {
+    @apply mb-1 block text-sm font-semibold text-slate-100;
+  }
+  .text-muted {
+    @apply text-slate-200;
+  }
+  .text-subtle {
+    @apply text-slate-300;
+  }
+
+  /* Alertas tema oscuro */
+  .alert-error {
+    @apply rounded-lg border border-red-700 bg-red-950/80 p-4 text-red-100;
+  }
+  .alert-success {
+    @apply rounded-lg border border-emerald-700 bg-emerald-950/80 p-4 text-emerald-100;
+  }
+  .alert-warning {
+    @apply rounded-lg border border-amber-600 bg-amber-950/60 p-4 text-amber-100;
+  }
+
+  /* Tablas */
+  .table-head {
+    @apply bg-slate-800 text-xs uppercase tracking-wider text-slate-100;
+  }
+  .table-row {
+    @apply border-t border-slate-600 text-slate-50 hover:bg-slate-800/60;
+  }
+  .table-cell-muted {
+    @apply text-slate-200;
+  }
+
+  .inventory-table-wrap {
+    @apply overflow-hidden;
+  }
+  .inventory-table-scroll {
+    @apply overflow-x-auto;
+  }
+  .inventory-table {
+    @apply min-w-full border-collapse;
+  }
+  .inventory-col-fixed {
+    @apply sticky z-10 bg-slate-900;
+    box-shadow: 2px 0 6px rgba(0, 0, 0, 0.35);
+  }
+  .inventory-table thead .inventory-col-fixed {
+    @apply bg-slate-800;
+  }
+  .inventory-col-scroll {
+    @apply min-w-[88px] whitespace-nowrap;
+  }
+}
+
+@supports (padding: max(0px)) {
+  body {
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}

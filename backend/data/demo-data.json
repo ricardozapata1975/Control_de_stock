@@ -1,0 +1,70 @@
+{
+  "inventario": [
+    [
+      "Taller A",
+      "E1",
+      "C1",
+      3,
+      "Llave allen 10mm",
+      "Stanley",
+      "SA10",
+      "Herramienta",
+      "No",
+      "Juego métrico",
+      "",
+      "2025-01-15"
+    ],
+    [
+      "Taller A",
+      "E2",
+      "C3",
+      2,
+      "Multímetro digital",
+      "Fluke",
+      "115",
+      "Medición",
+      "Sí",
+      "Uso eléctrico",
+      "Revisar pilas",
+      "2025-02-01"
+    ],
+    [
+      "Depósito",
+      "E1",
+      "C2",
+      1,
+      "Taladro percutor",
+      "Bosch",
+      "GSB 13",
+      "Eléctrica",
+      "No",
+      "220V",
+      "",
+      "2025-03-10"
+    ]
+  ],
+  "movimientos": [
+    [
+      "Taller A",
+      "E1",
+      "C1",
+      1,
+      "Llave allen 10mm",
+      "Test User",
+      "2026-06-02",
+      "",
+      ""
+    ],
+    [
+      "Taller A",
+      "E1",
+      "C1",
+      1,
+      "Llave allen 10mm",
+      "Offline Test",
+      "2026-06-02",
+      "",
+      ""
+    ]
+  ]
+}
