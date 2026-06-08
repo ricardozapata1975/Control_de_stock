@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { formatFechaDmy } from '../utils/fecha';
 
 export default function Historial() {
   const [movimientos, setMovimientos] = useState([]);
@@ -62,8 +63,8 @@ export default function Historial() {
                 <td className="px-3 py-3 font-medium text-white">{m.nombreHerramienta}</td>
                 <td className="px-3 py-3 text-slate-200">{m.nombrePersonal || m.usuario}</td>
                 <td className="px-3 py-3">{m.cantidad}</td>
-                <td className="px-3 py-3 table-cell-muted">{m.fechaEgreso || '—'}</td>
-                <td className="px-3 py-3 table-cell-muted">{m.fechaIngreso || '—'}</td>
+                <td className="px-3 py-3 table-cell-muted">{formatFechaDmy(m.fechaEgreso)}</td>
+                <td className="px-3 py-3 table-cell-muted">{formatFechaDmy(m.fechaIngreso)}</td>
                 <td className="px-3 py-3">
                   <span
                     className={`rounded-full px-2 py-1 text-xs font-semibold ${
