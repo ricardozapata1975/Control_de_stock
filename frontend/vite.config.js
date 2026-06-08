@@ -1,19 +1,6 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
-import { defineConfig, loadEnv } from 'vite';
-
-export default ({ mode }) => {
-  const env = loadEnv(mode, process.cwd(), '');
-
-  return defineConfig({
-    define: {
-      __API_URL__: JSON.stringify(env.VITE_API_URL)
-    }
-  });
-};
-
-fetch(`${API_URL}/api/productos`)
 
 // Backend en la misma PC (Vite hace proxy → otros dispositivos no necesitan tocar el puerto 3001)
 const API_TARGET = process.env.VITE_PROXY_TARGET || 'https://control-de-stock-back.onrender.com';
