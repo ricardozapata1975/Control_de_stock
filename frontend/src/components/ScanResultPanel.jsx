@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QR_TYPES, qrTypeLabel } from '../utils/qrPayload';
 import {
   buildInventarioScanUrl,
   getUbicacionScanLabel,
 } from '../utils/scanMatch';
+import ScanItemActionModal from './ScanItemActionModal';
 import ScanLocationList from './ScanLocationList';
 
 function buildEgresoUrl(parsed, items) {
@@ -11,25 +13,37 @@ function buildEgresoUrl(parsed, items) {
   if (parsed.type === QR_TYPES.ITEM && parsed.itemId) {
     p.set('itemId', parsed.itemId);
     if (items?.length === 1) p.set('stockId', items[0].id);
-  } else if (parsed.codigo) {
-    p.set('codigo', parsed.codigo);
-    if (parsed.type) p.set('tipoUbicacion', parsed.type);
+    return `/egreso?${p.toString()}`;
   }
-  return `/egreso?${p.toString()}`;
+  return '/egreso';
 }
 
 function buildIngresoUrl(parsed) {
   const p = new URLSearchParams();
-  if (parsed.type === QR_TYPES.ITEM && parsed.itemId) p.set('itemId', parsed.itemId);
-  else if (parsed.codigo) {
-    p.set('codigo', parsed.codigo);
-    if (parsed.type) p.set('tipoUbicacion', parsed.type);
+  if (parsed.type === QR_TYPES.ITEM && parsed.itemId) {
+    p.set('itemId', parsed.itemId);
+    return `/ingreso?${p.toString()}`;
   }
+  return '/ingreso';
+}
+
+function buildEgresoUrlForItem(item) {
+  const p = new URLSearchParams({ stockId: item.id });
+  return `/egreso?${p.toString()}`;
+}
+
+function buildIngresoUrlForItem(item) {
+  const p = new URLSearchParams({
+    itemId: item.itemId,
+    contenedorId: item.contenedorId,
+  });
   return `/ingreso?${p.toString()}`;
 }
 
 export default function ScanResultPanel({ parsed, contenedor, items = [], onScanAgain }) {
   const navigate = useNavigate();
+  const [selectedItem, setSelectedItem] = useState(null);
+
   const isItem = parsed.type === QR_TYPES.ITEM;
   const isUbicacion =
     parsed.type === QR_TYPES.ARMARIO ||
@@ -60,7 +74,14 @@ export default function ScanResultPanel({ parsed, contenedor, items = [], onScan
         )}
       </div>
 
-      {isUbicacion && <ScanLocationList parsed={parsed} items={items} />}
+      {isUbicacion && (
+        <ScanLocationList
+          parsed={parsed}
+          items={items}
+          selectable
+          onSelectItem={setSelectedItem}
+        />
+      )}
 
       {isItem && items.length > 0 && (
         <ScanLocationList parsed={parsed} items={items} />
@@ -93,9 +114,30 @@ export default function ScanResultPanel({ parsed, contenedor, items = [], onScan
         </button>
       </div>
 
+      {isUbicacion && (
+        <p className="text-center text-xs text-subtle">
+          Sin elegir herramienta, egreso e ingreso abren el formulario vacío.
+        </p>
+      )}
+
       <button type="button" className="text-sm text-slate-300 underline hover:text-white" onClick={onScanAgain}>
         Escanear otro código
       </button>
+
+      {selectedItem && (
+        <ScanItemActionModal
+          item={selectedItem}
+          onClose={() => setSelectedItem(null)}
+          onEgreso={() => {
+            setSelectedItem(null);
+            navigate(buildEgresoUrlForItem(selectedItem));
+          }}
+          onIngreso={() => {
+            setSelectedItem(null);
+            navigate(buildIngresoUrlForItem(selectedItem));
+          }}
+        />
+      )}
     </div>
   );
 }

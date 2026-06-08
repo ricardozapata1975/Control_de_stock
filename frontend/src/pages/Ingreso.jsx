@@ -40,14 +40,24 @@ export default function Ingreso() {
 
   useEffect(() => {
     const pre = searchParams.get('movimientoId');
-    if (pre && scopedPendientes.some((m) => m.id === pre)) {
+    if (pre && pendientes.some((m) => m.id === pre)) {
       setMovimientoId(pre);
       return;
     }
-    if ((searchParams.get('itemId') || searchParams.get('codigo')) && scopedPendientes.length === 1) {
-      setMovimientoId(scopedPendientes[0].id);
+    const itemId = searchParams.get('itemId');
+    const contenedorId = searchParams.get('contenedorId');
+    if (itemId && contenedorId) {
+      const match = pendientes.find(
+        (m) => m.itemId === itemId && m.contenedorId === contenedorId
+      );
+      if (match) setMovimientoId(match.id);
+      return;
     }
-  }, [searchParams, scopedPendientes]);
+    if (itemId && !searchParams.get('codigo')) {
+      const matches = pendientes.filter((m) => m.itemId === itemId);
+      if (matches.length === 1) setMovimientoId(matches[0].id);
+    }
+  }, [searchParams, pendientes]);
 
   const options = useMemo(
     () =>
@@ -76,7 +86,9 @@ export default function Ingreso() {
     }
   };
 
-  const scanHint = searchParams.get('itemId') || searchParams.get('codigo');
+  const preselected =
+    searchParams.get('movimientoId') ||
+    (searchParams.get('itemId') && searchParams.get('contenedorId'));
 
   return (
     <div>
@@ -87,9 +99,12 @@ export default function Ingreso() {
         </Link>
       </div>
 
-      {scanHint && scopedPendientes.length > 0 && (
+      {preselected && movimientoId && (
+        <p className="alert-warning mb-4 text-sm">Egreso pendiente precargado desde el escaneo QR.</p>
+      )}
+      {preselected && !movimientoId && searchParams.get('itemId') && (
         <p className="alert-warning mb-4 text-sm">
-          Devoluciones filtradas por escaneo ({scopedPendientes.length}).
+          No hay devolución pendiente para la herramienta seleccionada.
         </p>
       )}
 

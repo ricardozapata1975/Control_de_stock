@@ -44,16 +44,19 @@ export default function Egreso() {
 
   useEffect(() => {
     const fromStock = searchParams.get('stockId');
-    const fromItem = searchParams.get('itemId');
-    if (fromStock && scopedDisponibles.some((i) => i.id === fromStock)) {
-      setStockId(fromStock);
+    if (fromStock) {
+      if (disponibles.some((i) => i.id === fromStock)) setStockId(fromStock);
       return;
     }
-    if (fromItem || searchParams.get('codigo')) {
-      const first = scopedDisponibles[0];
-      if (first) setStockId(first.id);
+    const fromItem = searchParams.get('itemId');
+    const codigo = searchParams.get('codigo');
+    if (fromItem && !codigo) {
+      const contenedorId = searchParams.get('contenedorId');
+      let matches = disponibles.filter((i) => i.itemId === fromItem);
+      if (contenedorId) matches = matches.filter((i) => i.contenedorId === contenedorId);
+      if (matches.length === 1) setStockId(matches[0].id);
     }
-  }, [searchParams, scopedDisponibles]);
+  }, [searchParams, disponibles]);
 
   const options = useMemo(
     () =>
@@ -98,7 +101,9 @@ export default function Egreso() {
     }
   };
 
-  const scanHint = searchParams.get('itemId') || searchParams.get('codigo');
+  const preselected =
+    searchParams.get('stockId') ||
+    (searchParams.get('itemId') && !searchParams.get('codigo'));
 
   return (
     <div>
@@ -109,11 +114,8 @@ export default function Egreso() {
         </Link>
       </div>
 
-      {scanHint && scopedDisponibles.length > 0 && (
-        <p className="alert-warning mb-4 text-sm">
-          Filtrado por escaneo QR ({scopedDisponibles.length} opción
-          {scopedDisponibles.length !== 1 ? 'es' : ''}).
-        </p>
+      {preselected && stockId && (
+        <p className="alert-warning mb-4 text-sm">Herramienta precargada desde el escaneo QR.</p>
       )}
 
       {formError && <div className="alert-error mb-4">{formError}</div>}
