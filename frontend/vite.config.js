@@ -1,8 +1,17 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
+import { defineConfig, loadEnv } from 'vite';
 
-const API_URL = import.meta.env.VITE_API_URL;
+export default ({ mode }) => {
+  const env = loadEnv(mode, process.cwd(), '');
+
+  return defineConfig({
+    define: {
+      __API_URL__: JSON.stringify(env.VITE_API_URL)
+    }
+  });
+};
 
 fetch(`${API_URL}/api/productos`)
 
