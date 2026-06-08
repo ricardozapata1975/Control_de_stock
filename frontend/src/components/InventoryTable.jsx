@@ -12,11 +12,10 @@ const FIXED_COLS = [
 
 const SCROLL_COLUMNS = [
   { key: 'tipo', label: 'Tipo', minWidth: 0 },
-  { key: 'qr', label: 'Código QR', minWidth: 400 },
-  { key: 'calibracion', label: 'Calibración', minWidth: 520 },
-  { key: 'comentario', label: 'Comentario', minWidth: 640 },
-  { key: 'fecha', label: 'Fecha relev.', minWidth: 760 },
-  { key: 'acciones', label: 'Acciones', minWidth: 880, adminOnly: true },
+  { key: 'calibracion', label: 'Calibración', minWidth: 96 },
+  { key: 'comentario', label: 'Comentario', minWidth: 192 },
+  { key: 'fecha', label: 'Fecha relev.', minWidth: 288 },
+  { key: 'acciones', label: 'Acciones', minWidth: 384, adminOnly: true },
 ];
 
 function formatFecha(iso) {
@@ -40,12 +39,6 @@ function renderScrollCell(col, item, { isAdmin, onEdit, onDelete }) {
       return (
         <td key={col.key} className="inventory-col-scroll px-4 py-3 table-cell-muted">
           {item.tipo || '—'}
-        </td>
-      );
-    case 'qr':
-      return (
-        <td key={col.key} className="inventory-col-scroll px-4 py-3 font-mono text-sm text-amber-300">
-          {item.contenedorCodigo || '—'}
         </td>
       );
     case 'calibracion':
@@ -176,7 +169,7 @@ export default function InventoryTable({ items, isAdmin, onEdit, onDelete }) {
         </table>
       </div>
       <p className="border-t border-slate-700 px-3 py-2 text-xs text-subtle">
-        Columnas fijas: Herramienta, Ubicación y Stock. Deslizá para ver Tipo, QR y más.
+        Columnas fijas: Herramienta, Ubicación y Stock. Deslizá para ver Tipo, Calibración y más.
       </p>
     </div>
   );
