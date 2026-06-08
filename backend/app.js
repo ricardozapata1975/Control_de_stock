@@ -48,7 +48,17 @@ applyCatalogo(catalogo);
 
 const app = express();
 
-const allowedOrigins = [config.frontendUrl, ...config.corsOrigins];
+const allowedOrigins = [config.frontendUrl, ...config.corsOrigins].filter(Boolean);
+
+function isVercelOrigin(origin) {
+  if (!origin) return false;
+  try {
+    const { hostname } = new URL(origin);
+    return hostname.endsWith('.vercel.app');
+  } catch {
+    return false;
+  }
+}
 
 function isLocalNetworkOrigin(origin) {
   if (!origin) return true;
@@ -69,10 +79,10 @@ function isLocalNetworkOrigin(origin) {
 app.use(
   cors({
     origin(origin, callback) {
-      if (config.nodeEnv === 'development' && isLocalNetworkOrigin(origin)) {
-        return callback(null, true);
-      }
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (!origin) return callback(null, true);
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+      if (isVercelOrigin(origin)) return callback(null, true);
+      if (config.nodeEnv !== 'production' && isLocalNetworkOrigin(origin)) {
         return callback(null, true);
       }
       callback(new Error(`CORS bloqueado: ${origin}`));
@@ -84,6 +94,14 @@ app.use(express.json({ limit: '2mb' }));
 
 // Documentación estática
 app.use('/docs', docsRouter);
+
+app.get('/', (_req, res) => {
+  res.json({
+    service: 'Inventario Px Control API',
+    health: '/api/health',
+    docs: '/docs',
+  });
+});
 
 app.get('/api/health', (_req, res) => {
   res.json({

@@ -10,10 +10,7 @@ export default function AdminDatabase() {
   const [editRow, setEditRow] = useState(null);
   const [form, setForm] = useState({});
 
-  const dbEditorUrl =
-    typeof window !== 'undefined'
-      ? `${window.location.origin.replace(/:\d+$/, ':3001')}/admin/db`
-      : 'http://localhost:3001/admin/db';
+  const dbEditorUrl = getDocsUrl('/admin/db');
 
   useEffect(() => {
     api

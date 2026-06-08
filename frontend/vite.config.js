@@ -3,7 +3,7 @@ import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
 // Backend en la misma PC (Vite hace proxy → otros dispositivos no necesitan tocar el puerto 3001)
-const API_TARGET = process.env.VITE_PROXY_TARGET || 'https://control-de-stock-back.onrender.com';
+const API_TARGET = process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:3001';
 
 export default defineConfig({
   plugins: [react(), basicSsl()],

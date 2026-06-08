@@ -1,0 +1,27 @@
+# Render Blueprint — backend API
+# Dashboard: New → Blueprint → conectar repo → aplicar este archivo
+services:
+  - type: web
+    name: control-de-stock-back
+    runtime: node
+    rootDir: backend
+    buildCommand: npm install
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: DEMO_MODE
+        value: true
+      - key: FRONTEND_URL
+        value: https://control-de-stock-smoky.vercel.app
+      - key: CORS_ORIGINS
+        value: https://control-de-stock-smoky.vercel.app
+      - key: JWT_SECRET
+        generateValue: true
+      - key: ADMIN_USERNAME
+        value: admin
+      - key: ADMIN_PASSWORD
+        sync: false
+      - key: LOW_STOCK_THRESHOLD
+        value: 2
