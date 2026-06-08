@@ -2,7 +2,11 @@ node_modules/
 dist/
 .env
 .env.local
+.env.*
+!.env.example
 *.log
 .DS_Store
+.venv/
+__pycache__/
 data/demo-lock.json
 backend/data/sync-ledger.json
