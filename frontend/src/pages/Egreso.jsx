@@ -34,7 +34,10 @@ export default function Egreso() {
     let list = disponibles;
     if (itemId) list = list.filter((i) => i.itemId === itemId);
     if (codigo) {
-      list = filterInventarioByScan(list, parsedFromCodigoParam(codigo));
+      list = filterInventarioByScan(
+        list,
+        parsedFromCodigoParam(codigo, searchParams.get('tipoUbicacion') || '')
+      );
     }
     return list;
   }, [disponibles, searchParams]);

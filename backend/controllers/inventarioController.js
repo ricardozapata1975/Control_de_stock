@@ -6,6 +6,7 @@ export async function getInventario(req, res) {
     ubicacion: req.query.ubicacion,
     armario: req.query.armario,
     tipo: req.query.tipo,
+    codigo: req.query.codigo,
   });
   res.json(data);
 }

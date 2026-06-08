@@ -156,8 +156,21 @@ export async function demoListInventario(filters = {}) {
         i.ubicacion?.toLowerCase().includes(t)
     );
   }
-  if (filters.ubicacion) items = items.filter((i) => i.ubicacion === filters.ubicacion);
-  if (filters.armario) items = items.filter((i) => i.armario === filters.armario);
+  if (filters.codigo) {
+    const parsed = parseCodigo(filters.codigo);
+    if (parsed?.armario && !parsed.estante) {
+      items = items.filter((i) => i.armario === parsed.armario);
+    } else if (parsed?.estante && !parsed.contenedor) {
+      items = items.filter(
+        (i) => i.armario === parsed.armario && i.estante === parsed.estante
+      );
+    } else if (parsed?.codigo) {
+      items = items.filter((i) => i.contenedorCodigo === parsed.codigo);
+    }
+  } else {
+    if (filters.ubicacion) items = items.filter((i) => i.ubicacion === filters.ubicacion);
+    if (filters.armario) items = items.filter((i) => i.armario === filters.armario);
+  }
   if (filters.tipo) items = items.filter((i) => i.tipo === filters.tipo);
 
   const lowStock = items.filter((i) => Number(i.cantidad) === 0);

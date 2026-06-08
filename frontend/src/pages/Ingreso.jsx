@@ -32,7 +32,9 @@ export default function Ingreso() {
     const itemId = searchParams.get('itemId');
     const codigo = searchParams.get('codigo');
     if (!itemId && !codigo) return pendientes;
-    const parsed = itemId ? { type: QR_TYPES.ITEM, itemId } : parsedFromCodigoParam(codigo);
+    const parsed = itemId
+      ? { type: QR_TYPES.ITEM, itemId }
+      : parsedFromCodigoParam(codigo, searchParams.get('tipoUbicacion') || '');
     return filterPendientesByScan(pendientes, parsed, inventario);
   }, [pendientes, inventario, searchParams]);
 

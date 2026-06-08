@@ -1,7 +1,7 @@
 import { config } from '../config.js';
 import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
-import { mapUbicacionFields } from './ubicacionUtils.js';
+import { mapUbicacionFields, parseCodigo } from './ubicacionUtils.js';
 import { mapItemCampos } from './itemFields.js';
 
 function mapInventarioRow(row) {
@@ -36,8 +36,19 @@ export async function listInventario(filters = {}) {
   const supabase = getSupabase();
   let query = supabase.from('v_inventario').select('*').order('nombre');
 
-  if (filters.ubicacion) query = query.ilike('ubicacion', filters.ubicacion);
-  if (filters.armario) query = query.eq('armario', filters.armario);
+  if (filters.codigo) {
+    const parsed = parseCodigo(filters.codigo);
+    if (parsed?.armario && !parsed.estante) {
+      query = query.eq('armario', parsed.armario);
+    } else if (parsed?.estante && !parsed.contenedor) {
+      query = query.eq('armario', parsed.armario).eq('estante', parsed.estante);
+    } else if (parsed?.codigo) {
+      query = query.eq('contenedor_codigo', parsed.codigo);
+    }
+  } else {
+    if (filters.ubicacion) query = query.ilike('ubicacion', filters.ubicacion);
+    if (filters.armario) query = query.eq('armario', filters.armario);
+  }
   if (filters.tipo) query = query.ilike('tipo', filters.tipo);
   if (filters.q) {
     const term = `%${filters.q}%`;
