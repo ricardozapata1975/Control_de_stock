@@ -2,6 +2,10 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import basicSsl from '@vitejs/plugin-basic-ssl';
 
+const API_URL = import.meta.env.VITE_API_URL;
+
+fetch(`${API_URL}/api/productos`)
+
 // Backend en la misma PC (Vite hace proxy → otros dispositivos no necesitan tocar el puerto 3001)
 const API_TARGET = process.env.VITE_PROXY_TARGET || 'http://127.0.0.1:3001';
 
