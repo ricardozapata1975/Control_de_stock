@@ -28,6 +28,8 @@ async function request(path, options = {}) {
 export const api = {
   health: () => request('/api/health'),
   login: (body) => request('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  firstLogin: (body) =>
+    request('/api/auth/first-login', { method: 'POST', body: JSON.stringify(body) }),
   setPassword: (body) =>
     request('/api/auth/set-password', { method: 'POST', body: JSON.stringify(body) }),
   inventario: (params = {}) => {

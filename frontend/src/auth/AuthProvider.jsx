@@ -49,6 +49,11 @@ export function AuthProvider({ children }) {
     return data;
   }, []);
 
+  const beginFirstLogin = useCallback(async (username) => {
+    const data = await api.firstLogin({ username: username.trim() });
+    return data;
+  }, []);
+
   const completeLogin = useCallback(
     (data) => {
       persist(data.user, data.token);
@@ -78,6 +83,7 @@ export function AuthProvider({ children }) {
         user,
         token,
         login,
+        beginFirstLogin,
         completeLogin,
         setPassword,
         logout,

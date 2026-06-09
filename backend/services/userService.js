@@ -179,6 +179,27 @@ function buildAuthProfile(row) {
   };
 }
 
+/** Primer ingreso: valida usuario sin contraseña y devuelve token para crearla */
+export async function beginFirstLogin(username) {
+  const row = await findByUsername(username);
+  if (!row || row.is_active === false) {
+    throw Object.assign(new Error('Usuario no encontrado o inactivo. Pedile al administrador que te cree la cuenta.'), {
+      status: 404,
+    });
+  }
+  if (row.password_hash) {
+    throw Object.assign(
+      new Error('Este usuario ya tiene contraseña. Ingresá con usuario y contraseña.'),
+      { status: 400 }
+    );
+  }
+  return {
+    requiresPasswordSetup: true,
+    setupToken: signSetupToken(row.id),
+    user: mapUserPublic(row),
+  };
+}
+
 export async function authenticateUser(username, password) {
   const row = await findByUsername(username);
   if (!row || row.is_active === false) return null;

@@ -3,8 +3,9 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 
 export default function Login() {
-  const { login, completeLogin, setPassword, isLoggedIn, isAdmin } = useAuth();
+  const { login, beginFirstLogin, completeLogin, setPassword, isLoggedIn, isAdmin } = useAuth();
   const navigate = useNavigate();
+  const [modo, setModo] = useState('operario');
   const [step, setStep] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
@@ -22,6 +23,16 @@ export default function Login() {
 
   const goHome = (profile) => {
     navigate(profile?.role === 'admin' ? '/admin' : '/');
+  };
+
+  const resetToLogin = () => {
+    setStep('login');
+    setNewPassword('');
+    setConfirmPassword('');
+    setSetupToken('');
+    setChangeToken('');
+    setPendingUser(null);
+    setError('');
   };
 
   const submitLogin = async (e) => {
@@ -51,6 +62,22 @@ export default function Login() {
     }
   };
 
+  const submitFirstLogin = async (e) => {
+    e.preventDefault();
+    setError('');
+    setLoading(true);
+    try {
+      const data = await beginFirstLogin(username);
+      setPendingUser(data.user);
+      setSetupToken(data.setupToken);
+      setStep('setup');
+    } catch (err) {
+      setError(err.message || 'No se pudo iniciar el primer ingreso');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const submitPassword = async (e) => {
     e.preventDefault();
     setError('');
@@ -70,18 +97,25 @@ export default function Login() {
     }
   };
 
-  const title =
-    step === 'setup'
+  const isSetupStep = step === 'setup' || step === 'change';
+  const isFirstStep = step === 'primer-ingreso';
+
+  const title = isFirstStep
+    ? 'Primer ingreso'
+    : step === 'setup'
       ? 'Crear contraseña'
       : step === 'change'
         ? 'Nueva contraseña'
-        : 'Iniciar sesión';
+        : modo === 'admin'
+          ? 'Administrador'
+          : 'Operario';
 
-  const subtitle =
-    step === 'setup'
-      ? `Primer ingreso de ${pendingUser?.name || pendingUser?.username || username}. Definí tu contraseña.`
+  const subtitle = isFirstStep
+    ? 'Ingresá el usuario que te dio el administrador. Luego vas a crear tu contraseña.'
+    : step === 'setup'
+      ? `Bienvenido/a ${pendingUser?.name || pendingUser?.username || username}. Definí tu contraseña.`
       : step === 'change'
-        ? `Debés actualizar la contraseña de ${pendingUser?.name || pendingUser?.username}.`
+        ? `Actualizá la contraseña de ${pendingUser?.name || pendingUser?.username}.`
         : 'F-M-02 Control de Herramientas Compartidas';
 
   return (
@@ -95,16 +129,45 @@ export default function Login() {
           />
           <h1 className="mt-4 text-xl font-bold text-slate-100">Inventario Px Control</h1>
           <p className="text-muted">{subtitle}</p>
-          {step !== 'login' && (
+          {(isSetupStep || isFirstStep) && (
             <p className="mt-2 font-mono text-sm text-amber-300">{pendingUser?.username || username}</p>
           )}
         </div>
+
+        {!isSetupStep && !isFirstStep && (
+          <div className="mb-4 flex rounded-lg border border-slate-600 p-1">
+            <button
+              type="button"
+              className={`flex-1 rounded-md py-2 text-sm font-bold ${
+                modo === 'operario' ? 'bg-amber-500 text-slate-950' : 'text-slate-200'
+              }`}
+              onClick={() => {
+                setModo('operario');
+                setError('');
+              }}
+            >
+              Operario
+            </button>
+            <button
+              type="button"
+              className={`flex-1 rounded-md py-2 text-sm font-bold ${
+                modo === 'admin' ? 'bg-amber-500 text-slate-950' : 'text-slate-200'
+              }`}
+              onClick={() => {
+                setModo('admin');
+                setError('');
+              }}
+            >
+              Administrador
+            </button>
+          </div>
+        )}
 
         <h2 className="mb-4 text-center text-lg font-bold text-amber-400">{title}</h2>
 
         {error && <div className="alert-error mb-4 text-sm">{error}</div>}
 
-        {step === 'login' ? (
+        {step === 'login' && (
           <form onSubmit={submitLogin} className="space-y-4">
             <div>
               <label className="text-label">Usuario</label>
@@ -125,16 +188,62 @@ export default function Login() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 autoComplete="current-password"
+                required
               />
-              <p className="mt-1 text-xs text-subtle">
-                Si es tu primer ingreso, dejá la contraseña vacía y continuá.
-              </p>
             </div>
             <button type="submit" className="btn-primary w-full" disabled={loading}>
               {loading ? 'INGRESANDO...' : 'ENTRAR'}
             </button>
+            {modo === 'operario' && (
+              <p className="text-center text-sm">
+                <button
+                  type="button"
+                  className="text-sky-300 underline hover:text-sky-100"
+                  onClick={() => {
+                    setError('');
+                    setPassword('');
+                    setStep('primer-ingreso');
+                  }}
+                >
+                  ¿Es tu primer ingreso? Creá tu contraseña aquí
+                </button>
+              </p>
+            )}
           </form>
-        ) : (
+        )}
+
+        {step === 'primer-ingreso' && (
+          <form onSubmit={submitFirstLogin} className="space-y-4">
+            <div>
+              <label className="text-label">Usuario</label>
+              <input
+                className="input-field"
+                value={username}
+                onChange={(e) => setUsername(e.target.value)}
+                autoComplete="username"
+                placeholder="El que te asignó el administrador"
+                required
+                autoFocus
+              />
+            </div>
+            <p className="text-xs text-subtle">
+              Si el administrador ya te creó la cuenta, en el siguiente paso vas a elegir tu contraseña
+              personal.
+            </p>
+            <button type="submit" className="btn-primary w-full" disabled={loading}>
+              {loading ? 'VERIFICANDO...' : 'CONTINUAR'}
+            </button>
+            <button
+              type="button"
+              className="w-full text-sm text-slate-300 underline hover:text-white"
+              onClick={resetToLogin}
+            >
+              Volver al login de operario
+            </button>
+          </form>
+        )}
+
+        {isSetupStep && (
           <form onSubmit={submitPassword} className="space-y-4">
             <div>
               <label className="text-label">Nueva contraseña</label>
@@ -161,18 +270,14 @@ export default function Login() {
                 required
               />
             </div>
+            <p className="text-xs text-subtle">Mínimo 6 caracteres.</p>
             <button type="submit" className="btn-primary w-full" disabled={loading}>
               {loading ? 'GUARDANDO...' : 'GUARDAR Y ENTRAR'}
             </button>
             <button
               type="button"
               className="w-full text-sm text-slate-300 underline hover:text-white"
-              onClick={() => {
-                setStep('login');
-                setNewPassword('');
-                setConfirmPassword('');
-                setError('');
-              }}
+              onClick={resetToLogin}
             >
               Volver al login
             </button>

@@ -1,9 +1,9 @@
 import { loginUser } from '../services/authService.js';
-import { setUserPassword } from '../services/userService.js';
+import { beginFirstLogin, setUserPassword } from '../services/userService.js';
 
 export async function postLogin(req, res) {
-  const { username, password } = req.body;
-  const user = String(username || '').trim();
+  const { username, password, nombre } = req.body;
+  const user = String(username || nombre || '').trim();
   if (!user) {
     return res.status(400).json({ error: 'Ingresá tu usuario' });
   }
@@ -30,6 +30,21 @@ export async function postLogin(req, res) {
   }
 
   return res.json(result);
+}
+
+export async function postFirstLogin(req, res) {
+  const { username, nombre } = req.body;
+  const user = String(username || nombre || '').trim();
+  if (!user) {
+    return res.status(400).json({ error: 'Ingresá tu usuario' });
+  }
+
+  try {
+    const result = await beginFirstLogin(user);
+    return res.json(result);
+  } catch (e) {
+    return res.status(e.status || 500).json({ error: e.message });
+  }
 }
 
 export async function postSetPassword(req, res) {
