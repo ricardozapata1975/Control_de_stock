@@ -12,9 +12,11 @@ import {
   postIngreso,
 } from './controllers/movimientosController.js';
 import { postSync } from './controllers/syncController.js';
-import { postLogin } from './controllers/authController.js';
+import { postLogin, postSetPassword } from './controllers/authController.js';
+import { getUsers, postUser, putUser, postResetPassword } from './controllers/userController.js';
+import { requireAuth, requireAdmin } from './middleware/auth.js';
+import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem } from './controllers/adminController.js';
-import { requireAdmin } from './middleware/auth.js';
 import { getCatalogo } from './controllers/ubicacionController.js';
 import docsRouter from './routes/docs.js';
 import {
@@ -129,16 +131,17 @@ app.get('/api/movimientos', getMovimientos);
 app.get('/movimientos', getMovimientos);
 app.get('/api/movimientos/pendientes', getPendientes);
 
-app.post('/api/egreso', postEgreso);
-app.post('/egreso', postEgreso);
-app.post('/api/ingreso', postIngreso);
-app.post('/ingreso', postIngreso);
+app.post('/api/egreso', requireAuth, postEgreso);
+app.post('/egreso', requireAuth, postEgreso);
+app.post('/api/ingreso', requireAuth, postIngreso);
+app.post('/ingreso', requireAuth, postIngreso);
 
 app.post('/api/sync', postSync);
 app.post('/sync', postSync);
 
 // Autenticación
 app.post('/api/auth/login', postLogin);
+app.post('/api/auth/set-password', postSetPassword);
 
 // Administración (solo admin)
 app.get('/api/admin/items', requireAdmin, getAdminItems);
@@ -156,11 +159,19 @@ app.post('/api/admin/db/:table', requireAdmin, postDbRow);
 app.put('/api/admin/db/:table/:id', requireAdmin, putDbRow);
 app.delete('/api/admin/db/:table/:id', requireAdmin, deleteDbRow);
 
+// Usuarios (admin)
+app.get('/api/admin/users', requireAdmin, getUsers);
+app.post('/api/admin/users', requireAdmin, postUser);
+app.put('/api/admin/users/:id', requireAdmin, putUser);
+app.post('/api/admin/users/:id/reset-password', requireAdmin, postResetPassword);
+
 app.get('/admin/db', (_req, res) => {
   res.sendFile(path.join(__dirname, 'docs/site/admin-db.html'));
 });
 
 app.use(errorHandler);
+
+await ensureSeedAdmin();
 
 const server = app.listen(config.port, () => {
   console.log(`API http://localhost:${config.port}`);

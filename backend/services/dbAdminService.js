@@ -3,6 +3,7 @@ import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
 import { loadCatalogo, saveCatalogo, invalidateCatalogoCache } from './catalogoService.js';
 import { applyCatalogo } from './ubicacionUtils.js';
+import { listUsers } from './userService.js';
 
 const TABLES = {
   catalogo: {
@@ -38,10 +39,40 @@ const TABLES = {
     fields: ['id', 'item_id', 'contenedor_id', 'tipo', 'cantidad', 'usuario', 'fecha'],
     readOnly: true,
   },
+  users: {
+    label: 'Usuarios (gestionar en Admin → Usuarios)',
+    fields: [
+      'id',
+      'username',
+      'display_name',
+      'role',
+      'must_change_password',
+      'is_active',
+      'last_login_at',
+      'created_at',
+      'updated_at',
+    ],
+    readOnly: true,
+    virtual: true,
+  },
 };
 
 export function listTablesMeta() {
   return Object.entries(TABLES).map(([name, meta]) => ({ name, ...meta }));
+}
+
+function mapUserDbRow(u) {
+  return {
+    id: u.id,
+    username: u.username,
+    display_name: u.displayName || u.name,
+    role: u.role,
+    must_change_password: u.mustChangePassword,
+    is_active: u.isActive,
+    last_login_at: u.lastLoginAt,
+    created_at: u.createdAt,
+    updated_at: u.updatedAt,
+  };
 }
 
 export async function getTableRows(table) {
@@ -49,6 +80,12 @@ export async function getTableRows(table) {
     const c = await loadCatalogo();
     applyCatalogo(c);
     return { rows: [c], total: 1 };
+  }
+
+  if (table === 'users') {
+    const users = await listUsers();
+    const rows = users.map(mapUserDbRow);
+    return { rows, total: rows.length };
   }
 
   if (config.demoMode) {
@@ -64,6 +101,13 @@ export async function getTableRows(table) {
 }
 
 export async function saveTableRow(table, row, id) {
+  if (table === 'users') {
+    throw Object.assign(
+      new Error('Gestioná usuarios desde Admin → Usuarios (crear, resetear contraseña, roles)'),
+      { status: 403 }
+    );
+  }
+
   if (table === 'catalogo') {
     await saveCatalogo(row);
     invalidateCatalogoCache();
@@ -109,6 +153,10 @@ export async function saveTableRow(table, row, id) {
 }
 
 export async function deleteTableRow(table, id) {
+  if (table === 'users') {
+    throw Object.assign(new Error('Gestioná usuarios desde Admin → Usuarios'), { status: 403 });
+  }
+
   if (table === 'catalogo') {
     throw Object.assign(new Error('No se puede eliminar el catálogo completo'), { status: 400 });
   }

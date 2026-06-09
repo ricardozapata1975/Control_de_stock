@@ -5,13 +5,15 @@ export function getDocsUrl(path = '/docs/') {
   return `${base}${path.startsWith('/') ? path : `/${path}`}`;
 }
 
-function getAdminToken() {
-  return localStorage.getItem('inventario_admin_token');
+function getToken() {
+  return (
+    localStorage.getItem('inventario_token') || localStorage.getItem('inventario_admin_token')
+  );
 }
 
 async function request(path, options = {}) {
   const headers = { 'Content-Type': 'application/json', ...options.headers };
-  const token = options.admin ? getAdminToken() : null;
+  const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
   const res = await fetch(`${API_URL}${path}`, {
@@ -26,6 +28,8 @@ async function request(path, options = {}) {
 export const api = {
   health: () => request('/api/health'),
   login: (body) => request('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),
+  setPassword: (body) =>
+    request('/api/auth/set-password', { method: 'POST', body: JSON.stringify(body) }),
   inventario: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/api/inventario${qs ? `?${qs}` : ''}`);
@@ -41,46 +45,50 @@ export const api = {
   egreso: (body) => request('/api/egreso', { method: 'POST', body: JSON.stringify(body) }),
   ingreso: (body) => request('/api/ingreso', { method: 'POST', body: JSON.stringify(body) }),
   sync: (actions) => request('/api/sync', { method: 'POST', body: JSON.stringify(actions) }),
-  adminItems: () => request('/api/admin/items', { admin: true }),
+  adminItems: () => request('/api/admin/items'),
   adminAltaStock: (body) =>
-    request('/api/admin/stock/alta', { method: 'POST', body: JSON.stringify(body), admin: true }),
+    request('/api/admin/stock/alta', { method: 'POST', body: JSON.stringify(body) }),
   adminUpdateItem: (itemId, body) =>
     request(`/api/admin/items/${encodeURIComponent(itemId)}`, {
       method: 'PUT',
       body: JSON.stringify(body),
-      admin: true,
     }),
   adminBajaItem: (itemId) =>
     request(`/api/admin/items/${encodeURIComponent(itemId)}/baja`, {
       method: 'POST',
       body: JSON.stringify({}),
-      admin: true,
     }),
-  importEspecificacion: () => request('/api/admin/import/especificacion', { admin: true }),
+  importEspecificacion: () => request('/api/admin/import/especificacion'),
   importCsv: (body) =>
-    request('/api/admin/import/csv', { method: 'POST', body: JSON.stringify(body), admin: true }),
-  adminDbSchema: () => request('/api/admin/db/schema', { admin: true }),
-  adminDbTable: (table) =>
-    request(`/api/admin/db/${encodeURIComponent(table)}`, { admin: true }),
+    request('/api/admin/import/csv', { method: 'POST', body: JSON.stringify(body) }),
+  adminDbSchema: () => request('/api/admin/db/schema'),
+  adminDbTable: (table) => request(`/api/admin/db/${encodeURIComponent(table)}`),
   adminDbCreate: (table, body) =>
     request(`/api/admin/db/${encodeURIComponent(table)}`, {
       method: 'POST',
       body: JSON.stringify(body),
-      admin: true,
     }),
   adminDbUpdate: (table, id, body) =>
     request(`/api/admin/db/${encodeURIComponent(table)}/${encodeURIComponent(id)}`, {
       method: 'PUT',
       body: JSON.stringify(body),
-      admin: true,
     }),
   adminDbDelete: (table, id) =>
     request(`/api/admin/db/${encodeURIComponent(table)}/${encodeURIComponent(id)}`, {
       method: 'DELETE',
-      admin: true,
     }),
+  adminUsers: () => request('/api/admin/users'),
+  adminCreateUser: (body) =>
+    request('/api/admin/users', { method: 'POST', body: JSON.stringify(body) }),
+  adminUpdateUser: (id, body) =>
+    request(`/api/admin/users/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  adminResetPassword: (id) =>
+    request(`/api/admin/users/${encodeURIComponent(id)}/reset-password`, { method: 'POST' }),
   downloadPlantilla: async () => {
-    const token = getAdminToken();
+    const token = getToken();
     const res = await fetch(`${API_URL}/api/admin/import/plantilla.csv`, {
       headers: token ? { Authorization: `Bearer ${token}` } : {},
     });

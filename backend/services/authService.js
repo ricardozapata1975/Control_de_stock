@@ -1,33 +1,32 @@
-import crypto from 'crypto';
 import { config } from '../config.js';
+import { sign, verifyToken } from './jwtService.js';
+import * as userService from './userService.js';
 
-const TOKEN_TTL_MS = 7 * 24 * 60 * 60 * 1000;
+export { sign, verifyToken };
 
-function sign(payload) {
-  const body = {
-    ...payload,
-    exp: Date.now() + TOKEN_TTL_MS,
-  };
-  const data = Buffer.from(JSON.stringify(body)).toString('base64url');
-  const sig = crypto.createHmac('sha256', config.jwtSecret).update(data).digest('base64url');
-  return `${data}.${sig}`;
-}
+/** Login unificado: username + password (password opcional si aún no tiene contraseña) */
+export async function loginUser(username, password) {
+  const result = await userService.authenticateUser(username, password);
+  if (!result) return null;
 
-export function verifyToken(token) {
-  if (!token || !token.includes('.')) return null;
-  const [data, sig] = token.split('.');
-  const expected = crypto.createHmac('sha256', config.jwtSecret).update(data).digest('base64url');
-  if (sig !== expected) return null;
-  try {
-    const payload = JSON.parse(Buffer.from(data, 'base64url').toString('utf8'));
-    if (!payload.exp || payload.exp < Date.now()) return null;
-    return payload;
-  } catch {
-    return null;
+  if (result.requiresPasswordSetup || result.requiresPasswordChange) {
+    return result;
   }
+
+  return {
+    user: {
+      id: result.user.id,
+      username: result.user.username,
+      name: result.user.name,
+      role: result.user.role,
+      mustChangePassword: result.user.mustChangePassword,
+    },
+    token: result.token,
+  };
 }
 
-export function loginAdmin(username, password) {
+/** Compatibilidad: admin env (solo si no hay tabla users en demo) */
+export function loginAdminLegacy(username, password) {
   const user = String(username || '').trim().toLowerCase();
   const pass = String(password || '');
   if (user !== config.admin.username.toLowerCase() || pass !== config.admin.password) {
@@ -38,18 +37,7 @@ export function loginAdmin(username, password) {
     name: config.admin.displayName,
     username: config.admin.username,
     role: 'admin',
+    mustChangePassword: false,
   };
   return { user: profile, token: sign(profile) };
-}
-
-export function loginOperario(nombre) {
-  const name = String(nombre || '').trim();
-  if (!name) return null;
-  return {
-    user: {
-      id: name.toLowerCase().replace(/\s+/g, '-'),
-      name,
-      role: 'operario',
-    },
-  };
 }

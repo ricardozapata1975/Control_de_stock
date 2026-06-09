@@ -13,6 +13,7 @@ const links = [
 
 const adminLinks = [
   { to: '/admin', label: 'Admin' },
+  { to: '/admin/usuarios', label: 'Usuarios' },
   { to: '/admin/importar', label: 'Importar' },
   { to: '/admin/base-datos', label: 'Base datos' },
 ];

@@ -40,7 +40,7 @@ export async function postEgreso(req, res) {
     itemId: resolvedItemId,
     contenedorId: resolvedContenedorId,
     cantidad,
-    usuario: usuario || nombrePersonal,
+    usuario: req.user?.name || usuario || nombrePersonal,
   });
   res.status(201).json(result);
 }
@@ -50,7 +50,7 @@ export async function postIngreso(req, res) {
   const result = await registrarIngreso({
     movimientoId,
     egresoMovimientoId,
-    usuario: usuario || nombrePersonal,
+    usuario: req.user?.name || usuario || nombrePersonal,
   });
   res.json(result);
 }

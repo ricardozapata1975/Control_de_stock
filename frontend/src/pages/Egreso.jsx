@@ -6,8 +6,6 @@ import { useAuth } from '../auth/AuthProvider';
 import FilterableSelect from '../components/FilterableSelect';
 import { filterInventarioByScan, parsedFromCodigoParam } from '../utils/scanMatch';
 
-const USUARIOS = ['Juan Pérez', 'María López', 'Carlos Ruiz'];
-
 export default function Egreso() {
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
@@ -15,14 +13,13 @@ export default function Egreso() {
   const { executeOrQueue } = useSync();
   const [stockId, setStockId] = useState('');
   const [cantidad, setCantidad] = useState(1);
-  const [usuario, setUsuario] = useState(user?.name || '');
+  const usuario = user?.name || '';
   const [success, setSuccess] = useState(false);
   const [offlineSaved, setOfflineSaved] = useState(false);
   const [formError, setFormError] = useState('');
 
   useEffect(() => {
     fetchInventario();
-    if (user?.name) setUsuario(user.name);
   }, []);
 
   const disponibles = useMemo(() => inventario.filter((i) => i.cantidad > 0), [inventario]);
@@ -79,7 +76,7 @@ export default function Egreso() {
       return;
     }
     if (!usuario.trim()) {
-      setFormError('Seleccioná un usuario.');
+      setFormError('Sesión inválida. Volvé a iniciar sesión.');
       return;
     }
     setSuccess(false);
@@ -166,19 +163,10 @@ export default function Egreso() {
         </div>
         <div>
           <label className="text-label">Usuario</label>
-          <select className="input-field" value={usuario} onChange={(e) => setUsuario(e.target.value)} required>
-            <option value="">Seleccionar...</option>
-            {USUARIOS.map((u) => (
-              <option key={u} value={u}>
-                {u}
-              </option>
-            ))}
-            {user?.name && !USUARIOS.includes(user.name) && (
-              <option value={user.name}>
-                {user.name}
-              </option>
-            )}
-          </select>
+          <p className="rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2 text-slate-100">
+            {usuario || '—'}
+          </p>
+          <p className="mt-1 text-xs text-subtle">Registrado con tu sesión iniciada.</p>
         </div>
         <button
           type="submit"

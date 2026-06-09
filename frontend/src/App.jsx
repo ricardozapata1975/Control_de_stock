@@ -14,6 +14,7 @@ import Item from './pages/Item';
 import AdminStock from './pages/AdminStock';
 import ImportarCSV from './pages/ImportarCSV';
 import AdminDatabase from './pages/AdminDatabase';
+import AdminUsers from './pages/AdminUsers';
 
 function PrivateRoute({ children }) {
   const { isLoggedIn, ready } = useAuth();
@@ -74,6 +75,14 @@ export default function App() {
                 element={
                   <AdminRoute>
                     <AdminDatabase />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="admin/usuarios"
+                element={
+                  <AdminRoute>
+                    <AdminUsers />
                   </AdminRoute>
                 }
               />
