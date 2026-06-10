@@ -1,16 +1,24 @@
-const CACHE = 'inventario-v1';
+const CACHE = 'inventario-v3';
 
 self.addEventListener('install', (event) => {
-  event.waitUntil(self.skipWaiting());
+  self.skipWaiting();
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k))))
+  );
 });
 
 self.addEventListener('activate', (event) => {
-  event.waitUntil(self.clients.claim());
+  event.waitUntil(
+    caches.keys().then((keys) => Promise.all(keys.filter((k) => k !== CACHE).map((k) => caches.delete(k)))).then(() => self.clients.claim())
+  );
 });
 
 self.addEventListener('fetch', (event) => {
   if (event.request.method !== 'GET') return;
-  event.respondWith(
-    fetch(event.request).catch(() => caches.match(event.request))
-  );
+  const url = new URL(event.request.url);
+  if (url.pathname === '/sw.js' || url.pathname === '/index.html' || url.pathname.endsWith('.html')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+  event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
 });

@@ -4,8 +4,14 @@ import App from './App.jsx';
 import './index.css';
 
 if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('/sw.js').catch(() => {});
+  window.addEventListener('load', async () => {
+    try {
+      const reg = await navigator.serviceWorker.register('/sw.js');
+      await reg.update();
+      if (reg.waiting) reg.waiting.postMessage({ type: 'SKIP_WAITING' });
+    } catch {
+      /* sin PWA */
+    }
   });
 }
 

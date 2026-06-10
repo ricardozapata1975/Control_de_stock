@@ -168,48 +168,59 @@ export default function Login() {
         {error && <div className="alert-error mb-4 text-sm">{error}</div>}
 
         {step === 'login' && (
-          <form onSubmit={submitLogin} className="space-y-4">
-            <div>
-              <label className="text-label">Usuario</label>
-              <input
-                className="input-field"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                required
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="text-label">Contraseña</label>
-              <input
-                type="password"
-                className="input-field"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                required
-              />
-            </div>
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'INGRESANDO...' : 'ENTRAR'}
-            </button>
+          <>
+            <form onSubmit={submitLogin} className="space-y-4 rounded-lg border border-slate-600 bg-slate-900/40 p-4">
+              <div>
+                <label className="text-label" htmlFor="login-username">
+                  Usuario
+                </label>
+                <input
+                  id="login-username"
+                  className="input-field"
+                  value={username}
+                  onChange={(e) => setUsername(e.target.value)}
+                  autoComplete="username"
+                  required
+                  autoFocus
+                />
+              </div>
+              <div>
+                <label className="text-label" htmlFor="login-password">
+                  Contraseña
+                </label>
+                <input
+                  id="login-password"
+                  type="password"
+                  className="input-field"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  autoComplete="current-password"
+                  required
+                  placeholder="Tu contraseña"
+                />
+              </div>
+              <button type="submit" className="btn-primary w-full" disabled={loading}>
+                {loading ? 'INGRESANDO...' : 'ENTRAR'}
+              </button>
+            </form>
+
             {modo === 'operario' && (
-              <p className="text-center text-sm">
+              <div className="mt-4 space-y-2">
+                <p className="text-center text-xs text-subtle">¿Todavía no creaste tu contraseña?</p>
                 <button
                   type="button"
-                  className="text-sky-300 underline hover:text-sky-100"
+                  className="btn-secondary w-full border-sky-700 text-sky-100"
                   onClick={() => {
                     setError('');
                     setPassword('');
                     setStep('primer-ingreso');
                   }}
                 >
-                  ¿Es tu primer ingreso? Creá tu contraseña aquí
+                  Primer ingreso — crear contraseña
                 </button>
-              </p>
+              </div>
             )}
-          </form>
+          </>
         )}
 
         {step === 'primer-ingreso' && (
