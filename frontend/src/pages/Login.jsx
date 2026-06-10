@@ -3,12 +3,13 @@ import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 
 export default function Login() {
-  const { login, beginFirstLogin, completeLogin, setPassword, isLoggedIn, isAdmin } = useAuth();
+  const { login, beginFirstLogin, completeLogin, setPassword: savePassword, isLoggedIn, isAdmin } =
+    useAuth();
   const navigate = useNavigate();
   const [modo, setModo] = useState('operario');
   const [step, setStep] = useState('login');
   const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
+  const [password, setPasswordValue] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [setupToken, setSetupToken] = useState('');
@@ -83,7 +84,7 @@ export default function Login() {
     setError('');
     setLoading(true);
     try {
-      const profile = await setPassword({
+      const profile = await savePassword({
         setupToken: step === 'setup' ? setupToken : undefined,
         token: step === 'change' ? changeToken : undefined,
         newPassword,
@@ -193,7 +194,7 @@ export default function Login() {
                   type="password"
                   className="input-field"
                   value={password}
-                  onChange={(e) => setPassword(e.target.value)}
+                  onChange={(e) => setPasswordValue(e.target.value)}
                   autoComplete="current-password"
                   required
                   placeholder="Tu contraseña"
@@ -212,7 +213,7 @@ export default function Login() {
                   className="btn-secondary w-full border-sky-700 text-sky-100"
                   onClick={() => {
                     setError('');
-                    setPassword('');
+                    setPasswordValue('');
                     setStep('primer-ingreso');
                   }}
                 >
