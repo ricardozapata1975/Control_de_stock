@@ -33,7 +33,9 @@ En [Render Dashboard](https://dashboard.render.com) → tu servicio **control-de
 
 Probar: https://control-de-stock-back.onrender.com/api/health → debe responder `{"status":"ok",...}`
 
-> **Nota:** Con `DEMO_MODE=true` en Render el archivo `demo-db.json` se reinicia al redeploy. Para datos persistentes usá Supabase (`DEMO_MODE=false` + variables `SUPABASE_*`).
+> **Persistencia demo:** `demo-db.json` **no está en Git** (solo `demo-db.seed.json` como plantilla inicial). En Render hay un disco persistente en `backend/data` para que egresos, stock y cambios en la web **no se borren** al hacer push. Si el servicio ya existía, en Dashboard → **Disks** agregá un disco montado en `/opt/render/project/src/data` (1 GB).
+>
+> Para producción con muchos usuarios, conviene Supabase (`DEMO_MODE=false` + `SUPABASE_*`).
 
 ---
 

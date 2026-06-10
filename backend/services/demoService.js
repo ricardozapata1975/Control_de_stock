@@ -16,13 +16,25 @@ import { mapItemCampos, itemCamposFromCsv, itemPayloadFromBody, parseFechaReleva
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DATA_PATH = path.join(__dirname, '../data/demo-db.json');
+const SEED_PATH = path.join(__dirname, '../data/demo-db.seed.json');
+
+async function loadFromSeedFile() {
+  try {
+    const raw = await fs.readFile(SEED_PATH, 'utf-8');
+    return JSON.parse(raw);
+  } catch {
+    return seed();
+  }
+}
 
 async function load() {
   try {
     const raw = await fs.readFile(DATA_PATH, 'utf-8');
     return JSON.parse(raw);
   } catch {
-    return seed();
+    const data = await loadFromSeedFile();
+    await save(data);
+    return data;
   }
 }
 
