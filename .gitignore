@@ -10,3 +10,7 @@ data/demo-lock.json
 backend/data/sync-ledger.json
 backend/data/demo-users.json
 backend/data/demo-db.json
+backend/data/inventario.sqlite
+backend/data/inventario.sqlite-wal
+backend/data/inventario.sqlite-shm
+backend/data/inventario.seed.sqlite

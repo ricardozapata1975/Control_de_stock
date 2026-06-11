@@ -172,6 +172,10 @@ app.get('/admin/db', (_req, res) => {
 
 app.use(errorHandler);
 
+if (config.demoMode) {
+  const { initSqliteDatabase } = await import('./db/sqlite.js');
+  initSqliteDatabase();
+}
 await ensureSeedAdmin();
 
 const server = app.listen(config.port, () => {

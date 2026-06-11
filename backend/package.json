@@ -4,11 +4,15 @@
   "type": "module",
   "scripts": {
     "start": "node app.js",
-    "dev": "node --watch app.js"
+    "dev": "node --watch app.js",
+    "db:import-seed": "node scripts/import-seed-to-sqlite.js",
+    "db:export-seed": "node -e \"import('./db/sqlite.js').then(m=>console.log(m.exportSeedDatabase()))\"",
+    "db:migrate-supabase": "node scripts/migrate-demo-to-supabase.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",
     "bcryptjs": "^3.0.3",
+    "better-sqlite3": "^11.10.0",
     "cors": "^2.8.5",
     "dotenv": "^16.4.7",
     "express": "^4.21.2",

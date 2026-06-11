@@ -8,15 +8,15 @@ services:
     buildCommand: npm install
     startCommand: npm start
     healthCheckPath: /api/health
-    disk:
-      name: inventario-demo-data
-      mountPath: /opt/render/project/src/data
-      sizeGB: 1
     envVars:
       - key: NODE_ENV
         value: production
       - key: DEMO_MODE
-        value: true
+        value: false
+      - key: SUPABASE_URL
+        sync: false
+      - key: SUPABASE_SERVICE_ROLE_KEY
+        sync: false
       - key: FRONTEND_URL
         value: https://control-de-stock-smoky.vercel.app
       - key: CORS_ORIGINS

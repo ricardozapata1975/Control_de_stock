@@ -1,10 +1,8 @@
 /**
- * Modo demo local (sin Supabase) — misma forma de datos que la API Supabase.
+ * Almacenamiento local (SQLite) cuando DEMO_MODE=true — misma forma que Supabase.
  */
-import fs from 'fs/promises';
-import path from 'path';
-import { fileURLToPath } from 'url';
 import { config } from '../config.js';
+import { loadInventoryData, saveInventoryData } from '../db/sqlite.js';
 import {
   buildCodigo,
   buildDbId,
@@ -14,33 +12,12 @@ import {
 } from './ubicacionUtils.js';
 import { mapItemCampos, itemCamposFromCsv, itemPayloadFromBody, parseFechaRelevamiento } from './itemFields.js';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const DATA_PATH = path.join(__dirname, '../data/demo-db.json');
-const SEED_PATH = path.join(__dirname, '../data/demo-db.seed.json');
-
-async function loadFromSeedFile() {
-  try {
-    const raw = await fs.readFile(SEED_PATH, 'utf-8');
-    return JSON.parse(raw);
-  } catch {
-    return seed();
-  }
-}
-
 async function load() {
-  try {
-    const raw = await fs.readFile(DATA_PATH, 'utf-8');
-    return JSON.parse(raw);
-  } catch {
-    const data = await loadFromSeedFile();
-    await save(data);
-    return data;
-  }
+  return loadInventoryData();
 }
 
 async function save(data) {
-  await fs.mkdir(path.dirname(DATA_PATH), { recursive: true });
-  await fs.writeFile(DATA_PATH, JSON.stringify(data, null, 2));
+  saveInventoryData(data);
 }
 
 function seed() {
@@ -382,7 +359,6 @@ export async function demoSaveRaw(db) {
   return save(db);
 }
 
-/** Vacía inventario demo antes de importar CSV en modo reemplazar */
 export async function demoResetInventario() {
   await save({ contenedores: [], items: [], stock: [], movimientos: [] });
 }
@@ -474,24 +450,25 @@ export async function demoResolveUbicacion({ armario, estante, contenedor, codig
   return cont;
 }
 
-export async function demoAltaStock({
-  modo,
-  itemId,
-  nombre,
-  marca,
-  modelo,
-  tipo,
-  detalle,
-  calibracion,
-  comentario,
-  fecha_relevamiento,
-  contenedorId,
-  armario,
-  estante,
-  contenedor,
-  cantidad,
-  adminName,
-}) {
+export async function demoAltaStock(payload) {
+  const {
+    modo,
+    itemId,
+    nombre,
+    marca,
+    modelo,
+    tipo,
+    detalle,
+    calibracion,
+    comentario,
+    fecha_relevamiento,
+    contenedorId,
+    armario,
+    estante,
+    contenedor,
+    cantidad,
+    adminName,
+  } = payload;
   const db = await load();
   let cont;
   if (contenedorId) {
