@@ -13,10 +13,16 @@
 
 En [Render Dashboard](https://dashboard.render.com) → tu servicio **control-de-stock-back** → **Environment**:
 
+### Producción con Supabase (recomendado en Render)
+
+Render Free no tiene disco persistente: usá **Supabase** y **no** dejes `DEMO_MODE=true`. Pasos completos (tablas, claves, verificación): [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
+
 | Variable | Valor |
 |----------|--------|
 | `NODE_ENV` | `production` |
-| `DEMO_MODE` | `true` (o `false` si usás Supabase) |
+| `DEMO_MODE` | `false` |
+| `SUPABASE_URL` | URL del proyecto (ej. `https://<ref>.supabase.co`) |
+| `SUPABASE_SERVICE_ROLE_KEY` | clave **service_role** / secret del backend (no la publishable del frontend) |
 | `FRONTEND_URL` | `https://control-de-stock-smoky.vercel.app` |
 | `CORS_ORIGINS` | `https://control-de-stock-smoky.vercel.app` |
 | `JWT_SECRET` | una clave larga aleatoria (no usar la de ejemplo) |
@@ -33,9 +39,7 @@ En [Render Dashboard](https://dashboard.render.com) → tu servicio **control-de
 
 Probar: https://control-de-stock-back.onrender.com/api/health → debe responder `{"status":"ok",...}`
 
-> **Importante (Render Free):** no hay disco persistente. Usá **Supabase** (`DEMO_MODE=false`). Guía paso a paso: [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
->
-> **Local:** `DEMO_MODE=true` usa SQLite (`inventario.sqlite`), no JSON.
+> **Solo desarrollo local:** `DEMO_MODE=true` usa SQLite (`inventario.sqlite`), no JSON. No uses ese modo en Render.
 
 ---
 
