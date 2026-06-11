@@ -1,74 +1,81 @@
-# Base de datos estable (Supabase) — Render Free
+# Conectar Supabase — proyecto **herramientas**
 
-En **Render plan Free** no hay disco persistente. Cualquier archivo en el servidor (JSON o SQLite) **se borra en cada deploy**.
+**Project ref:** `lxkkgudlaumcjxksjywh`  
+**URL:** `https://lxkkgudlaumcjxksjywh.supabase.co`
 
-La solución es **Supabase** (PostgreSQL gratis en la nube). Los datos viven fuera de Render y no se pierden al hacer `git push`.
+Esperá a que el dashboard deje de mostrar **"Coming up..."** y aparezca la URL del proyecto.
 
-## 1. Crear proyecto en Supabase
+---
 
-1. [supabase.com](https://supabase.com) → nuevo proyecto (plan Free).
-2. **Project Settings → API**:
-   - **Project URL** → `SUPABASE_URL`
-   - **service_role** (secret) → `SUPABASE_SERVICE_ROLE_KEY`
+## Paso 1 — Crear tablas (SQL Editor)
 
-## 2. Ejecutar SQL (en orden)
+1. Supabase → proyecto **herramientas** → **SQL Editor** → **New query**
+2. Abrí el archivo `supabase/full-setup.sql` del repo
+3. Copiá **todo** el contenido y pegá en el editor
+4. Clic **Run** (debe decir Success)
 
-En **SQL Editor** del proyecto:
+---
 
-1. `supabase/schema.sql`
-2. `supabase/schema-admin.sql`
-3. `supabase/schema-ubicacion.sql`
-4. `supabase/schema-items-campos.sql`
-5. `supabase/schema-users.sql`
+## Paso 2 — Copiar credenciales API
 
-## 3. Migrar inventario actual
+**Project Settings** (engranaje) → **API**:
 
-En tu PC (`backend/.env`):
+| Variable | Dónde copiarla |
+|----------|----------------|
+| `SUPABASE_URL` | Project URL → `https://lxkkgudlaumcjxksjywh.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | **service_role** (secret, no la anon key) |
+
+---
+
+## Paso 3 — Configurar `backend/.env` (tu PC)
 
 ```env
 DEMO_MODE=false
-SUPABASE_URL=https://tu-proyecto.supabase.co
-SUPABASE_SERVICE_ROLE_KEY=eyJ...
+SUPABASE_URL=https://lxkkgudlaumcjxksjywh.supabase.co
+SUPABASE_SERVICE_ROLE_KEY=eyJ...tu-clave-service-role...
+
+ADMIN_USERNAME=admin
+ADMIN_PASSWORD=admin123
+JWT_SECRET=una-clave-larga-aleatoria
 ```
 
+---
+
+## Paso 4 — Migrar inventario
+
 ```powershell
-cd backend
+cd D:\inventario-herramientas\backend
 npm install
 npm run db:migrate-supabase
 ```
 
-Carga `demo-db.seed.json` (181 ítems, contenedores, stock, movimientos) en Supabase.
+Carga contenedores, ítems, stock, movimientos y crea el usuario **admin**.
 
-## 4. Configurar Render
+---
 
-Servicio **control-de-stock-back** → **Environment**:
+## Paso 5 — Configurar Render (producción)
+
+En **control-de-stock-back** → **Environment**:
 
 | Variable | Valor |
 |----------|--------|
 | `DEMO_MODE` | `false` |
-| `SUPABASE_URL` | URL del proyecto |
-| `SUPABASE_SERVICE_ROLE_KEY` | service_role |
+| `SUPABASE_URL` | `https://lxkkgudlaumcjxksjywh.supabase.co` |
+| `SUPABASE_SERVICE_ROLE_KEY` | (misma service_role) |
 | `JWT_SECRET` | clave larga aleatoria |
 | `ADMIN_USERNAME` | `admin` |
 | `ADMIN_PASSWORD` | tu contraseña |
 | `FRONTEND_URL` | `https://control-de-stock-smoky.vercel.app` |
 | `CORS_ORIGINS` | `https://control-de-stock-smoky.vercel.app` |
 
-**Manual Deploy** después de guardar.
+**Manual Deploy** en Render.
 
-## 5. Verificar
+---
 
-- `GET /api/health` → `"db": "supabase"`
-- Login, inventario, egresos e ingresos con datos persistentes.
+## Paso 6 — Verificar
 
-## Desarrollo local (SQLite)
+- `https://control-de-stock-back.onrender.com/api/health` → `"db": "supabase"`
+- Login admin en la web
+- Inventario con tus herramientas
 
-Con `DEMO_MODE=true` se usa `backend/data/inventario.sqlite` (no se sube a Git).
-
-```powershell
-cd backend
-npm run db:import-seed
-npm run dev
-```
-
-Plantilla de datos: `backend/data/demo-db.seed.json` (sí está en Git).
+Los datos quedan en Supabase y **no se borran** al hacer push a Git.
