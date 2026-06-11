@@ -1,4 +1,11 @@
-﻿-- Inventario Taller â€” Supabase / PostgreSQL
+﻿-- Inventario Px Control — setup completo para Supabase SQL Editor
+-- Proyecto: herramientas (ref: lxkkguclaumcjxksjywh)
+-- URL: https://lxkkguclaumcjxksjywh.supabase.co
+--
+-- INSTRUCCIONES: copiar TODO este archivo → SQL Editor → Run
+-- Si ya tenés tablas incompletas y vacías, usá patch-partial-schema.sql primero.
+
+-- Inventario Taller â€” Supabase / PostgreSQL
 -- Ejecutar en SQL Editor del proyecto Supabase
 
 CREATE EXTENSION IF NOT EXISTS "pgcrypto";
@@ -193,6 +200,10 @@ BEGIN
   RETURN jsonb_build_object('ok', true, 'movimiento_id', v_mov_id);
 END;
 $$;
+
+
+-- ─── Usuarios ───────────────────────────────────────────────────────────────
+
 -- Usuarios del sistema (operarios y administradores)
 -- Ejecutar en SQL Editor de Supabase despuÃ©s de schema.sql
 
@@ -214,3 +225,4 @@ CREATE INDEX IF NOT EXISTS idx_users_role ON users (role);
 
 COMMENT ON TABLE users IS 'Cuentas de operarios y administradores del inventario';
 COMMENT ON COLUMN users.password_hash IS 'NULL hasta que el usuario define su contraseÃ±a en el primer ingreso';
+

@@ -45,6 +45,20 @@ function toUuid(id) {
 }
 
 async function assertSchema() {
+  const { error: usersErr } = await supabase.from('users').select('id').limit(1);
+  if (usersErr?.code === 'PGRST205') {
+    throw new Error(
+      'Falta la tabla users. Ejecutá supabase/patch-partial-schema.sql en el SQL Editor de Supabase.'
+    );
+  }
+
+  const { error: armarioErr } = await supabase.from('contenedores').select('armario').limit(1);
+  if (armarioErr?.code === 'PGRST204' || armarioErr?.code === '42703') {
+    throw new Error(
+      'El esquema está incompleto (falta columna armario). Ejecutá supabase/patch-partial-schema.sql en el SQL Editor.'
+    );
+  }
+
   const { error } = await supabase.from('contenedores').select('id').limit(1);
   if (error?.message?.includes('does not exist') || error?.code === '42P01') {
     throw new Error(
