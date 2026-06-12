@@ -69,7 +69,7 @@ function renderScrollCell(col, item, { isAdmin, onEdit, onDelete }) {
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
-              className="rounded-lg border border-slate-500 px-3 py-1.5 text-sm font-semibold text-slate-100 hover:bg-slate-800"
+              className="min-h-[44px] rounded-lg border border-border px-3 py-2 text-sm font-semibold text-content hover:bg-surface-hover"
               onClick={() => onEdit?.(item)}
             >
               Editar
@@ -138,7 +138,7 @@ export default function InventoryTable({ items, isAdmin, onEdit, onDelete }) {
             {items.map((item) => (
               <tr key={item.id} className="table-row">
                 <td className="inventory-col-fixed px-4 py-3" style={cellFixed(FIXED_COLS[0])}>
-                  <p className="font-medium text-white">{item.nombre}</p>
+                  <p className="font-medium text-content">{item.nombre}</p>
                   {item.marca && (
                     <p className="text-xs text-subtle">
                       {item.marca} {item.modelo || ''}
@@ -168,7 +168,7 @@ export default function InventoryTable({ items, isAdmin, onEdit, onDelete }) {
           </tbody>
         </table>
       </div>
-      <p className="border-t border-slate-700 px-3 py-2 text-xs text-subtle">
+      <p className="border-t border-border px-3 py-2 text-xs text-subtle">
         Columnas fijas: Herramienta, Ubicación y Stock. Deslizá para ver Tipo, Calibración y más.
       </p>
     </div>

@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import ThemeToggle from '../components/ThemeToggle';
 
 export default function Login() {
   const { login, beginFirstLogin, completeLogin, setPassword: savePassword, isLoggedIn, isAdmin } =
@@ -120,7 +121,10 @@ export default function Login() {
         : 'F-M-02 Control de Herramientas Compartidas';
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-slate-950 p-6">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-surface p-6">
+      <div className="absolute right-4 top-4 safe-top">
+        <ThemeToggle />
+      </div>
       <div className="card w-full max-w-md">
         <div className="mb-6 flex flex-col items-center text-center">
           <img
@@ -128,7 +132,7 @@ export default function Login() {
             alt="PX Control — Process Automation Experts"
             className="h-14 w-auto max-w-full object-contain"
           />
-          <h1 className="mt-4 text-xl font-bold text-slate-100">Inventario Px Control</h1>
+          <h1 className="mt-4 text-xl font-bold text-content">Inventario Px Control</h1>
           <p className="text-muted">{subtitle}</p>
           {(isSetupStep || isFirstStep) && (
             <p className="mt-2 font-mono text-sm text-amber-300">{pendingUser?.username || username}</p>
@@ -136,11 +140,11 @@ export default function Login() {
         </div>
 
         {!isSetupStep && !isFirstStep && (
-          <div className="mb-4 flex rounded-lg border border-slate-600 p-1">
+          <div className="mb-4 flex rounded-lg border border-border p-1">
             <button
               type="button"
-              className={`flex-1 rounded-md py-2 text-sm font-bold ${
-                modo === 'operario' ? 'bg-amber-500 text-slate-950' : 'text-slate-200'
+              className={`flex-1 min-h-[44px] rounded-md py-2 text-sm font-bold ${
+                modo === 'operario' ? 'bg-accent text-accent-foreground' : 'text-content-muted'
               }`}
               onClick={() => {
                 setModo('operario');
@@ -151,8 +155,8 @@ export default function Login() {
             </button>
             <button
               type="button"
-              className={`flex-1 rounded-md py-2 text-sm font-bold ${
-                modo === 'admin' ? 'bg-amber-500 text-slate-950' : 'text-slate-200'
+              className={`flex-1 min-h-[44px] rounded-md py-2 text-sm font-bold ${
+                modo === 'admin' ? 'bg-accent text-accent-foreground' : 'text-content-muted'
               }`}
               onClick={() => {
                 setModo('admin');
@@ -170,7 +174,7 @@ export default function Login() {
 
         {step === 'login' && (
           <>
-            <form onSubmit={submitLogin} className="space-y-4 rounded-lg border border-slate-600 bg-slate-900/40 p-4">
+            <form onSubmit={submitLogin} className="space-y-4 rounded-lg border border-border bg-surface-muted/60 p-4">
               <div>
                 <label className="text-label" htmlFor="login-username">
                   Usuario
@@ -247,7 +251,7 @@ export default function Login() {
             </button>
             <button
               type="button"
-              className="w-full text-sm text-slate-300 underline hover:text-white"
+              className="w-full min-h-[44px] text-sm text-content-subtle underline hover:text-content"
               onClick={resetToLogin}
             >
               Volver al login de operario
@@ -288,7 +292,7 @@ export default function Login() {
             </button>
             <button
               type="button"
-              className="w-full text-sm text-slate-300 underline hover:text-white"
+              className="w-full min-h-[44px] text-sm text-content-subtle underline hover:text-content"
               onClick={resetToLogin}
             >
               Volver al login
