@@ -93,7 +93,7 @@ export default function Ingreso() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between gap-2">
-        <h2 className="text-2xl font-bold text-amber-400">REGISTRAR INGRESO</h2>
+        <h2 className="page-title">REGISTRAR INGRESO</h2>
         <Link to="/escanear" className="btn-secondary shrink-0 py-2 text-base">
           📷 QR
         </Link>
@@ -144,7 +144,7 @@ export default function Ingreso() {
           )}
         </div>
         {selected && (
-          <div className="rounded-lg border border-slate-500 bg-slate-800 p-3 text-sm text-slate-100">
+          <div className="rounded-lg border border-border bg-surface-muted p-3 text-sm text-content">
             {selected.contenedorCodigo} · {selected.armarioNombre || selected.ubicacion} / {selected.estante}
             {selected.contenedor ? ` / ${selected.contenedor}` : ''}
           </div>

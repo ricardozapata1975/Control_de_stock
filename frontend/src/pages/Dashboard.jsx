@@ -109,7 +109,7 @@ export default function Dashboard() {
         <div className="alert-error mb-4">
           {error || actionError}
           {error && (
-            <button type="button" className="ml-2 underline hover:text-white" onClick={clearError}>
+            <button type="button" className="ml-2 underline hover:text-content" onClick={clearError}>
               Cerrar
             </button>
           )}
@@ -119,11 +119,11 @@ export default function Dashboard() {
       {filters.codigo && (
         <div className="alert-warning mb-4 flex flex-wrap items-center justify-between gap-2 text-sm">
           <span>
-            <strong className="text-amber-100">Filtro QR:</strong> {scanLabel || filters.codigo}
+            <strong>Filtro QR:</strong> {scanLabel || filters.codigo}
             {' · '}
             {inventario.length} resultado{inventario.length !== 1 ? 's' : ''}
           </span>
-          <button type="button" className="text-amber-200 underline hover:text-white" onClick={clearScanFilter}>
+          <button type="button" className="underline hover:text-content" onClick={clearScanFilter}>
             Quitar filtro
           </button>
         </div>

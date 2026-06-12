@@ -55,9 +55,9 @@ export default function Item() {
       <div className="card mb-4">
         <p className="text-xs font-semibold uppercase tracking-wide text-sky-400">Artículo</p>
         <h2 className="page-title mb-1">{item.nombre}</h2>
-        <p className="font-mono text-sm text-amber-300">item_id: {itemId}</p>
+        <p className="font-mono text-sm text-accent">item_id: {itemId}</p>
         {item.tipo && <p className="text-muted mt-1">{item.tipo}</p>}
-        <p className="mt-2 text-lg font-bold text-slate-100">Stock total: {total}</p>
+        <p className="mt-2 text-lg font-bold text-content">Stock total: {total}</p>
       </div>
 
       <ScanResultPanel parsed={parsed} items={rows} onScanAgain={() => navigate('/escanear')} />
@@ -68,11 +68,11 @@ export default function Item() {
           {rows.map((r) => (
             <li
               key={r.id}
-              className="flex cursor-pointer items-center justify-between rounded-lg border border-slate-600 p-3 hover:bg-slate-800"
+              className="flex cursor-pointer items-center justify-between rounded-lg border border-border p-3 hover:bg-surface-hover"
               onClick={() => navigate(`/contenedor/${encodeURIComponent(r.contenedorCodigo)}`)}
             >
-              <span className="text-slate-100">{formatUbicacionLabel(r)}</span>
-              <span className="font-bold text-amber-300">{r.cantidad} u.</span>
+              <span className="text-content">{formatUbicacionLabel(r)}</span>
+              <span className="font-bold text-accent">{r.cantidad} u.</span>
             </li>
           ))}
         </ul>

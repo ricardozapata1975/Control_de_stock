@@ -74,7 +74,7 @@ export default function FilterableSelect({
       {open && !disabled && (
         <ul
           ref={listRef}
-          className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-slate-500 bg-slate-800 shadow-xl"
+          className="absolute z-30 mt-1 max-h-56 w-full overflow-y-auto rounded-lg border border-border bg-surface-elevated shadow-xl"
           role="listbox"
         >
           {filtered.length === 0 ? (
@@ -86,8 +86,8 @@ export default function FilterableSelect({
                   type="button"
                   role="option"
                   aria-selected={opt.value === value}
-                  className={`w-full px-4 py-3 text-left text-sm transition hover:bg-slate-700 ${
-                    opt.value === value ? 'bg-amber-900/40 text-amber-100' : 'text-slate-100'
+                  className={`w-full px-4 py-3 text-left text-sm transition hover:bg-surface-hover ${
+                    opt.value === value ? 'bg-accent/20 text-accent' : 'text-content'
                   }`}
                   onMouseDown={(e) => e.preventDefault()}
                   onClick={() => pick(opt)}

@@ -46,10 +46,10 @@ export default function EscanearQR() {
 
   return (
     <div>
-      <h2 className="mb-2 text-2xl font-bold text-amber-400">ESCANEAR QR</h2>
+      <h2 className="page-title mb-2">ESCANEAR QR</h2>
       <p className="mb-6 text-muted">
-        Escaneá y elegí <strong className="text-slate-100">egreso</strong> o{' '}
-        <strong className="text-slate-100">ingreso</strong> sin salir del flujo.
+        Escaneá y elegí <strong className="text-content">egreso</strong> o{' '}
+        <strong className="text-content">ingreso</strong> sin salir del flujo.
       </p>
 
       {!result && (

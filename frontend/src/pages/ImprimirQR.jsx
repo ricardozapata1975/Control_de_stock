@@ -252,8 +252,8 @@ export default function ImprimirQR() {
             type="button"
             className={`rounded-lg px-4 py-2 text-sm font-bold uppercase tracking-wide ${
               tab === t.id
-                ? 'bg-amber-500 text-slate-950'
-                : 'border border-slate-600 text-slate-200 hover:bg-slate-800'
+                ? 'bg-accent text-accent-foreground'
+                : 'border border-border text-content-muted hover:bg-surface-hover hover:text-content'
             }`}
             onClick={() => setTab(t.id)}
           >
@@ -283,17 +283,17 @@ export default function ImprimirQR() {
         {filteredEntries.map((entry) => (
           <label
             key={entry.key}
-            className="flex cursor-pointer items-center gap-2 rounded-lg border border-slate-500 p-3 text-slate-100 hover:bg-slate-800"
+            className="flex cursor-pointer items-center gap-2 rounded-lg border border-border p-3 text-content hover:bg-surface-hover"
           >
             <input
               type="checkbox"
               checked={selected.has(entry.key)}
               onChange={() => toggle(entry.key)}
-              className="h-5 w-5 accent-amber-500"
+              className="h-5 w-5 accent-accent"
             />
             <span className="min-w-0">
-              <span className="block font-mono font-bold text-amber-300">{entry.titulo}</span>
-              <span className="block truncate text-sm text-slate-200">{entry.subtitulo}</span>
+              <span className="block font-mono font-bold text-accent">{entry.titulo}</span>
+              <span className="block truncate text-sm text-content-muted">{entry.subtitulo}</span>
             </span>
           </label>
         ))}

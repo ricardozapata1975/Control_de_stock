@@ -105,7 +105,7 @@ export default function Egreso() {
   return (
     <div>
       <div className="mb-6 flex items-center justify-between gap-2">
-        <h2 className="text-2xl font-bold text-amber-400">REGISTRAR EGRESO</h2>
+        <h2 className="page-title">REGISTRAR EGRESO</h2>
         <Link to="/escanear" className="btn-secondary shrink-0 py-2 text-base">
           📷 QR
         </Link>
@@ -159,11 +159,11 @@ export default function Egreso() {
             onChange={(e) => setCantidad(e.target.value)}
             disabled={!stockId}
           />
-          {selected && <p className="mt-1 text-amber-400">Disponible: {maxQty}</p>}
+          {selected && <p className="mt-1 text-accent">Disponible: {maxQty}</p>}
         </div>
         <div>
           <label className="text-label">Usuario</label>
-          <p className="rounded-lg border border-slate-600 bg-slate-800/80 px-3 py-2 text-slate-100">
+          <p className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-content">
             {usuario || '—'}
           </p>
           <p className="mt-1 text-xs text-subtle">Registrado con tu sesión iniciada.</p>

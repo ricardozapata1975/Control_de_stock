@@ -45,11 +45,11 @@ export default function ContenedorPanel({ data, onRefresh }) {
 
   return (
     <div>
-      <div className="card mb-4 border-amber-800/50 bg-slate-900">
-        <h2 className="font-mono text-2xl font-bold text-amber-400">{contenedor.codigo}</h2>
+      <div className="card mb-4 border-accent/40">
+        <h2 className="font-mono text-2xl font-bold text-accent">{contenedor.codigo}</h2>
         <p className="text-muted">{formatUbicacionLabel(contenedor)}</p>
         <p className="mt-2 text-sm text-subtle">
-          {items.length} ítems · Stock total: <strong className="text-white">{contenedor.totalStock}</strong>
+          {items.length} ítems · Stock total: <strong className="text-content">{contenedor.totalStock}</strong>
         </p>
       </div>
 
@@ -64,8 +64,8 @@ export default function ContenedorPanel({ data, onRefresh }) {
         {items.map((item) => (
           <li key={item.id} className="card flex flex-wrap items-center justify-between gap-3">
             <div>
-              <p className="text-lg font-semibold text-white">{item.nombre}</p>
-              <p className="text-sm text-muted">{item.marca} · Stock: <span className="font-bold text-amber-300">{item.cantidad}</span></p>
+              <p className="text-lg font-semibold text-content">{item.nombre}</p>
+              <p className="text-sm text-muted">{item.marca} · Stock: <span className="font-bold text-accent">{item.cantidad}</span></p>
             </div>
             <div className="flex gap-2">
               <button

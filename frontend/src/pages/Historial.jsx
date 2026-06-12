@@ -60,8 +60,8 @@ export default function Historial() {
           <tbody>
             {movimientos.map((m) => (
               <tr key={m.id} className="table-row">
-                <td className="px-3 py-3 font-medium text-white">{m.nombreHerramienta}</td>
-                <td className="px-3 py-3 text-slate-200">{m.nombrePersonal || m.usuario}</td>
+                <td className="px-3 py-3 font-medium text-content">{m.nombreHerramienta}</td>
+                <td className="px-3 py-3 text-content-muted">{m.nombrePersonal || m.usuario}</td>
                 <td className="px-3 py-3">{m.cantidad}</td>
                 <td className="px-3 py-3 table-cell-muted">{formatFechaDmy(m.fechaEgreso)}</td>
                 <td className="px-3 py-3 table-cell-muted">{formatFechaDmy(m.fechaIngreso)}</td>

@@ -10,7 +10,7 @@ export default function ScanItemActionModal({ item, onClose, onEgreso, onIngreso
       role="presentation"
     >
       <div
-        className="card w-full max-w-sm border-amber-700/60"
+        className="card w-full max-w-sm border-accent/40"
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-labelledby="scan-item-action-title"
@@ -25,9 +25,9 @@ export default function ScanItemActionModal({ item, onClose, onEgreso, onIngreso
           </p>
         )}
         <p className="mt-2 text-sm text-muted">{formatUbicacionLabel(item)}</p>
-        <p className="font-mono text-xs text-amber-300">{item.contenedorCodigo}</p>
+        <p className="font-mono text-xs text-accent">{item.contenedorCodigo}</p>
         <p className="mt-1 text-sm">
-          Stock disponible: <strong className="text-amber-200">{item.cantidad}</strong>
+          Stock disponible: <strong className="text-accent">{item.cantidad}</strong>
         </p>
 
         <div className="mt-5 grid gap-3">
@@ -36,12 +36,12 @@ export default function ScanItemActionModal({ item, onClose, onEgreso, onIngreso
           </button>
           <button
             type="button"
-            className="btn-secondary w-full border-amber-600 text-amber-100"
+            className="btn-secondary w-full border-accent text-accent"
             onClick={onIngreso}
           >
             INGRESO
           </button>
-          <button type="button" className="text-sm text-slate-300 underline hover:text-white" onClick={onClose}>
+          <button type="button" className="text-sm text-content-muted underline hover:text-content" onClick={onClose}>
             Cancelar
           </button>
         </div>

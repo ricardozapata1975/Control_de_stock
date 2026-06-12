@@ -11,7 +11,7 @@ export default function OfflineStatus() {
       onClick={syncNow}
       disabled={syncing || !isOnline}
       className={`w-full min-h-[44px] px-4 py-2 text-center text-sm font-bold ${
-        !isOnline ? 'bg-amber-700 text-white' : 'bg-surface-muted text-amber-500 dark:text-amber-300'
+        !isOnline ? 'bg-accent text-accent-foreground' : 'bg-surface-muted text-accent'
       }`}
     >
       {syncing

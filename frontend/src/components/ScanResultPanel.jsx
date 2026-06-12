@@ -57,18 +57,18 @@ export default function ScanResultPanel({ parsed, contenedor, items = [], onScan
   const ubicacionLabel = isUbicacion ? getUbicacionScanLabel(parsed, contenedor) : null;
 
   return (
-    <div className="card mt-6 space-y-4 border-amber-700/50">
+    <div className="card mt-6 space-y-4 border-accent/40">
       <div>
         <p className="text-xs font-semibold uppercase tracking-wide text-sky-400">
           {qrTypeLabel(parsed.type)} escaneado
         </p>
-        <h3 className="font-mono text-xl font-bold text-amber-300">{title}</h3>
+        <h3 className="font-mono text-xl font-bold text-accent">{title}</h3>
         {ubicacionLabel && <p className="mt-1 text-muted">{ubicacionLabel}</p>}
         {isItem && (
           <p className="font-mono text-sm text-subtle">item_id: {parsed.itemId}</p>
         )}
         {isUbicacion && (
-          <p className="mt-2 text-sm text-slate-200">
+          <p className="mt-2 text-sm text-content-muted">
             {items.length} herramienta{items.length !== 1 ? 's' : ''} en esta ubicación
           </p>
         )}
@@ -107,7 +107,7 @@ export default function ScanResultPanel({ parsed, contenedor, items = [], onScan
         </button>
         <button
           type="button"
-          className="btn-secondary w-full border-amber-600 text-amber-100"
+          className="btn-secondary w-full border-accent text-accent"
           onClick={() => navigate(buildIngresoUrl(parsed))}
         >
           Registrar ingreso
@@ -120,7 +120,7 @@ export default function ScanResultPanel({ parsed, contenedor, items = [], onScan
         </p>
       )}
 
-      <button type="button" className="text-sm text-slate-300 underline hover:text-white" onClick={onScanAgain}>
+      <button type="button" className="text-sm text-content-muted underline hover:text-content" onClick={onScanAgain}>
         Escanear otro código
       </button>
 
