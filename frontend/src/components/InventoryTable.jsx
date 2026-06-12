@@ -1,5 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { formatUbicacionLabel } from '../utils/contenedor';
+import { buildEgresoUrlForItem } from '../utils/scanMatch';
 
 const FIXED_WIDTH = 332;
 const COL_WIDTH = 96;
@@ -11,6 +13,7 @@ const FIXED_COLS = [
 ];
 
 const SCROLL_COLUMNS = [
+  { key: 'egreso', label: 'Egreso', minWidth: 104 },
   { key: 'tipo', label: 'Tipo', minWidth: 0 },
   { key: 'calibracion', label: 'Calibración', minWidth: 96 },
   { key: 'comentario', label: 'Comentario', minWidth: 192 },
@@ -33,8 +36,28 @@ function cellFixed(col) {
   };
 }
 
-function renderScrollCell(col, item, { isAdmin, onEdit, onDelete }) {
+function renderScrollCell(col, item, { isAdmin, onEdit, onDelete, onEgreso }) {
   switch (col.key) {
+    case 'egreso':
+      return (
+        <td key={col.key} className="inventory-col-scroll px-3 py-3">
+          {item.cantidad > 0 ? (
+            <button
+              type="button"
+              className="min-h-[44px] whitespace-nowrap rounded-lg border border-accent/50 bg-accent/10 px-3 py-2 text-sm font-semibold text-accent transition hover:bg-accent/20 active:scale-[0.98]"
+              onClick={(e) => {
+                e.stopPropagation();
+                onEgreso?.(item);
+              }}
+              aria-label={`Egresar ${item.nombre}`}
+            >
+              Egresar
+            </button>
+          ) : (
+            <span className="text-xs text-subtle">Sin stock</span>
+          )}
+        </td>
+      );
     case 'tipo':
       return (
         <td key={col.key} className="inventory-col-scroll px-4 py-3 table-cell-muted">
@@ -70,14 +93,20 @@ function renderScrollCell(col, item, { isAdmin, onEdit, onDelete }) {
             <button
               type="button"
               className="min-h-[44px] rounded-lg border border-border px-3 py-2 text-sm font-semibold text-content hover:bg-surface-hover"
-              onClick={() => onEdit?.(item)}
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit?.(item);
+              }}
             >
               Editar
             </button>
             <button
               type="button"
-              className="rounded-lg border border-red-700 px-3 py-1.5 text-sm font-semibold text-red-200 hover:bg-red-950"
-              onClick={() => onDelete?.(item)}
+              className="min-h-[44px] rounded-lg border border-red-700 px-3 py-2 text-sm font-semibold text-red-200 hover:bg-red-950"
+              onClick={(e) => {
+                e.stopPropagation();
+                onDelete?.(item);
+              }}
             >
               Eliminar
             </button>
@@ -90,8 +119,20 @@ function renderScrollCell(col, item, { isAdmin, onEdit, onDelete }) {
 }
 
 export default function InventoryTable({ items, isAdmin, onEdit, onDelete }) {
+  const navigate = useNavigate();
   const wrapRef = useRef(null);
   const [visibleScroll, setVisibleScroll] = useState(SCROLL_COLUMNS.length);
+
+  const handleEgreso = (item) => {
+    if (item.cantidad <= 0) return;
+    navigate(buildEgresoUrlForItem(item));
+  };
+
+  const handleRowClick = (item, event) => {
+    if (item.cantidad <= 0) return;
+    if (event.target.closest('button')) return;
+    handleEgreso(item);
+  };
 
   useEffect(() => {
     const el = wrapRef.current;
@@ -136,7 +177,21 @@ export default function InventoryTable({ items, isAdmin, onEdit, onDelete }) {
           </thead>
           <tbody>
             {items.map((item) => (
-              <tr key={item.id} className="table-row">
+              <tr
+                key={item.id}
+                className={`table-row ${item.cantidad > 0 ? 'cursor-pointer hover:bg-surface-hover' : ''}`}
+                onClick={(e) => handleRowClick(item, e)}
+                onKeyDown={(e) => {
+                  if (item.cantidad <= 0) return;
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    handleEgreso(item);
+                  }
+                }}
+                tabIndex={item.cantidad > 0 ? 0 : undefined}
+                role={item.cantidad > 0 ? 'button' : undefined}
+                aria-label={item.cantidad > 0 ? `Egresar ${item.nombre}` : undefined}
+              >
                 <td className="inventory-col-fixed px-4 py-3" style={cellFixed(FIXED_COLS[0])}>
                   <p className="font-medium text-content">{item.nombre}</p>
                   {item.marca && (
@@ -162,14 +217,16 @@ export default function InventoryTable({ items, isAdmin, onEdit, onDelete }) {
                     {item.cantidad}
                   </span>
                 </td>
-                {scrollCols.map((col) => renderScrollCell(col, item, { isAdmin, onEdit, onDelete }))}
+                {scrollCols.map((col) =>
+                  renderScrollCell(col, item, { isAdmin, onEdit, onDelete, onEgreso: handleEgreso })
+                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <p className="border-t border-border px-3 py-2 text-xs text-subtle">
-        Columnas fijas: Herramienta, Ubicación y Stock. Deslizá para ver Tipo, Calibración y más.
+        Tocá una fila con stock o usá Egresar. Deslizá para ver más columnas.
       </p>
     </div>
   );

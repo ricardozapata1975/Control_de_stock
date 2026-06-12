@@ -2,6 +2,8 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { QR_TYPES, qrTypeLabel } from '../utils/qrPayload';
 import {
+  buildEgresoUrlForItem,
+  buildIngresoUrlForItem,
   buildInventarioScanUrl,
   getUbicacionScanLabel,
 } from '../utils/scanMatch';
@@ -25,19 +27,6 @@ function buildIngresoUrl(parsed) {
     return `/ingreso?${p.toString()}`;
   }
   return '/ingreso';
-}
-
-function buildEgresoUrlForItem(item) {
-  const p = new URLSearchParams({ stockId: item.id });
-  return `/egreso?${p.toString()}`;
-}
-
-function buildIngresoUrlForItem(item) {
-  const p = new URLSearchParams({
-    itemId: item.itemId,
-    contenedorId: item.contenedorId,
-  });
-  return `/ingreso?${p.toString()}`;
 }
 
 export default function ScanResultPanel({ parsed, contenedor, items = [], onScanAgain }) {

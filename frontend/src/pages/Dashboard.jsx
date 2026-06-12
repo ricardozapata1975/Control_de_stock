@@ -10,7 +10,8 @@ import PaginationBar from '../components/PaginationBar';
 import ItemEditModal from '../components/ItemEditModal';
 import { getUbicacionScanLabel, parsedFromCodigoParam } from '../utils/scanMatch';
 
-const PAGE_SIZE = 25;
+const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
+const DEFAULT_PAGE_SIZE = 25;
 
 export default function Dashboard() {
   const { isAdmin } = useAuth();
@@ -30,10 +31,11 @@ export default function Dashboard() {
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState('');
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
 
   useEffect(() => {
     setPage(1);
-  }, [filters.q, filters.armario, filters.tipo, filters.codigo, filters.scanType]);
+  }, [filters.q, filters.armario, filters.tipo, filters.codigo, filters.scanType, pageSize]);
 
   useEffect(() => {
     const codigo = searchParams.get('codigo');
@@ -62,7 +64,7 @@ export default function Dashboard() {
     return getUbicacionScanLabel(parsed);
   }, [filters.codigo, filters.scanType]);
 
-  const totalPages = Math.ceil(inventario.length / PAGE_SIZE) || 1;
+  const totalPages = Math.ceil(inventario.length / pageSize) || 1;
 
   useEffect(() => {
     if (page > totalPages) {
@@ -71,9 +73,9 @@ export default function Dashboard() {
   }, [page, totalPages]);
 
   const paginatedItems = useMemo(() => {
-    const start = (page - 1) * PAGE_SIZE;
-    return inventario.slice(start, start + PAGE_SIZE);
-  }, [inventario, page]);
+    const start = (page - 1) * pageSize;
+    return inventario.slice(start, start + pageSize);
+  }, [inventario, page, pageSize]);
 
   const clearScanFilter = () => {
     setFilters({ codigo: '', scanType: '' });
@@ -168,6 +170,10 @@ export default function Dashboard() {
         <PaginationBar
           page={page}
           totalPages={totalPages}
+          totalItems={inventario.length}
+          pageSize={pageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onPageSizeChange={setPageSize}
           onPrev={() => setPage((p) => Math.max(1, p - 1))}
           onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
         />
@@ -182,6 +188,9 @@ export default function Dashboard() {
         <PaginationBar
           page={page}
           totalPages={totalPages}
+          pageSize={pageSize}
+          pageSizeOptions={PAGE_SIZE_OPTIONS}
+          onPageSizeChange={setPageSize}
           onPrev={() => setPage((p) => Math.max(1, p - 1))}
           onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
         />

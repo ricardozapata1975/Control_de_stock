@@ -112,7 +112,9 @@ export default function Egreso() {
       </div>
 
       {preselected && stockId && (
-        <p className="alert-warning mb-4 text-sm">Herramienta precargada desde el escaneo QR.</p>
+        <p className="alert-warning mb-4 text-sm">
+          Herramienta precargada desde inventario o escaneo QR.
+        </p>
       )}
 
       {formError && <div className="alert-error mb-4">{formError}</div>}

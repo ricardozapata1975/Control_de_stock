@@ -88,3 +88,16 @@ export function buildInventarioScanUrl(parsed) {
   if (parsed?.type && parsed.type !== QR_TYPES.ITEM) p.set('tipoUbicacion', parsed.type);
   return `/?${p.toString()}`;
 }
+
+export function buildEgresoUrlForItem(item) {
+  const p = new URLSearchParams({ stockId: item.id });
+  return `/egreso?${p.toString()}`;
+}
+
+export function buildIngresoUrlForItem(item) {
+  const p = new URLSearchParams({
+    itemId: item.itemId,
+    contenedorId: item.contenedorId,
+  });
+  return `/ingreso?${p.toString()}`;
+}
