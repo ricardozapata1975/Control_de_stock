@@ -6,8 +6,11 @@ import { api } from '../api/client';
 import LowStockAlert from '../components/LowStockAlert';
 import SearchFilters from '../components/SearchFilters';
 import InventoryTable from '../components/InventoryTable';
+import PaginationBar from '../components/PaginationBar';
 import ItemEditModal from '../components/ItemEditModal';
 import { getUbicacionScanLabel, parsedFromCodigoParam } from '../utils/scanMatch';
+
+const PAGE_SIZE = 25;
 
 export default function Dashboard() {
   const { isAdmin } = useAuth();
@@ -26,6 +29,11 @@ export default function Dashboard() {
   const [editItem, setEditItem] = useState(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState('');
+  const [page, setPage] = useState(1);
+
+  useEffect(() => {
+    setPage(1);
+  }, [filters.q, filters.armario, filters.tipo, filters.codigo, filters.scanType]);
 
   useEffect(() => {
     const codigo = searchParams.get('codigo');
@@ -53,6 +61,19 @@ export default function Dashboard() {
     const parsed = parsedFromCodigoParam(filters.codigo, filters.scanType);
     return getUbicacionScanLabel(parsed);
   }, [filters.codigo, filters.scanType]);
+
+  const totalPages = Math.ceil(inventario.length / PAGE_SIZE) || 1;
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const paginatedItems = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return inventario.slice(start, start + PAGE_SIZE);
+  }, [inventario, page]);
 
   const clearScanFilter = () => {
     setFilters({ codigo: '', scanType: '' });
@@ -143,12 +164,28 @@ export default function Dashboard() {
         armarios={armarios}
         tipos={tipos}
       />
+      {inventario.length > 0 && (
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+        />
+      )}
       <InventoryTable
-        items={inventario}
+        items={paginatedItems}
         isAdmin={isAdmin}
         onEdit={setEditItem}
         onDelete={handleDelete}
       />
+      {inventario.length > 0 && (
+        <PaginationBar
+          page={page}
+          totalPages={totalPages}
+          onPrev={() => setPage((p) => Math.max(1, p - 1))}
+          onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+        />
+      )}
 
       {editItem && (
         <ItemEditModal
