@@ -1,6 +1,38 @@
 import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
 
+/** PostgREST embed falla si movimientos no tiene FK a items/contenedores (producción legacy). */
+async function enrichMovimientosRows(supabase, rows) {
+  if (!rows?.length) return rows;
+
+  const itemIds = [...new Set(rows.map((r) => r.item_id).filter(Boolean))];
+  const contIds = [...new Set(rows.map((r) => r.contenedor_id).filter(Boolean))];
+
+  const [itemsRes, contRes] = await Promise.all([
+    itemIds.length
+      ? supabase.from('items').select('id, nombre, marca, modelo, tipo').in('id', itemIds)
+      : { data: [], error: null },
+    contIds.length
+      ? supabase
+          .from('contenedores')
+          .select('id, codigo, ubicacion, estante, contenedor')
+          .in('id', contIds)
+      : { data: [], error: null },
+  ]);
+
+  if (itemsRes.error) throw Object.assign(new Error(itemsRes.error.message), { status: 500 });
+  if (contRes.error) throw Object.assign(new Error(contRes.error.message), { status: 500 });
+
+  const itemsById = Object.fromEntries((itemsRes.data || []).map((i) => [i.id, i]));
+  const contById = Object.fromEntries((contRes.data || []).map((c) => [c.id, c]));
+
+  return rows.map((row) => ({
+    ...row,
+    items: itemsById[row.item_id] || null,
+    contenedores: contById[row.contenedor_id] || null,
+  }));
+}
+
 export async function listMovimientos(filters = {}) {
   if (demo.isDemoMode()) return demo.demoListMovimientos(filters);
 
@@ -11,7 +43,7 @@ export async function listMovimientos(filters = {}) {
 
   let query = supabase
     .from('movimientos')
-    .select(`*, items (nombre, marca, modelo, tipo), contenedores (codigo, ubicacion, estante, contenedor)`)
+    .select('*')
     .eq('tipo', 'egreso')
     .order('fecha', { ascending: false });
 
@@ -24,7 +56,7 @@ export async function listMovimientos(filters = {}) {
   const { data, error } = await query;
   if (error) throw Object.assign(new Error(error.message), { status: 500 });
 
-  const egresoRows = data || [];
+  const egresoRows = await enrichMovimientosRows(supabase, data || []);
   const egresoIds = egresoRows.map((r) => r.id);
   let ingresoByEgreso = {};
 
@@ -53,11 +85,12 @@ export async function listPendientes() {
 
   const { data, error: err2 } = await supabase
     .from('movimientos')
-    .select(`*, items (nombre, marca, modelo, tipo), contenedores (codigo, ubicacion, estante, contenedor)`)
+    .select('*')
     .in('id', ids.map((r) => r.id));
 
   if (err2) throw Object.assign(new Error(err2.message), { status: 500 });
-  return (data || []).map((m) => mapMovimiento(m, null));
+  const rows = await enrichMovimientosRows(supabase, data || []);
+  return rows.map((m) => mapMovimiento(m, null));
 }
 
 function mapMovimiento(row, ingresoRow = null) {
