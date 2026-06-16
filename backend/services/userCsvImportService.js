@@ -1,6 +1,5 @@
 import {
   createUser,
-  findByUsername,
   listUsers,
   normalizeUsernamePublic,
   updateUser,

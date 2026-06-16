@@ -20,8 +20,22 @@ async function request(path, options = {}) {
     ...options,
     headers,
   });
-  const data = await res.json().catch(() => ({}));
-  if (!res.ok) throw new Error(data.error || `Error ${res.status}`);
+  const raw = await res.text();
+  let data = {};
+  try {
+    data = raw ? JSON.parse(raw) : {};
+  } catch {
+    /* respuesta HTML u otro formato no JSON */
+  }
+  if (!res.ok) {
+    if (res.status === 404) {
+      throw new Error(
+        data.error ||
+          'Ruta no encontrada en el servidor (404). El backend puede no estar actualizado: en Render, abrí el servicio y hacé Manual Deploy desde main.'
+      );
+    }
+    throw new Error(data.error || `Error ${res.status}`);
+  }
   return data;
 }
 
