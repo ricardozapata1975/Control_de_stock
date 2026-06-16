@@ -492,18 +492,20 @@ export async function sendUserWelcome(id) {
     throw Object.assign(new Error('El usuario no tiene correo electrónico registrado'), { status: 400 });
   }
 
-  await sendWelcomeEmail({
+  const delivery = await sendWelcomeEmail({
     to: row.email,
     displayName: row.display_name,
     username: row.username,
   });
 
   const isConsole = config.email?.provider === 'console';
+  const resendId = delivery?.id ? ` (ID Resend: ${delivery.id})` : '';
   return {
     ok: true,
     message: isConsole
       ? `Modo consola: no se envió correo real. Revisá los logs del backend para ${row.email}.`
-      : `Invitación enviada a ${row.email}`,
+      : `Invitación enviada a ${row.email}${resendId}`,
+    delivery,
     user: mapUserAdmin(row),
   };
 }

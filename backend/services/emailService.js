@@ -3,6 +3,39 @@ import { config } from '../config.js';
 
 const EMAIL_SEND_TIMEOUT_MS = 20000;
 const TRANSPORT_TIMEOUT_MS = 15000;
+const RESEND_TEST_FROM = 'Inventario Px Control <onboarding@resend.dev>';
+
+function escapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function extractEmailAddress(from) {
+  const raw = String(from || '').trim();
+  const match = raw.match(/<([^>]+)>/);
+  return (match ? match[1] : raw).trim().toLowerCase();
+}
+
+let warnedUnverifiedFrom = false;
+
+function resolveFromAddress({ logWarning = false } = {}) {
+  const configured = String(config.email.from || '').trim() || RESEND_TEST_FROM;
+  if (config.email.provider !== 'resend') return configured;
+
+  const address = extractEmailAddress(configured);
+  if (address.endsWith('@resend.dev')) return configured;
+
+  if (logWarning && !warnedUnverifiedFrom) {
+    warnedUnverifiedFrom = true;
+    console.warn(
+      `[Email] EMAIL_FROM "${configured}" requiere dominio verificado en Resend. Usando ${RESEND_TEST_FROM}.`
+    );
+  }
+  return RESEND_TEST_FROM;
+}
 
 function buildFrontendUrl(path = '') {
   const base = config.frontendUrl.replace(/\/$/, '');
@@ -93,8 +126,17 @@ async function sendViaResendApi({ from, to, subject, text, html }) {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) {
-      const detail = data.message || data.error || `HTTP ${res.status}`;
+      const detail =
+        data.message ||
+        (Array.isArray(data.errors) ? data.errors.map((e) => e.message).join('; ') : null) ||
+        data.error ||
+        `HTTP ${res.status}`;
       throw Object.assign(new Error(`Resend: ${detail}`), { status: res.status >= 500 ? 502 : 400 });
+    }
+    if (!data.id) {
+      console.warn('[Email/Resend] Respuesta sin id de mensaje:', data);
+    } else {
+      console.log(`[Email/Resend] Enviado id=${data.id} to=${to} from=${from}`);
     }
     return { ok: true, mode: 'resend', id: data.id };
   } catch (err) {
@@ -112,7 +154,13 @@ async function sendViaResendApi({ from, to, subject, text, html }) {
 
 async function deliverEmail({ from, to, subject, text, html }) {
   if (config.email.provider === 'resend') {
-    return sendViaResendApi({ from, to, subject, text, html });
+    return sendViaResendApi({
+      from: resolveFromAddress({ logWarning: true }),
+      to,
+      subject,
+      text,
+      html,
+    });
   }
 
   const transport = getTransport();
@@ -126,10 +174,18 @@ async function deliverEmail({ from, to, subject, text, html }) {
 
 export function getEmailStatus() {
   const { email } = config;
+  const effectiveFrom = resolveFromAddress();
+  const configuredFrom = email.from || RESEND_TEST_FROM;
   return {
     configured: isEmailConfigured(),
     provider: email.provider,
     sendsRealEmail: email.provider !== 'console',
+    from: effectiveFrom,
+    fromConfigured: configuredFrom,
+    usesResendTestFrom:
+      email.provider === 'resend' &&
+      extractEmailAddress(effectiveFrom).endsWith('@resend.dev') &&
+      !extractEmailAddress(configuredFrom).endsWith('@resend.dev'),
   };
 }
 
@@ -143,7 +199,7 @@ export function isEmailConfigured() {
 
 export async function sendPasswordResetEmail({ to, username, token }) {
   const resetUrl = buildResetUrl(token);
-  const from = config.email.from;
+  const from = resolveFromAddress({ logWarning: true });
   const subject = 'Restablecer contraseña — Inventario Px Control';
   const text = [
     `Hola${username ? ` ${username}` : ''},`,
@@ -178,10 +234,17 @@ export async function sendPasswordResetEmail({ to, username, token }) {
 
 export async function sendWelcomeEmail({ to, displayName, username }) {
   const loginUrl = buildLoginUrl();
-  const from = config.email.from;
+  const from = resolveFromAddress({ logWarning: true });
+  const recipient = String(to || '').trim().toLowerCase();
+  if (!recipient) {
+    throw Object.assign(new Error('Destinatario de correo inválido'), { status: 400 });
+  }
   const subject = 'Bienvenido a Inventario Px Control';
   const greeting = displayName || username || 'usuario';
   const userLabel = username || 'tu usuario';
+  const safeGreeting = escapeHtml(greeting);
+  const safeUserLabel = escapeHtml(userLabel);
+  const safeLoginUrl = escapeHtml(loginUrl);
 
   const text = [
     `Hola ${greeting},`,
@@ -200,12 +263,12 @@ export async function sendWelcomeEmail({ to, displayName, username }) {
   ].join('\n');
 
   const html = `
-    <p>Hola <strong>${greeting}</strong>,</p>
+    <p>Hola <strong>${safeGreeting}</strong>,</p>
     <p>Te damos la bienvenida a <strong>Inventario Px Control</strong>. Seguí estos pasos para tu primer ingreso:</p>
     <ol>
-      <li>Abrí <a href="${loginUrl}">${loginUrl}</a></li>
+      <li>Abrí <a href="${safeLoginUrl}">${safeLoginUrl}</a></li>
       <li>Hacé clic en <strong>Primer ingreso — crear contraseña</strong></li>
-      <li>Ingresá tu usuario: <strong>${userLabel}</strong></li>
+      <li>Ingresá tu usuario: <strong>${safeUserLabel}</strong></li>
       <li>Creá tu contraseña personal (mínimo 6 caracteres)</li>
       <li>Listo: ya podés usar el inventario, egreso e ingreso de herramientas</li>
     </ol>
@@ -215,11 +278,11 @@ export async function sendWelcomeEmail({ to, displayName, username }) {
 
   if (config.email.provider === 'console') {
     console.log('[Email/console] Welcome email');
-    console.log(`  To: ${to}`);
+    console.log(`  To: ${recipient}`);
     console.log(`  Usuario: ${userLabel}`);
     console.log(`  Login: ${loginUrl}`);
     return { ok: true, mode: 'console', loginUrl };
   }
 
-  return deliverEmail({ from, to, subject, text, html });
+  return deliverEmail({ from, to: recipient, subject, text, html });
 }

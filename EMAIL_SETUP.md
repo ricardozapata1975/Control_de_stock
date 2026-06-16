@@ -9,7 +9,7 @@ Desde **Admin → Usuarios**, el botón **Enviar invitación** manda un correo d
 | Variable | Descripción |
 |----------|-------------|
 | `EMAIL_PROVIDER` | `console` (dev), `smtp` o `resend` |
-| `EMAIL_FROM` | Remitente, ej. `Inventario Px Control <noreply@pxcontrol.com>` |
+| `EMAIL_FROM` | Con Resend sin dominio verificado: `Inventario Px Control <onboarding@resend.dev>` (obligatorio para pruebas) |
 | `FRONTEND_URL` | Base del enlace, ej. `https://control-de-stock-smoky.vercel.app` |
 
 ### Opción A — Resend (recomendado en Render)
@@ -22,7 +22,9 @@ RESEND_API_KEY=re_...
 EMAIL_FROM=Inventario Px Control <onboarding@resend.dev>
 ```
 
-Verificá en `https://control-de-stock-back.onrender.com/api/health` que aparezca `"email":{"configured":true,"provider":"resend","sendsRealEmail":true}`.
+Verificá en `https://control-de-stock-back.onrender.com/api/health` que aparezca `"provider":"resend"` y `"from"` con `onboarding@resend.dev`.
+
+> **Importante:** con `onboarding@resend.dev` solo podés enviar al **mismo correo con el que creaste la cuenta Resend**. Para enviar a otros usuarios (ej. `@pxcontrol.com`), verificá el dominio en Resend y usá `EMAIL_FROM` con ese dominio.
 
 ### Opción B — SMTP (Office 365 / Gmail)
 
