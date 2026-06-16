@@ -45,9 +45,13 @@
     @apply bg-surface text-content antialiased;
   }
 
+  select,
+  select option {
+    color: rgb(var(--text-primary));
+  }
+
   select option {
     background-color: rgb(var(--bg-elevated));
-    color: rgb(var(--text-primary));
   }
 
   #qr-reader,
@@ -75,6 +79,28 @@
   }
   .input-field {
     @apply w-full rounded-lg border-2 border-border bg-surface-input px-4 py-3 text-lg text-content placeholder-content-subtle focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40;
+    color: rgb(var(--text-primary));
+    background-color: rgb(var(--bg-input));
+  }
+  .select-field {
+    @apply rounded-lg border-2 border-border px-3 py-1.5 text-sm font-semibold focus:border-accent focus:outline-none focus:ring-2 focus:ring-accent/40;
+    color: rgb(var(--text-primary));
+    background-color: rgb(var(--bg-input));
+    min-width: 9rem;
+  }
+  .select-field option {
+    color: rgb(var(--text-primary));
+    background-color: rgb(var(--bg-elevated));
+  }
+  .badge-role-admin {
+    @apply inline-flex rounded px-2 py-0.5 text-xs font-bold;
+    background-color: rgb(120 53 15);
+    color: rgb(254 243 199);
+  }
+  .badge-role-operario {
+    @apply inline-flex rounded px-2 py-0.5 text-xs font-bold;
+    background-color: rgb(51 65 85);
+    color: rgb(226 232 240);
   }
   .card {
     @apply rounded-xl border border-border bg-surface-elevated p-4 text-content shadow-lg;

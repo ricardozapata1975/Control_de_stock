@@ -1,6 +1,24 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 
+const ROLE_LABELS = {
+  admin: 'Administrador',
+  operario: 'Operario',
+};
+
+function normalizeRole(role) {
+  return role === 'admin' ? 'admin' : 'operario';
+}
+
+function RoleBadge({ role }) {
+  const normalized = normalizeRole(role);
+  return (
+    <span className={normalized === 'admin' ? 'badge-role-admin' : 'badge-role-operario'}>
+      {ROLE_LABELS[normalized]}
+    </span>
+  );
+}
+
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -77,13 +95,32 @@ export default function AdminUsers() {
     }
   };
 
-  const updateRole = async (user, role) => {
+  const updateRole = async (user, role, selectEl) => {
+    const nextRole = normalizeRole(role);
+    const currentRole = normalizeRole(user.role);
+    if (nextRole === currentRole) return;
+
+    if (nextRole === 'admin') {
+      const label = user.name || user.displayName || user.username;
+      if (
+        !window.confirm(
+          `¿Dar permisos de administrador a "${label}" (${user.username})?\nPodrá gestionar usuarios, stock e importaciones.`
+        )
+      ) {
+        if (selectEl) selectEl.value = currentRole;
+        return;
+      }
+    }
+
     setError('');
+    setMessage('');
     try {
-      await api.adminUpdateUser(user.id, { role });
+      await api.adminUpdateUser(user.id, { role: nextRole });
+      setMessage(`Rol de "${user.username}" actualizado a ${ROLE_LABELS[nextRole]}.`);
       await load();
     } catch (err) {
       setError(err.message);
+      if (selectEl) selectEl.value = currentRole;
     }
   };
 
@@ -281,14 +318,18 @@ export default function AdminUsers() {
                   <td className="px-4 py-3">{u.name || u.displayName}</td>
                   <td className="px-4 py-3 text-subtle">{u.email || '—'}</td>
                   <td className="px-4 py-3">
-                    <select
-                      className="input-field py-1 text-sm"
-                      value={u.role}
-                      onChange={(e) => updateRole(u, e.target.value)}
-                    >
-                      <option value="operario">Operario</option>
-                      <option value="admin">Administrador</option>
-                    </select>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <RoleBadge role={u.role} />
+                      <select
+                        className="select-field"
+                        value={normalizeRole(u.role)}
+                        onChange={(e) => updateRole(u, e.target.value, e.target)}
+                        aria-label={`Cambiar rol de ${u.username}`}
+                      >
+                        <option value="operario">Operario</option>
+                        <option value="admin">Administrador</option>
+                      </select>
+                    </div>
                   </td>
                   <td className="px-4 py-3">
                     <span
