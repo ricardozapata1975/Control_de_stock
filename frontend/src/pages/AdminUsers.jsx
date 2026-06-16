@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api/client';
 
 const ROLE_LABELS = {
@@ -8,6 +8,10 @@ const ROLE_LABELS = {
 
 function normalizeRole(role) {
   return role === 'admin' ? 'admin' : 'operario';
+}
+
+function canReceiveInvite(user) {
+  return Boolean(user.email && user.isActive && !user.hasPassword);
 }
 
 function RoleBadge({ role }) {
@@ -32,6 +36,14 @@ export default function AdminUsers() {
   const [csvLoading, setCsvLoading] = useState(false);
   const [sendingWelcomeId, setSendingWelcomeId] = useState(null);
   const [bulkSending, setBulkSending] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(() => new Set());
+  const selectAllRef = useRef(null);
+
+  const inviteableUsers = useMemo(() => users.filter(canReceiveInvite), [users]);
+  const selectedCount = selectedIds.size;
+  const allInviteableSelected =
+    inviteableUsers.length > 0 && inviteableUsers.every((u) => selectedIds.has(u.id));
+  const someInviteableSelected = inviteableUsers.some((u) => selectedIds.has(u.id));
 
   const load = async () => {
     setLoading(true);
@@ -49,6 +61,20 @@ export default function AdminUsers() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    if (selectAllRef.current) {
+      selectAllRef.current.indeterminate = someInviteableSelected && !allInviteableSelected;
+    }
+  }, [someInviteableSelected, allInviteableSelected]);
+
+  useEffect(() => {
+    setSelectedIds((prev) => {
+      const valid = new Set(users.map((u) => u.id));
+      const next = new Set([...prev].filter((id) => valid.has(id)));
+      return next.size === prev.size ? prev : next;
+    });
+  }, [users]);
 
   const createUser = async (e) => {
     e.preventDefault();
@@ -92,17 +118,26 @@ export default function AdminUsers() {
     }
   };
 
-  const inviteAllPending = async () => {
-    const targets = users.filter((u) => u.email && u.isActive && !u.hasPassword);
-    if (!targets.length) {
-      setError('No hay usuarios activos sin contraseña con correo registrado.');
+  const toggleSelect = (id) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (allInviteableSelected) {
+      setSelectedIds(new Set());
       return;
     }
-    if (
-      !window.confirm(
-        `¿Enviar invitación a ${targets.length} usuario(s) sin contraseña?\nSe enviará un correo con los pasos de primer ingreso.`
-      )
-    ) {
+    setSelectedIds(new Set(inviteableUsers.map((u) => u.id)));
+  };
+
+  const sendWelcomeBulk = async (targets, { clearSelection = false } = {}) => {
+    if (!targets.length) {
+      setError('No hay usuarios seleccionados para invitar.');
       return;
     }
     setError('');
@@ -122,8 +157,40 @@ export default function AdminUsers() {
       setError(`Enviados ${ok}/${targets.length}. Errores: ${failed.join('; ')}`);
     } else {
       setMessage(`Invitaciones enviadas a ${ok} usuario(s).`);
+      if (clearSelection) setSelectedIds(new Set());
     }
     setBulkSending(false);
+  };
+
+  const inviteSelected = async () => {
+    const targets = users.filter((u) => selectedIds.has(u.id) && canReceiveInvite(u));
+    if (!targets.length) {
+      setError('Seleccioná al menos un usuario activo sin contraseña con correo.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `¿Enviar invitación a ${targets.length} usuario(s) seleccionado(s)?\nSe enviará un correo con los pasos de primer ingreso.`
+      )
+    ) {
+      return;
+    }
+    await sendWelcomeBulk(targets, { clearSelection: true });
+  };
+
+  const inviteAllPending = async () => {
+    if (!inviteableUsers.length) {
+      setError('No hay usuarios activos sin contraseña con correo registrado.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `¿Enviar invitación a ${inviteableUsers.length} usuario(s) sin contraseña?\nSe enviará un correo con los pasos de primer ingreso.`
+      )
+    ) {
+      return;
+    }
+    await sendWelcomeBulk(inviteableUsers);
   };
 
   const resetPassword = async (user) => {
@@ -341,21 +408,49 @@ export default function AdminUsers() {
       </form>
 
       <div className="card overflow-x-auto p-0">
-        {users.some((u) => u.email && u.isActive && !u.hasPassword) && (
-          <div className="flex flex-wrap items-center justify-end gap-3 border-b border-border px-4 py-3">
-            <button
-              type="button"
-              className="rounded-lg border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-200 hover:bg-sky-950 disabled:opacity-50"
-              onClick={inviteAllPending}
-              disabled={bulkSending || loading}
-            >
-              {bulkSending ? 'Enviando invitaciones...' : 'Invitar a todos sin contraseña'}
-            </button>
+        {inviteableUsers.length > 0 && (
+          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
+            <span className="text-sm font-medium text-content-muted">
+              {selectedCount} seleccionado{selectedCount === 1 ? '' : 's'}
+            </span>
+            <div className="flex flex-wrap items-center gap-3">
+              <button
+                type="button"
+                className="min-h-[44px] rounded-lg border border-accent/50 bg-accent/10 px-3 py-2 text-sm font-semibold text-accent transition hover:bg-accent/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={inviteSelected}
+                disabled={bulkSending || loading || selectedCount === 0}
+              >
+                {bulkSending ? 'Enviando invitaciones...' : 'Enviar invitación a seleccionados'}
+              </button>
+              <button
+                type="button"
+                className="min-h-[44px] rounded-lg border border-border px-3 py-2 text-sm font-semibold text-content-muted transition hover:bg-surface-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                onClick={inviteAllPending}
+                disabled={bulkSending || loading}
+              >
+                Invitar a todos sin contraseña
+              </button>
+            </div>
           </div>
         )}
         <table className="w-full text-left text-sm">
           <thead className="table-head">
             <tr>
+              <th className="w-12 px-2 py-3">
+                {inviteableUsers.length > 0 && (
+                  <label className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center">
+                    <input
+                      ref={selectAllRef}
+                      type="checkbox"
+                      checked={allInviteableSelected}
+                      onChange={toggleSelectAll}
+                      disabled={bulkSending || loading}
+                      className="h-5 w-5 accent-accent disabled:cursor-not-allowed disabled:opacity-50"
+                      aria-label="Seleccionar todos los usuarios invitables"
+                    />
+                  </label>
+                )}
+              </th>
               <th className="px-4 py-3">Usuario</th>
               <th className="px-4 py-3">Nombre</th>
               <th className="px-4 py-3">Correo</th>
@@ -369,13 +464,32 @@ export default function AdminUsers() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="px-4 py-6 text-center text-muted">
+                <td colSpan={9} className="px-4 py-6 text-center text-muted">
                   Cargando...
                 </td>
               </tr>
             ) : (
               users.map((u) => (
                 <tr key={u.id} className="table-row">
+                  <td className="px-2 py-3">
+                    {canReceiveInvite(u) ? (
+                      <label className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center">
+                        <input
+                          type="checkbox"
+                          checked={selectedIds.has(u.id)}
+                          onChange={() => toggleSelect(u.id)}
+                          disabled={bulkSending}
+                          className="h-5 w-5 accent-accent disabled:cursor-not-allowed disabled:opacity-50"
+                          aria-label={`Seleccionar ${u.username} para invitación`}
+                        />
+                      </label>
+                    ) : (
+                      <span
+                        className="flex min-h-[44px] min-w-[44px] items-center justify-center"
+                        aria-hidden="true"
+                      />
+                    )}
+                  </td>
                   <td className="px-4 py-3 font-mono text-accent">{u.username}</td>
                   <td className="px-4 py-3">{u.name || u.displayName}</td>
                   <td className="px-4 py-3 text-subtle">{u.email || '—'}</td>
