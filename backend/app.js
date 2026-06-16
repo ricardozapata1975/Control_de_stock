@@ -13,7 +13,7 @@ import {
 } from './controllers/movimientosController.js';
 import { postSync } from './controllers/syncController.js';
 import { postFirstLogin, postForgotPassword, postLogin, postResetPassword as postAuthResetPassword, postSetPassword } from './controllers/authController.js';
-import { getUsers, postUser, putUser, postResetPassword, getUsersImportSpecHandler, postUsersImportPreview, postUsersImport } from './controllers/userController.js';
+import { getUsers, postUser, putUser, postResetPassword, postSendWelcome, getUsersImportSpecHandler, postUsersImportPreview, postUsersImport } from './controllers/userController.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem } from './controllers/adminController.js';
@@ -167,6 +167,7 @@ app.get('/api/admin/users', requireAdmin, getUsers);
 app.post('/api/admin/users', requireAdmin, postUser);
 app.put('/api/admin/users/:id', requireAdmin, putUser);
 app.post('/api/admin/users/:id/reset-password', requireAdmin, postResetPassword);
+app.post('/api/admin/users/:id/send-welcome', requireAdmin, postSendWelcome);
 app.get('/api/admin/users/import/especificacion', requireAdmin, getUsersImportSpecHandler);
 app.post('/api/admin/users/import/preview', requireAdmin, postUsersImportPreview);
 app.post('/api/admin/users/import', requireAdmin, postUsersImport);

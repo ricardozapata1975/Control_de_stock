@@ -1,6 +1,8 @@
-# Email — recuperación de contraseña
+# Email — recuperación de contraseña e invitaciones
 
 El flujo **Olvidé mi contraseña** envía un enlace a `users.email`.
+
+Desde **Admin → Usuarios**, el botón **Enviar invitación** manda un correo de bienvenida con los pasos del primer ingreso (usuario sin contraseña). Requiere que el usuario tenga correo y esté activo.
 
 ## Variables en Render / `backend/.env`
 
@@ -37,6 +39,19 @@ EMAIL_PROVIDER=console
 ```
 
 El enlace de reset se imprime en la consola del backend.
+
+### Invitación de bienvenida (primer ingreso)
+
+Con `EMAIL_PROVIDER=console`, al enviar una invitación desde Admin → Usuarios verás en la consola del backend:
+
+```
+[Email/console] Welcome email
+  To: usuario@empresa.com
+  Usuario: jperez
+  Login: http://localhost:5173/login
+```
+
+El correo incluye la URL de login (`FRONTEND_URL/login`), el nombre de usuario y los pasos para crear la contraseña.
 
 ## Supabase — parche SQL
 

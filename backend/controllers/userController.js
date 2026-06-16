@@ -2,6 +2,7 @@ import {
   createUser,
   listUsers,
   resetUserPassword,
+  sendUserWelcome,
   updateUser,
 } from '../services/userService.js';
 import {
@@ -47,6 +48,15 @@ export async function postResetPassword(req, res) {
       message:
         'Contraseña restablecida. El usuario deberá crear una nueva en su próximo ingreso.',
     });
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message });
+  }
+}
+
+export async function postSendWelcome(req, res) {
+  try {
+    const result = await sendUserWelcome(req.params.id);
+    res.json(result);
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
   }

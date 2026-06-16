@@ -30,6 +30,8 @@ export default function AdminUsers() {
   const [csvPreview, setCsvPreview] = useState(null);
   const [csvMode, setCsvMode] = useState('skip');
   const [csvLoading, setCsvLoading] = useState(false);
+  const [sendingWelcomeId, setSendingWelcomeId] = useState(null);
+  const [bulkSending, setBulkSending] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -74,6 +76,54 @@ export default function AdminUsers() {
     } catch (err) {
       setError(err.message);
     }
+  };
+
+  const sendWelcome = async (user) => {
+    setError('');
+    setMessage('');
+    setSendingWelcomeId(user.id);
+    try {
+      const data = await api.adminSendWelcome(user.id);
+      setMessage(data.message || `Invitación enviada a ${user.email}.`);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setSendingWelcomeId(null);
+    }
+  };
+
+  const inviteAllPending = async () => {
+    const targets = users.filter((u) => u.email && u.isActive && !u.hasPassword);
+    if (!targets.length) {
+      setError('No hay usuarios activos sin contraseña con correo registrado.');
+      return;
+    }
+    if (
+      !window.confirm(
+        `¿Enviar invitación a ${targets.length} usuario(s) sin contraseña?\nSe enviará un correo con los pasos de primer ingreso.`
+      )
+    ) {
+      return;
+    }
+    setError('');
+    setMessage('');
+    setBulkSending(true);
+    let ok = 0;
+    const failed = [];
+    for (const user of targets) {
+      try {
+        await api.adminSendWelcome(user.id);
+        ok += 1;
+      } catch (err) {
+        failed.push(`${user.username}: ${err.message}`);
+      }
+    }
+    if (failed.length) {
+      setError(`Enviados ${ok}/${targets.length}. Errores: ${failed.join('; ')}`);
+    } else {
+      setMessage(`Invitaciones enviadas a ${ok} usuario(s).`);
+    }
+    setBulkSending(false);
   };
 
   const resetPassword = async (user) => {
@@ -291,6 +341,18 @@ export default function AdminUsers() {
       </form>
 
       <div className="card overflow-x-auto p-0">
+        {users.some((u) => u.email && u.isActive && !u.hasPassword) && (
+          <div className="flex flex-wrap items-center justify-end gap-3 border-b border-border px-4 py-3">
+            <button
+              type="button"
+              className="rounded-lg border border-sky-700 px-3 py-2 text-xs font-semibold text-sky-200 hover:bg-sky-950 disabled:opacity-50"
+              onClick={inviteAllPending}
+              disabled={bulkSending || loading}
+            >
+              {bulkSending ? 'Enviando invitaciones...' : 'Invitar a todos sin contraseña'}
+            </button>
+          </div>
+        )}
         <table className="w-full text-left text-sm">
           <thead className="table-head">
             <tr>
@@ -352,6 +414,16 @@ export default function AdminUsers() {
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex flex-wrap gap-2">
+                      {u.email && (
+                        <button
+                          type="button"
+                          className="min-h-[36px] rounded-lg border border-sky-700 px-2 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-950 disabled:opacity-50"
+                          onClick={() => sendWelcome(u)}
+                          disabled={sendingWelcomeId === u.id || bulkSending}
+                        >
+                          {sendingWelcomeId === u.id ? 'Enviando...' : 'Enviar invitación'}
+                        </button>
+                      )}
                       <button
                         type="button"
                         className="rounded-lg border border-slate-500 px-2 py-1 text-xs font-semibold hover:bg-slate-800"

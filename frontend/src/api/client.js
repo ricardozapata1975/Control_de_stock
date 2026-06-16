@@ -107,6 +107,8 @@ export const api = {
     }),
   adminResetPassword: (id) =>
     request(`/api/admin/users/${encodeURIComponent(id)}/reset-password`, { method: 'POST' }),
+  adminSendWelcome: (id) =>
+    request(`/api/admin/users/${encodeURIComponent(id)}/send-welcome`, { method: 'POST' }),
   adminUsersImportSpec: () => request('/api/admin/users/import/especificacion'),
   adminUsersImportPreview: (csv) =>
     request('/api/admin/users/import/preview', {

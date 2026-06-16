@@ -6,7 +6,7 @@ import { fileURLToPath } from 'url';
 import { config } from '../config.js';
 import { getSupabase } from '../db/supabase.js';
 import { sign, verifyToken } from './jwtService.js';
-import { isEmailConfigured, sendPasswordResetEmail } from './emailService.js';
+import { isEmailConfigured, sendPasswordResetEmail, sendWelcomeEmail } from './emailService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEMO_USERS_PATH = path.join(__dirname, '../data/demo-users.json');
@@ -474,6 +474,35 @@ export async function resetUserPassword(id) {
     must_change_password: true,
   });
   return mapUserAdmin(updated);
+}
+
+export async function sendUserWelcome(id) {
+  if (!isEmailConfigured()) {
+    throw Object.assign(new Error('El envío de correos no está configurado en el servidor'), {
+      status: 503,
+    });
+  }
+
+  const row = await findById(id);
+  if (!row) throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
+  if (row.is_active === false) {
+    throw Object.assign(new Error('El usuario está inactivo'), { status: 400 });
+  }
+  if (!row.email) {
+    throw Object.assign(new Error('El usuario no tiene correo electrónico registrado'), { status: 400 });
+  }
+
+  await sendWelcomeEmail({
+    to: row.email,
+    displayName: row.display_name,
+    username: row.username,
+  });
+
+  return {
+    ok: true,
+    message: `Invitación enviada a ${row.email}`,
+    user: mapUserAdmin(row),
+  };
 }
 
 export async function ensureSeedAdmin() {
