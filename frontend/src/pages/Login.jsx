@@ -207,12 +207,13 @@ export default function Login() {
               <button type="submit" className="btn-primary w-full" disabled={loading}>
                 {loading ? 'INGRESANDO...' : 'ENTRAR'}
               </button>
-              <p className="text-center text-sm">
-                <Link to="/olvide-contrasena" className="text-content-subtle underline hover:text-content">
-                  Olvidé mi contraseña
-                </Link>
-              </p>
             </form>
+
+            <p className="mt-3 text-center text-sm">
+              <Link to="/olvide-contrasena" className="text-content-muted underline hover:text-content">
+                Olvidé mi contraseña
+              </Link>
+            </p>
 
             {modo === 'operario' && (
               <div className="mt-4 space-y-2">
