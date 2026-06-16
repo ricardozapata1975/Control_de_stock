@@ -12,13 +12,17 @@ Desde **Admin → Usuarios**, el botón **Enviar invitación** manda un correo d
 | `EMAIL_FROM` | Remitente, ej. `Inventario Px Control <noreply@pxcontrol.com>` |
 | `FRONTEND_URL` | Base del enlace, ej. `https://control-de-stock-smoky.vercel.app` |
 
-### Opción A — Resend (recomendado)
+### Opción A — Resend (recomendado en Render)
+
+SMTP desde Render hacia Office 365 suele colgarse o fallar. **Usá Resend con API HTTP** (`EMAIL_PROVIDER=resend`):
 
 ```env
 EMAIL_PROVIDER=resend
 RESEND_API_KEY=re_...
 EMAIL_FROM=Inventario Px Control <onboarding@resend.dev>
 ```
+
+Verificá en `https://control-de-stock-back.onrender.com/api/health` que aparezca `"email":{"configured":true,"provider":"resend","sendsRealEmail":true}`.
 
 ### Opción B — SMTP (Office 365 / Gmail)
 

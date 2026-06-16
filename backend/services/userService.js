@@ -498,9 +498,12 @@ export async function sendUserWelcome(id) {
     username: row.username,
   });
 
+  const isConsole = config.email?.provider === 'console';
   return {
     ok: true,
-    message: `Invitación enviada a ${row.email}`,
+    message: isConsole
+      ? `Modo consola: no se envió correo real. Revisá los logs del backend para ${row.email}.`
+      : `Invitación enviada a ${row.email}`,
     user: mapUserAdmin(row),
   };
 }

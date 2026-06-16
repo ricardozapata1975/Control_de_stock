@@ -30,17 +30,9 @@ services:
       - key: LOW_STOCK_THRESHOLD
         value: 2
       - key: EMAIL_PROVIDER
-        value: smtp
+        value: resend
+      - key: RESEND_API_KEY
+        sync: false
       - key: EMAIL_FROM
         sync: false
-      - key: SMTP_HOST
-        sync: false
-      - key: SMTP_PORT
-        value: 587
-      - key: SMTP_SECURE
-        value: false
-      - key: SMTP_USER
-        sync: false
-      - key: SMTP_PASS
-        sync: false
-      # Alternativa: EMAIL_PROVIDER=resend + RESEND_API_KEY
+      # Alternativa SMTP (puede colgarse en Render): EMAIL_PROVIDER=smtp + SMTP_*

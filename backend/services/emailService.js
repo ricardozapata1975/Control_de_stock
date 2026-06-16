@@ -1,6 +1,9 @@
 import nodemailer from 'nodemailer';
 import { config } from '../config.js';
 
+const EMAIL_SEND_TIMEOUT_MS = 20000;
+const TRANSPORT_TIMEOUT_MS = 15000;
+
 function buildFrontendUrl(path = '') {
   const base = config.frontendUrl.replace(/\/$/, '');
   if (!path) return base;
@@ -17,6 +20,11 @@ function buildLoginUrl() {
 
 function getTransport() {
   const { email } = config;
+  const transportOptions = {
+    connectionTimeout: TRANSPORT_TIMEOUT_MS,
+    greetingTimeout: TRANSPORT_TIMEOUT_MS,
+    socketTimeout: TRANSPORT_TIMEOUT_MS,
+  };
   if (email.provider === 'resend') {
     if (!email.resendApiKey) return null;
     return nodemailer.createTransport({
@@ -24,6 +32,7 @@ function getTransport() {
       port: 465,
       secure: true,
       auth: { user: 'resend', pass: email.resendApiKey },
+      ...transportOptions,
     });
   }
   if (email.provider === 'smtp') {
@@ -35,9 +44,93 @@ function getTransport() {
       auth: email.smtp.user
         ? { user: email.smtp.user, pass: email.smtp.pass }
         : undefined,
+      ...transportOptions,
     });
   }
   return null;
+}
+
+async function sendWithTimeout(promise, ms = EMAIL_SEND_TIMEOUT_MS) {
+  let timer;
+  try {
+    return await Promise.race([
+      promise,
+      new Promise((_, reject) => {
+        timer = setTimeout(() => {
+          reject(
+            Object.assign(
+              new Error(
+                'Tiempo de espera agotado al enviar el correo. Verificá EMAIL_PROVIDER y credenciales SMTP/Resend en Render.'
+              ),
+              { status: 504 }
+            )
+          );
+        }, ms);
+      }),
+    ]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function sendViaResendApi({ from, to, subject, text, html }) {
+  const { resendApiKey } = config.email;
+  if (!resendApiKey) {
+    throw Object.assign(new Error('RESEND_API_KEY no configurada'), { status: 503 });
+  }
+
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), EMAIL_SEND_TIMEOUT_MS);
+  try {
+    const res = await fetch('https://api.resend.com/emails', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${resendApiKey}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ from, to: [to], subject, text, html }),
+      signal: controller.signal,
+    });
+    const data = await res.json().catch(() => ({}));
+    if (!res.ok) {
+      const detail = data.message || data.error || `HTTP ${res.status}`;
+      throw Object.assign(new Error(`Resend: ${detail}`), { status: res.status >= 500 ? 502 : 400 });
+    }
+    return { ok: true, mode: 'resend', id: data.id };
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw Object.assign(
+        new Error('Tiempo de espera agotado al enviar el correo vía Resend.'),
+        { status: 504 }
+      );
+    }
+    throw err;
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+async function deliverEmail({ from, to, subject, text, html }) {
+  if (config.email.provider === 'resend') {
+    return sendViaResendApi({ from, to, subject, text, html });
+  }
+
+  const transport = getTransport();
+  if (!transport) {
+    throw Object.assign(new Error('Servicio de email no configurado en el servidor'), { status: 503 });
+  }
+
+  await sendWithTimeout(transport.sendMail({ from, to, subject, text, html }));
+  return { ok: true, mode: config.email.provider };
+}
+
+export function getEmailStatus() {
+  const { email } = config;
+  return {
+    configured: isEmailConfigured(),
+    provider: email.provider,
+    sendsRealEmail: email.provider !== 'console',
+  };
 }
 
 export function isEmailConfigured() {
@@ -80,13 +173,7 @@ export async function sendPasswordResetEmail({ to, username, token }) {
     return { ok: true, mode: 'console', resetUrl };
   }
 
-  const transport = getTransport();
-  if (!transport) {
-    throw Object.assign(new Error('Servicio de email no configurado en el servidor'), { status: 503 });
-  }
-
-  await transport.sendMail({ from, to, subject, text, html });
-  return { ok: true, mode: config.email.provider };
+  return deliverEmail({ from, to, subject, text, html });
 }
 
 export async function sendWelcomeEmail({ to, displayName, username }) {
@@ -134,11 +221,5 @@ export async function sendWelcomeEmail({ to, displayName, username }) {
     return { ok: true, mode: 'console', loginUrl };
   }
 
-  const transport = getTransport();
-  if (!transport) {
-    throw Object.assign(new Error('Servicio de email no configurado en el servidor'), { status: 503 });
-  }
-
-  await transport.sendMail({ from, to, subject, text, html });
-  return { ok: true, mode: config.email.provider };
+  return deliverEmail({ from, to, subject, text, html });
 }

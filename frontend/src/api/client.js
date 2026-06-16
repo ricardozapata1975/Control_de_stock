@@ -12,31 +12,50 @@ function getToken() {
 }
 
 async function request(path, options = {}) {
-  const headers = { 'Content-Type': 'application/json', ...options.headers };
+  const { timeoutMs, ...fetchOptions } = options;
+  const headers = { 'Content-Type': 'application/json', ...fetchOptions.headers };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...options,
-    headers,
-  });
-  const raw = await res.text();
-  let data = {};
+  const controller = timeoutMs ? new AbortController() : null;
+  const timeoutId =
+    controller && timeoutMs
+      ? setTimeout(() => controller.abort(), timeoutMs)
+      : null;
+
   try {
-    data = raw ? JSON.parse(raw) : {};
-  } catch {
-    /* respuesta HTML u otro formato no JSON */
-  }
-  if (!res.ok) {
-    if (res.status === 404) {
+    const res = await fetch(`${API_URL}${path}`, {
+      ...fetchOptions,
+      headers,
+      signal: controller?.signal,
+    });
+    const raw = await res.text();
+    let data = {};
+    try {
+      data = raw ? JSON.parse(raw) : {};
+    } catch {
+      /* respuesta HTML u otro formato no JSON */
+    }
+    if (!res.ok) {
+      if (res.status === 404) {
+        throw new Error(
+          data.error ||
+            'Ruta no encontrada en el servidor (404). El backend puede no estar actualizado: en Render, abrí el servicio y hacé Manual Deploy desde main.'
+        );
+      }
+      throw new Error(data.error || `Error ${res.status}`);
+    }
+    return data;
+  } catch (err) {
+    if (err.name === 'AbortError') {
       throw new Error(
-        data.error ||
-          'Ruta no encontrada en el servidor (404). El backend puede no estar actualizado: en Render, abrí el servicio y hacé Manual Deploy desde main.'
+        'La solicitud tardó demasiado. El servidor de correo puede estar mal configurado o inaccesible desde Render.'
       );
     }
-    throw new Error(data.error || `Error ${res.status}`);
+    throw err;
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
   }
-  return data;
 }
 
 export const api = {
@@ -108,7 +127,10 @@ export const api = {
   adminResetPassword: (id) =>
     request(`/api/admin/users/${encodeURIComponent(id)}/reset-password`, { method: 'POST' }),
   adminSendWelcome: (id) =>
-    request(`/api/admin/users/${encodeURIComponent(id)}/send-welcome`, { method: 'POST' }),
+    request(`/api/admin/users/${encodeURIComponent(id)}/send-welcome`, {
+      method: 'POST',
+      timeoutMs: 45000,
+    }),
   adminUsersImportSpec: () => request('/api/admin/users/import/especificacion'),
   adminUsersImportPreview: (csv) =>
     request('/api/admin/users/import/preview', {

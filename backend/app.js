@@ -2,6 +2,7 @@ import 'express-async-errors';
 import express from 'express';
 import cors from 'cors';
 import { config, assertConfig } from './config.js';
+import { getEmailStatus } from './services/emailService.js';
 import { errorHandler } from './middleware/errorHandler.js';
 import { getInventario } from './controllers/inventarioController.js';
 import { getContenedor, getContenedores } from './controllers/contenedorController.js';
@@ -110,6 +111,7 @@ app.get('/api/health', (_req, res) => {
     status: 'ok',
     db: config.demoMode ? 'demo-local' : 'supabase',
     demoMode: config.demoMode,
+    email: getEmailStatus(),
     timestamp: new Date().toISOString(),
   });
 });
