@@ -106,7 +106,23 @@ async function sendWithTimeout(promise, ms = EMAIL_SEND_TIMEOUT_MS) {
   }
 }
 
-async function sendViaResendApi({ from, to, subject, text, html }) {
+function formatResendError(status, detail, to) {
+  const normalized = String(detail || '').trim();
+  const sandboxRestriction =
+    status === 403 &&
+    /own email|verify a domain|resend\.dev|testing emails/i.test(normalized);
+
+  if (sandboxRestriction) {
+    return (
+      `No se puede enviar a ${to}: Resend está en modo prueba (onboarding@resend.dev). ` +
+      'Solo permite enviar al correo con el que creaste la cuenta Resend. ' +
+      'Para invitar a otros usuarios (ej. @systelec.com), verificá el dominio en resend.com/domains ' +
+      'y actualizá EMAIL_FROM en Render con un correo de ese dominio verificado.'
+    );
+  }
+
+  return `Resend: ${normalized || `HTTP ${status}`}`;
+}
   const { resendApiKey } = config.email;
   if (!resendApiKey) {
     throw Object.assign(new Error('RESEND_API_KEY no configurada'), { status: 503 });
@@ -131,7 +147,9 @@ async function sendViaResendApi({ from, to, subject, text, html }) {
         (Array.isArray(data.errors) ? data.errors.map((e) => e.message).join('; ') : null) ||
         data.error ||
         `HTTP ${res.status}`;
-      throw Object.assign(new Error(`Resend: ${detail}`), { status: res.status >= 500 ? 502 : 400 });
+      throw Object.assign(new Error(formatResendError(res.status, detail, to)), {
+        status: res.status >= 500 ? 502 : 400,
+      });
     }
     if (!data.id) {
       console.warn('[Email/Resend] Respuesta sin id de mensaje:', data);
@@ -186,6 +204,8 @@ export function getEmailStatus() {
       email.provider === 'resend' &&
       extractEmailAddress(effectiveFrom).endsWith('@resend.dev') &&
       !extractEmailAddress(configuredFrom).endsWith('@resend.dev'),
+    resendSandboxOnly:
+      email.provider === 'resend' && extractEmailAddress(effectiveFrom).endsWith('@resend.dev'),
   };
 }
 

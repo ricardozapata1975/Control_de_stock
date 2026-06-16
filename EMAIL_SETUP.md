@@ -24,7 +24,24 @@ EMAIL_FROM=Inventario Px Control <onboarding@resend.dev>
 
 Verificá en `https://control-de-stock-back.onrender.com/api/health` que aparezca `"provider":"resend"` y `"from"` con `onboarding@resend.dev`.
 
-> **Importante:** con `onboarding@resend.dev` solo podés enviar al **mismo correo con el que creaste la cuenta Resend**. Para enviar a otros usuarios (ej. `@pxcontrol.com`), verificá el dominio en Resend y usá `EMAIL_FROM` con ese dominio.
+> **Importante:** con `onboarding@resend.dev` solo podés enviar al **mismo correo con el que creaste la cuenta Resend** (en tu caso `ricardo.javier.zapata@gmail.com`). Los envíos a otros destinatarios (ej. `gustavo.lezcano@systelec.com`) aparecen como **403** en los logs de Resend y no llegan.
+
+### Producción: verificar dominio para invitar a todos
+
+Para enviar invitaciones a operarios con correo `@systelec.com` o `@pxcontrol.com`:
+
+1. Entrá a [resend.com/domains](https://resend.com/domains) → **Add Domain**
+2. Agregá `systelec.com` (o `pxcontrol.com` si preferís ese remitente)
+3. En el DNS del dominio (donde gestionan el dominio), agregá los registros **SPF**, **DKIM** y **DMARC** que muestra Resend
+4. Esperá a que el dominio quede **Verified** (puede tardar unos minutos)
+5. En Render → Environment, actualizá:
+   ```env
+   EMAIL_FROM=Inventario Px Control <noreply@systelec.com>
+   ```
+   (o `administracion@pxcontrol.com` si verificaste ese dominio)
+6. Redeploy del backend y volvé a enviar las invitaciones
+
+Hasta completar estos pasos, solo funcionarán las pruebas a tu Gmail personal.
 
 ### Opción B — SMTP (Office 365 / Gmail)
 
