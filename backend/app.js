@@ -12,8 +12,8 @@ import {
   postIngreso,
 } from './controllers/movimientosController.js';
 import { postSync } from './controllers/syncController.js';
-import { postFirstLogin, postLogin, postSetPassword } from './controllers/authController.js';
-import { getUsers, postUser, putUser, postResetPassword } from './controllers/userController.js';
+import { postFirstLogin, postForgotPassword, postLogin, postResetPassword as postAuthResetPassword, postSetPassword } from './controllers/authController.js';
+import { getUsers, postUser, putUser, postResetPassword, getUsersImportSpecHandler, postUsersImportPreview, postUsersImport } from './controllers/userController.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem } from './controllers/adminController.js';
@@ -143,6 +143,8 @@ app.post('/sync', postSync);
 app.post('/api/auth/login', postLogin);
 app.post('/api/auth/first-login', postFirstLogin);
 app.post('/api/auth/set-password', postSetPassword);
+app.post('/api/auth/forgot-password', postForgotPassword);
+app.post('/api/auth/reset-password', postAuthResetPassword);
 
 // Administración (solo admin)
 app.get('/api/admin/items', requireAdmin, getAdminItems);
@@ -165,6 +167,9 @@ app.get('/api/admin/users', requireAdmin, getUsers);
 app.post('/api/admin/users', requireAdmin, postUser);
 app.put('/api/admin/users/:id', requireAdmin, putUser);
 app.post('/api/admin/users/:id/reset-password', requireAdmin, postResetPassword);
+app.get('/api/admin/users/import/especificacion', requireAdmin, getUsersImportSpecHandler);
+app.post('/api/admin/users/import/preview', requireAdmin, postUsersImportPreview);
+app.post('/api/admin/users/import', requireAdmin, postUsersImport);
 
 app.get('/admin/db', (_req, res) => {
   res.sendFile(path.join(__dirname, 'docs/site/admin-db.html'));

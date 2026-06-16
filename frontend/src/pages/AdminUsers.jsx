@@ -6,8 +6,12 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [form, setForm] = useState({ username: '', displayName: '', role: 'operario' });
+  const [form, setForm] = useState({ username: '', displayName: '', role: 'operario', email: '' });
   const [saving, setSaving] = useState(false);
+  const [csvText, setCsvText] = useState('');
+  const [csvPreview, setCsvPreview] = useState(null);
+  const [csvMode, setCsvMode] = useState('skip');
+  const [csvLoading, setCsvLoading] = useState(false);
 
   const load = async () => {
     setLoading(true);
@@ -34,7 +38,7 @@ export default function AdminUsers() {
     try {
       const data = await api.adminCreateUser(form);
       setMessage(data.message || 'Usuario creado.');
-      setForm({ username: '', displayName: '', role: 'operario' });
+      setForm({ username: '', displayName: '', role: 'operario', email: '' });
       await load();
     } catch (err) {
       setError(err.message);
@@ -80,6 +84,54 @@ export default function AdminUsers() {
       await load();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const onCsvFile = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const text = await file.text();
+    setCsvText(text);
+    setCsvPreview(null);
+    e.target.value = '';
+  };
+
+  const previewCsv = async () => {
+    if (!csvText.trim()) {
+      setError('Seleccioná o pegá un CSV primero');
+      return;
+    }
+    setCsvLoading(true);
+    setError('');
+    setMessage('');
+    try {
+      const data = await api.adminUsersImportPreview(csvText);
+      setCsvPreview(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCsvLoading(false);
+    }
+  };
+
+  const importCsv = async () => {
+    if (!csvText.trim()) return;
+    if (!window.confirm('¿Importar usuarios desde el CSV?')) return;
+    setCsvLoading(true);
+    setError('');
+    setMessage('');
+    try {
+      const data = await api.adminUsersImport(csvText, csvMode);
+      setMessage(
+        `Importación: ${data.creados} creados, ${data.actualizados} actualizados, ${data.omitidos} omitidos, ${data.errores?.length || 0} errores.`
+      );
+      setCsvPreview(null);
+      setCsvText('');
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setCsvLoading(false);
     }
   };
 
@@ -130,9 +182,75 @@ export default function AdminUsers() {
             <option value="admin">Administrador</option>
           </select>
         </div>
+        <div>
+          <label className="text-label">Correo (opcional, para recuperar contraseña)</label>
+          <input
+            type="email"
+            className="input-field"
+            value={form.email}
+            onChange={(e) => setForm({ ...form, email: e.target.value })}
+            placeholder="usuario@empresa.com"
+          />
+        </div>
         <button type="submit" className="btn-primary max-w-xs" disabled={saving}>
           {saving ? 'Creando...' : 'Crear usuario'}
         </button>
+      </form>
+
+      <form className="card mb-6 space-y-4">
+        <h3 className="section-title">Importar desde Microsoft 365 Admin</h3>
+        <p className="text-sm text-muted">
+          Exportá usuarios desde admin.cloud.microsoft (CSV UTF-8). Se crean como operarios sin
+          contraseña inicial; el correo se usa para recuperación.
+        </p>
+        <div>
+          <label className="text-label">Archivo CSV</label>
+          <input type="file" accept=".csv,text/csv" className="input-field" onChange={onCsvFile} />
+        </div>
+        <div>
+          <label className="text-label">O pegar contenido CSV</label>
+          <textarea
+            className="input-field min-h-[120px] font-mono text-xs"
+            value={csvText}
+            onChange={(e) => {
+              setCsvText(e.target.value);
+              setCsvPreview(null);
+            }}
+            placeholder="Display name, User principal name, ..."
+          />
+        </div>
+        <div>
+          <label className="text-label">Si el usuario ya existe</label>
+          <select
+            className="input-field max-w-xs"
+            value={csvMode}
+            onChange={(e) => setCsvMode(e.target.value)}
+          >
+            <option value="skip">Omitir</option>
+            <option value="update">Actualizar nombre y correo</option>
+          </select>
+        </div>
+        <div className="flex flex-wrap gap-3">
+          <button type="button" className="btn-secondary" onClick={previewCsv} disabled={csvLoading}>
+            {csvLoading ? 'Procesando...' : 'Vista previa'}
+          </button>
+          <button
+            type="button"
+            className="btn-primary"
+            onClick={importCsv}
+            disabled={csvLoading || !csvText.trim()}
+          >
+            Importar usuarios
+          </button>
+        </div>
+        {csvPreview && (
+          <div className="rounded-lg border border-border bg-surface-muted/60 p-4 text-sm">
+            <p>
+              Total: {csvPreview.total} · Crear: {csvPreview.crear} · Actualizar:{' '}
+              {csvPreview.actualizar} · Omitir: {csvPreview.omitir} · Errores: {csvPreview.errores}
+            </p>
+          </div>
+        )}
       </form>
 
       <div className="card overflow-x-auto p-0">
@@ -141,6 +259,7 @@ export default function AdminUsers() {
             <tr>
               <th className="px-4 py-3">Usuario</th>
               <th className="px-4 py-3">Nombre</th>
+              <th className="px-4 py-3">Correo</th>
               <th className="px-4 py-3">Rol</th>
               <th className="px-4 py-3">Estado</th>
               <th className="px-4 py-3">Contraseña</th>
@@ -151,15 +270,16 @@ export default function AdminUsers() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-4 py-6 text-center text-muted">
+                <td colSpan={8} className="px-4 py-6 text-center text-muted">
                   Cargando...
                 </td>
               </tr>
             ) : (
               users.map((u) => (
                 <tr key={u.id} className="table-row">
-                  <td className="px-4 py-3 font-mono text-amber-300">{u.username}</td>
+                  <td className="px-4 py-3 font-mono text-accent">{u.username}</td>
                   <td className="px-4 py-3">{u.name || u.displayName}</td>
+                  <td className="px-4 py-3 text-subtle">{u.email || '—'}</td>
                   <td className="px-4 py-3">
                     <select
                       className="input-field py-1 text-sm"

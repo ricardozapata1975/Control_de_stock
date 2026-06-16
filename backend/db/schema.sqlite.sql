@@ -51,11 +51,14 @@ CREATE TABLE IF NOT EXISTS users (
   id TEXT PRIMARY KEY,
   username TEXT NOT NULL UNIQUE,
   display_name TEXT NOT NULL,
+  email TEXT,
   password_hash TEXT,
   role TEXT NOT NULL CHECK (role IN ('admin', 'operario')),
   must_change_password INTEGER NOT NULL DEFAULT 1,
   is_active INTEGER NOT NULL DEFAULT 1,
   last_login_at TEXT,
+  reset_token TEXT,
+  reset_token_expires TEXT,
   created_at TEXT DEFAULT (datetime('now')),
   updated_at TEXT DEFAULT (datetime('now'))
 );

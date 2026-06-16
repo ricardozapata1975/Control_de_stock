@@ -32,6 +32,10 @@ export const api = {
     request('/api/auth/first-login', { method: 'POST', body: JSON.stringify(body) }),
   setPassword: (body) =>
     request('/api/auth/set-password', { method: 'POST', body: JSON.stringify(body) }),
+  forgotPassword: (body) =>
+    request('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify(body) }),
+  resetPassword: (body) =>
+    request('/api/auth/reset-password', { method: 'POST', body: JSON.stringify(body) }),
   inventario: (params = {}) => {
     const qs = new URLSearchParams(params).toString();
     return request(`/api/inventario${qs ? `?${qs}` : ''}`);
@@ -89,6 +93,17 @@ export const api = {
     }),
   adminResetPassword: (id) =>
     request(`/api/admin/users/${encodeURIComponent(id)}/reset-password`, { method: 'POST' }),
+  adminUsersImportSpec: () => request('/api/admin/users/import/especificacion'),
+  adminUsersImportPreview: (csv) =>
+    request('/api/admin/users/import/preview', {
+      method: 'POST',
+      body: JSON.stringify({ csv }),
+    }),
+  adminUsersImport: (csv, modoDuplicados = 'skip') =>
+    request('/api/admin/users/import', {
+      method: 'POST',
+      body: JSON.stringify({ csv, modoDuplicados }),
+    }),
   downloadPlantilla: async () => {
     const token = getToken();
     const res = await fetch(`${API_URL}/api/admin/import/plantilla.csv`, {

@@ -14,3 +14,6 @@ backend/data/inventario.sqlite
 backend/data/inventario.sqlite-wal
 backend/data/inventario.sqlite-shm
 backend/data/inventario.seed.sqlite
+users_*.csv
+*.csv
+!backend/docs/**/*.csv

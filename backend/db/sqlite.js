@@ -28,6 +28,17 @@ export function getDb() {
 function runSchema() {
   const sql = fs.readFileSync(SCHEMA_PATH, 'utf-8');
   getDb().exec(sql);
+  migrateUserColumns();
+}
+
+function migrateUserColumns() {
+  const db = getDb();
+  const cols = db.prepare(`PRAGMA table_info(users)`).all().map((c) => c.name);
+  if (!cols.includes('email')) db.exec(`ALTER TABLE users ADD COLUMN email TEXT`);
+  if (!cols.includes('reset_token')) db.exec(`ALTER TABLE users ADD COLUMN reset_token TEXT`);
+  if (!cols.includes('reset_token_expires')) {
+    db.exec(`ALTER TABLE users ADD COLUMN reset_token_expires TEXT`);
+  }
 }
 
 function tableCount(table) {

@@ -33,6 +33,18 @@ export const config = {
     displayName: process.env.ADMIN_DISPLAY_NAME || 'Administrador',
   },
   jwtSecret: process.env.JWT_SECRET || 'cambiar-en-produccion-inventario-taller',
+  email: {
+    provider: process.env.EMAIL_PROVIDER || 'console',
+    from: process.env.EMAIL_FROM || 'Inventario Px Control <noreply@pxcontrol.com>',
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    smtp: {
+      host: process.env.SMTP_HOST || '',
+      port: Number(process.env.SMTP_PORT) || 587,
+      secure: process.env.SMTP_SECURE === 'true',
+      user: process.env.SMTP_USER || '',
+      pass: process.env.SMTP_PASS || '',
+    },
+  },
 };
 
 export function assertConfig() {

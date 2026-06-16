@@ -15,6 +15,8 @@ import AdminStock from './pages/AdminStock';
 import ImportarCSV from './pages/ImportarCSV';
 import AdminDatabase from './pages/AdminDatabase';
 import AdminUsers from './pages/AdminUsers';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 function PrivateRoute({ children }) {
   const { isLoggedIn, ready } = useAuth();
@@ -38,6 +40,8 @@ export default function App() {
         <BrowserRouter>
           <Routes>
             <Route path="/login" element={<Login />} />
+            <Route path="/olvide-contrasena" element={<ForgotPassword />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route
               path="/"
               element={

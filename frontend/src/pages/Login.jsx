@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, useNavigate } from 'react-router-dom';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import ThemeToggle from '../components/ThemeToggle';
 
@@ -207,6 +207,11 @@ export default function Login() {
               <button type="submit" className="btn-primary w-full" disabled={loading}>
                 {loading ? 'INGRESANDO...' : 'ENTRAR'}
               </button>
+              <p className="text-center text-sm">
+                <Link to="/olvide-contrasena" className="text-content-subtle underline hover:text-content">
+                  Olvidé mi contraseña
+                </Link>
+              </p>
             </form>
 
             {modo === 'operario' && (

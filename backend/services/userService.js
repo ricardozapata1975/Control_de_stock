@@ -6,11 +6,17 @@ import { fileURLToPath } from 'url';
 import { config } from '../config.js';
 import { getSupabase } from '../db/supabase.js';
 import { sign, verifyToken } from './jwtService.js';
+import { isEmailConfigured, sendPasswordResetEmail } from './emailService.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEMO_USERS_PATH = path.join(__dirname, '../data/demo-users.json');
 const BCRYPT_ROUNDS = 12;
 const SETUP_TTL_MS = 15 * 60 * 1000;
+const RESET_TTL_MS = 60 * 60 * 1000;
+
+export function normalizeUsernamePublic(username) {
+  return normalizeUsername(username);
+}
 
 function normalizeUsername(username) {
   return String(username || '')
@@ -33,6 +39,7 @@ export function mapUserPublic(row) {
     username: row.username,
     name: row.display_name,
     displayName: row.display_name,
+    email: row.email || null,
     role: row.role,
     isActive: row.is_active !== false,
     mustChangePassword: !!row.must_change_password,
@@ -112,6 +119,41 @@ async function seedDemoUsersIfEmpty(users) {
   return seeded;
 }
 
+async function findByEmail(email) {
+  const e = String(email || '')
+    .trim()
+    .toLowerCase();
+  if (!e) return null;
+
+  if (config.demoMode) {
+    const users = await loadDemoUsers();
+    return users.find((row) => String(row.email || '').toLowerCase() === e) || null;
+  }
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase.from('users').select('*').ilike('email', e).maybeSingle();
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+  return data;
+}
+
+async function findByResetToken(token) {
+  if (!token) return null;
+
+  if (config.demoMode) {
+    const users = await loadDemoUsers();
+    return users.find((row) => row.reset_token === token) || null;
+  }
+
+  const supabase = getSupabase();
+  const { data, error } = await supabase
+    .from('users')
+    .select('*')
+    .eq('reset_token', token)
+    .maybeSingle();
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+  return data;
+}
+
 async function findByUsername(username) {
   const u = normalizeUsername(username);
   if (!u) return null;
@@ -144,6 +186,10 @@ async function findById(id) {
   const { data, error } = await supabase.from('users').select('*').eq('id', id).maybeSingle();
   if (error) throw Object.assign(new Error(error.message), { status: 500 });
   return data;
+}
+
+export async function updateUserRowPublic(id, patch) {
+  return updateUserRow(id, patch);
 }
 
 async function updateUserRow(id, patch) {
@@ -279,7 +325,82 @@ export async function listUsers() {
   return (data || []).map(mapUserAdmin);
 }
 
-export async function createUser({ username, displayName, role }) {
+export async function requestPasswordReset({ email, username }) {
+  if (!isEmailConfigured()) {
+    throw Object.assign(new Error('El envío de correos no está configurado en el servidor'), {
+      status: 503,
+    });
+  }
+
+  const identifier = String(email || username || '').trim();
+  if (!identifier) {
+    throw Object.assign(new Error('Ingresá tu correo electrónico'), { status: 400 });
+  }
+
+  let row = null;
+  if (identifier.includes('@')) {
+    row = await findByEmail(identifier);
+  } else {
+    row = await findByUsername(identifier);
+  }
+
+  const generic = {
+    ok: true,
+    message:
+      'Si existe una cuenta con ese correo, te enviamos un enlace para restablecer la contraseña.',
+  };
+
+  if (!row || row.is_active === false || !row.email) {
+    return generic;
+  }
+
+  const token = crypto.randomBytes(32).toString('hex');
+  const expires = new Date(Date.now() + RESET_TTL_MS).toISOString();
+
+  await updateUserRow(row.id, {
+    reset_token: token,
+    reset_token_expires: expires,
+  });
+
+  await sendPasswordResetEmail({
+    to: row.email,
+    username: row.display_name || row.username,
+    token,
+  });
+
+  return generic;
+}
+
+export async function resetPasswordWithToken({ token, newPassword }) {
+  validatePassword(newPassword);
+
+  const row = await findByResetToken(token);
+  if (!row || row.is_active === false) {
+    throw Object.assign(new Error('El enlace no es válido o ya expiró'), { status: 400 });
+  }
+
+  const expires = row.reset_token_expires ? new Date(row.reset_token_expires).getTime() : 0;
+  if (!expires || expires < Date.now()) {
+    throw Object.assign(new Error('El enlace no es válido o ya expiró'), { status: 400 });
+  }
+
+  const password_hash = await hashPassword(newPassword);
+  const updated = await updateUserRow(row.id, {
+    password_hash,
+    must_change_password: false,
+    reset_token: null,
+    reset_token_expires: null,
+    last_login_at: new Date().toISOString(),
+  });
+
+  const profile = buildAuthProfile(updated);
+  return {
+    user: mapUserPublic(updated),
+    token: sign(profile),
+  };
+}
+
+export async function createUser({ username, displayName, role, email }) {
   const u = normalizeUsername(username);
   const name = String(displayName || '').trim();
   const r = role === 'admin' ? 'admin' : 'operario';
@@ -293,15 +414,23 @@ export async function createUser({ username, displayName, role }) {
   if (existing) throw Object.assign(new Error('Ese nombre de usuario ya existe'), { status: 409 });
 
   const now = new Date().toISOString();
+  const mail = email ? String(email).trim().toLowerCase() : null;
+  if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(mail)) {
+    throw Object.assign(new Error('El correo no es válido'), { status: 400 });
+  }
+
   const row = {
     id: newId(),
     username: u,
     display_name: name,
+    email: mail,
     password_hash: null,
     role: r,
     must_change_password: true,
     is_active: true,
     last_login_at: null,
+    reset_token: null,
+    reset_token_expires: null,
     created_at: now,
     updated_at: now,
   };
