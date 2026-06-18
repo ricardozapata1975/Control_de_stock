@@ -3,17 +3,19 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useSync } from '../context/SyncContext';
 import { useAuth } from '../auth/AuthProvider';
+import { api } from '../api/client';
 import FilterableSelect from '../components/FilterableSelect';
 import { filterInventarioByScan, parsedFromCodigoParam } from '../utils/scanMatch';
 
 export default function Egreso() {
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
   const [searchParams] = useSearchParams();
   const { inventario, loading, error, fetchInventario, registrarEgreso, clearError } = useStore();
   const { executeOrQueue } = useSync();
   const [stockId, setStockId] = useState('');
   const [cantidad, setCantidad] = useState(1);
-  const usuario = user?.name || '';
+  const [usuarioEgreso, setUsuarioEgreso] = useState(user?.name || '');
+  const [activeUsers, setActiveUsers] = useState([]);
   const [success, setSuccess] = useState(false);
   const [offlineSaved, setOfflineSaved] = useState(false);
   const [formError, setFormError] = useState('');
@@ -21,6 +23,44 @@ export default function Egreso() {
   useEffect(() => {
     fetchInventario();
   }, []);
+
+  useEffect(() => {
+    setUsuarioEgreso(user?.name || '');
+  }, [user?.name]);
+
+  useEffect(() => {
+    if (!isAdmin) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.adminUsers();
+        if (!cancelled) {
+          setActiveUsers((data.users || []).filter((u) => u.isActive !== false));
+        }
+      } catch {
+        /* admin sin lista: queda solo el usuario logueado */
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [isAdmin]);
+
+  const usuarioOptions = useMemo(() => {
+    const names = new Set();
+    const opts = [];
+    const add = (name) => {
+      const n = String(name || '').trim();
+      if (!n || names.has(n)) return;
+      names.add(n);
+      opts.push({ value: n, label: n, searchText: n });
+    };
+    add(user?.name);
+    activeUsers.forEach((u) => add(u.name || u.displayName));
+    return opts.sort((a, b) => a.label.localeCompare(b.label, 'es'));
+  }, [activeUsers, user?.name]);
+
+  const usuario = isAdmin ? usuarioEgreso : user?.name || '';
 
   const disponibles = useMemo(() => inventario.filter((i) => i.cantidad > 0), [inventario]);
 
@@ -165,10 +205,28 @@ export default function Egreso() {
         </div>
         <div>
           <label className="text-label">Usuario</label>
-          <p className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-content">
-            {usuario || '—'}
-          </p>
-          <p className="mt-1 text-xs text-subtle">Registrado con tu sesión iniciada.</p>
+          {isAdmin ? (
+            <>
+              <FilterableSelect
+                options={usuarioOptions}
+                value={usuarioEgreso}
+                onChange={setUsuarioEgreso}
+                placeholder="Buscar operario…"
+                emptyMessage="Ningún usuario coincide"
+                disabled={!usuarioOptions.length}
+              />
+              <p className="mt-1 text-xs text-subtle">
+                Como administrador podés registrar el retiro a nombre de otro operario.
+              </p>
+            </>
+          ) : (
+            <>
+              <p className="rounded-lg border border-border bg-surface-muted px-3 py-2 text-content">
+                {usuario || '—'}
+              </p>
+              <p className="mt-1 text-xs text-subtle">Registrado con tu sesión iniciada.</p>
+            </>
+          )}
         </div>
         <button
           type="submit"

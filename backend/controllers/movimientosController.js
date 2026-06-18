@@ -36,11 +36,17 @@ export async function postEgreso(req, res) {
     }
   }
 
+  const bodyUsuario = String(usuario || nombrePersonal || '').trim();
+  let resolvedUsuario = req.user?.name || bodyUsuario;
+  if (req.user?.role === 'admin' && bodyUsuario) {
+    resolvedUsuario = bodyUsuario;
+  }
+
   const result = await registrarEgreso({
     itemId: resolvedItemId,
     contenedorId: resolvedContenedorId,
     cantidad,
-    usuario: req.user?.name || usuario || nombrePersonal,
+    usuario: resolvedUsuario,
   });
   res.status(201).json(result);
 }

@@ -415,7 +415,13 @@ export async function demoListItemsAdmin() {
       totalStock,
       ubicaciones: rows.map((s) => {
         const c = db.contenedores.find((x) => x.id === s.contenedor_id);
-        return { contenedorCodigo: c?.codigo, cantidad: s.cantidad, ...mapUbicacionFields(c) };
+        return {
+          stockId: s.id,
+          contenedorId: s.contenedor_id,
+          contenedorCodigo: c?.codigo,
+          cantidad: s.cantidad,
+          ...mapUbicacionFields(c),
+        };
       }),
     };
   });
@@ -532,10 +538,77 @@ export async function demoUpdateItem(itemId, body) {
   if (!item) throw Object.assign(new Error('Ítem no encontrado'), { status: 404 });
   if (!isItemActivo(item)) throw Object.assign(new Error('El ítem está dado de baja'), { status: 409 });
 
-  const payload = itemPayloadFromBody({ ...item, ...body, nombre: body.nombre ?? item.nombre });
-  if (!payload.nombre) throw Object.assign(new Error('El nombre es obligatorio'), { status: 400 });
+  const { stockId, cantidad, armario, estante, contenedor, ...itemBody } = body;
+  const hasStockUpdate =
+    stockId !== undefined ||
+    cantidad !== undefined ||
+    armario !== undefined ||
+    estante !== undefined ||
+    contenedor !== undefined;
 
-  Object.assign(item, payload);
+  const itemFieldKeys = [
+    'nombre',
+    'marca',
+    'modelo',
+    'tipo',
+    'detalle',
+    'calibracion',
+    'comentario',
+    'fechaRelevamiento',
+    'fecha_relevamiento',
+  ];
+  const hasItemUpdate = itemFieldKeys.some((k) => itemBody[k] !== undefined);
+
+  if (hasItemUpdate) {
+    const payload = itemPayloadFromBody({ ...item, ...itemBody, nombre: itemBody.nombre ?? item.nombre });
+    if (!payload.nombre) throw Object.assign(new Error('El nombre es obligatorio'), { status: 400 });
+    Object.assign(item, payload);
+  }
+
+  if (hasStockUpdate) {
+    if (!stockId) {
+      throw Object.assign(new Error('stockId requerido para editar ubicación/cantidad'), { status: 400 });
+    }
+    const qty = Number(cantidad);
+    if (Number.isNaN(qty) || qty < 0) {
+      throw Object.assign(new Error('Cantidad inválida'), { status: 400 });
+    }
+
+    const stockRow = db.stock.find((s) => s.id === stockId && s.item_id === itemId);
+    if (!stockRow) throw Object.assign(new Error('Registro de stock no encontrado'), { status: 404 });
+
+    let targetContenedorId = stockRow.contenedor_id;
+    if (armario && estante) {
+      const cont = await demoResolveUbicacion({ armario, estante, contenedor });
+      targetContenedorId = cont.id;
+    }
+
+    if (targetContenedorId === stockRow.contenedor_id) {
+      if (qty === 0) {
+        db.stock = db.stock.filter((s) => s.id !== stockId);
+      } else {
+        stockRow.cantidad = qty;
+      }
+    } else if (qty === 0) {
+      db.stock = db.stock.filter((s) => s.id !== stockId);
+    } else {
+      const destStock = db.stock.find(
+        (s) => s.item_id === itemId && s.contenedor_id === targetContenedorId
+      );
+      if (destStock) {
+        destStock.cantidad += qty;
+        db.stock = db.stock.filter((s) => s.id !== stockId);
+      } else {
+        stockRow.contenedor_id = targetContenedorId;
+        stockRow.cantidad = qty;
+      }
+    }
+  }
+
+  if (!hasItemUpdate && !hasStockUpdate) {
+    throw Object.assign(new Error('No hay campos para actualizar'), { status: 400 });
+  }
+
   await save(db);
   return { ok: true, item: { id: item.id, ...mapItemCampos(item), nombre: item.nombre } };
 }
