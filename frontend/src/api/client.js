@@ -124,6 +124,8 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
+  adminDeleteUser: (id) =>
+    request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   adminResetPassword: (id) =>
     request(`/api/admin/users/${encodeURIComponent(id)}/reset-password`, { method: 'POST' }),
   adminSendWelcome: (id) =>

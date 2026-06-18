@@ -1,5 +1,6 @@
 import {
   createUser,
+  deleteUser,
   listUsers,
   resetUserPassword,
   sendUserWelcome,
@@ -35,6 +36,18 @@ export async function putUser(req, res) {
   try {
     const user = await updateUser(req.params.id, { displayName, role, isActive });
     res.json({ user });
+  } catch (e) {
+    res.status(e.status || 500).json({ error: e.message });
+  }
+}
+
+export async function deleteUserHandler(req, res) {
+  try {
+    const result = await deleteUser(req.params.id, { actorId: req.user?.id });
+    res.json({
+      ...result,
+      message: 'Usuario eliminado correctamente.',
+    });
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });
   }

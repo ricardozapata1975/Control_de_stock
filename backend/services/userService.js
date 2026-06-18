@@ -448,6 +448,60 @@ export async function createUser({ username, displayName, role, email }) {
   return mapUserAdmin(data);
 }
 
+async function countActiveAdmins(excludeId = null) {
+  if (config.demoMode) {
+    let users = await loadDemoUsers();
+    users = await seedDemoUsersIfEmpty(users);
+    return users.filter(
+      (row) => row.role === 'admin' && row.is_active !== false && row.id !== excludeId
+    ).length;
+  }
+
+  const supabase = getSupabase();
+  let query = supabase
+    .from('users')
+    .select('id', { count: 'exact', head: true })
+    .eq('role', 'admin')
+    .eq('is_active', true);
+  if (excludeId) query = query.neq('id', excludeId);
+  const { count, error } = await query;
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+  return count || 0;
+}
+
+export async function deleteUser(id, { actorId } = {}) {
+  const row = await findById(id);
+  if (!row) throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
+
+  if (actorId && actorId === id) {
+    throw Object.assign(new Error('No podés eliminar tu propia cuenta'), { status: 400 });
+  }
+
+  if (row.role === 'admin' && row.is_active !== false) {
+    const remainingAdmins = await countActiveAdmins(id);
+    if (remainingAdmins < 1) {
+      throw Object.assign(new Error('No se puede eliminar el último administrador activo'), {
+        status: 400,
+      });
+    }
+  }
+
+  if (config.demoMode) {
+    const users = await loadDemoUsers();
+    const next = users.filter((u) => u.id !== id);
+    if (next.length === users.length) {
+      throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
+    }
+    await saveDemoUsers(next);
+    return { ok: true, id };
+  }
+
+  const supabase = getSupabase();
+  const { error } = await supabase.from('users').delete().eq('id', id);
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+  return { ok: true, id };
+}
+
 export async function updateUser(id, { displayName, role, isActive }) {
   const row = await findById(id);
   if (!row) throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });

@@ -1,5 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api/client';
+import { useAuth } from '../auth/AuthProvider';
+import UserFilters from '../components/UserFilters';
+
+const DEFAULT_FILTERS = { q: '', domain: '', status: 'all' };
 
 const ROLE_LABELS = {
   admin: 'Administrador',
@@ -14,6 +18,28 @@ function canReceiveInvite(user) {
   return Boolean(user.email && user.isActive && !user.hasPassword);
 }
 
+function matchesUserFilters(user, filters) {
+  const q = filters.q.trim().toLowerCase();
+  if (q) {
+    const haystack = [user.username, user.name, user.displayName, user.email]
+      .filter(Boolean)
+      .join(' ')
+      .toLowerCase();
+    if (!haystack.includes(q)) return false;
+  }
+
+  if (filters.status === 'active' && !user.isActive) return false;
+  if (filters.status === 'inactive' && user.isActive) return false;
+
+  const domain = filters.domain.trim().toLowerCase().replace(/^@/, '');
+  if (domain) {
+    const email = String(user.email || '').toLowerCase();
+    if (!email.includes(`@${domain}`)) return false;
+  }
+
+  return true;
+}
+
 function RoleBadge({ role }) {
   const normalized = normalizeRole(role);
   return (
@@ -24,7 +50,9 @@ function RoleBadge({ role }) {
 }
 
 export default function AdminUsers() {
+  const { user: currentUser } = useAuth();
   const [users, setUsers] = useState([]);
+  const [filters, setFilters] = useState(DEFAULT_FILTERS);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
@@ -35,11 +63,30 @@ export default function AdminUsers() {
   const [csvMode, setCsvMode] = useState('skip');
   const [csvLoading, setCsvLoading] = useState(false);
   const [sendingWelcomeId, setSendingWelcomeId] = useState(null);
+  const [deletingUserId, setDeletingUserId] = useState(null);
   const [bulkSending, setBulkSending] = useState(false);
   const [selectedIds, setSelectedIds] = useState(() => new Set());
   const selectAllRef = useRef(null);
 
-  const inviteableUsers = useMemo(() => users.filter(canReceiveInvite), [users]);
+  const emailDomains = useMemo(() => {
+    const domains = new Set();
+    for (const u of users) {
+      const email = String(u.email || '').toLowerCase();
+      const at = email.lastIndexOf('@');
+      if (at > 0) domains.add(email.slice(at));
+    }
+    return [...domains].sort();
+  }, [users]);
+
+  const filteredUsers = useMemo(
+    () => users.filter((u) => matchesUserFilters(u, filters)),
+    [users, filters]
+  );
+
+  const hasActiveFilters =
+    filters.q.trim() !== '' || filters.domain.trim() !== '' || filters.status !== 'all';
+
+  const inviteableUsers = useMemo(() => filteredUsers.filter(canReceiveInvite), [filteredUsers]);
   const selectedCount = selectedIds.size;
   const allInviteableSelected =
     inviteableUsers.length > 0 && inviteableUsers.every((u) => selectedIds.has(u.id));
@@ -163,7 +210,7 @@ export default function AdminUsers() {
   };
 
   const inviteSelected = async () => {
-    const targets = users.filter((u) => selectedIds.has(u.id) && canReceiveInvite(u));
+    const targets = filteredUsers.filter((u) => selectedIds.has(u.id) && canReceiveInvite(u));
     if (!targets.length) {
       setError('Seleccioná al menos un usuario activo sin contraseña con correo.');
       return;
@@ -209,6 +256,34 @@ export default function AdminUsers() {
       await load();
     } catch (err) {
       setError(err.message);
+    }
+  };
+
+  const deleteUser = async (user) => {
+    const label = user.name || user.displayName || user.username;
+    if (
+      !window.confirm(
+        `¿Eliminar la cuenta de "${label}" (${user.username})?\nEsta acción no se puede deshacer.`
+      )
+    ) {
+      return;
+    }
+    setError('');
+    setMessage('');
+    setDeletingUserId(user.id);
+    try {
+      const data = await api.adminDeleteUser(user.id);
+      setMessage(data.message || `Usuario "${user.username}" eliminado.`);
+      setSelectedIds((prev) => {
+        const next = new Set(prev);
+        next.delete(user.id);
+        return next;
+      });
+      await load();
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setDeletingUserId(null);
     }
   };
 
@@ -407,6 +482,19 @@ export default function AdminUsers() {
         )}
       </form>
 
+      <UserFilters
+        filters={filters}
+        onChange={(patch) => setFilters((prev) => ({ ...prev, ...patch }))}
+        domains={emailDomains}
+      />
+
+      {hasActiveFilters && !loading && (
+        <p className="mb-4 text-sm text-content-muted">
+          Mostrando {filteredUsers.length} de {users.length} usuario
+          {users.length === 1 ? '' : 's'}
+        </p>
+      )}
+
       <div className="card overflow-x-auto p-0">
         {inviteableUsers.length > 0 && (
           <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
@@ -468,8 +556,16 @@ export default function AdminUsers() {
                   Cargando...
                 </td>
               </tr>
+            ) : filteredUsers.length === 0 ? (
+              <tr>
+                <td colSpan={9} className="px-4 py-6 text-center text-muted">
+                  {users.length === 0
+                    ? 'No hay usuarios registrados.'
+                    : 'Ningún usuario coincide con los filtros.'}
+                </td>
+              </tr>
             ) : (
-              users.map((u) => (
+              filteredUsers.map((u) => (
                 <tr key={u.id} className="table-row">
                   <td className="px-2 py-3">
                     {canReceiveInvite(u) ? (
@@ -551,6 +647,19 @@ export default function AdminUsers() {
                         onClick={() => resetPassword(u)}
                       >
                         Resetear clave
+                      </button>
+                      <button
+                        type="button"
+                        className="min-h-[36px] rounded-lg border border-red-700 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-950 disabled:opacity-50"
+                        onClick={() => deleteUser(u)}
+                        disabled={deletingUserId === u.id || u.id === currentUser?.id}
+                        title={
+                          u.id === currentUser?.id
+                            ? 'No podés eliminar tu propia cuenta'
+                            : 'Eliminar cuenta'
+                        }
+                      >
+                        {deletingUserId === u.id ? 'Eliminando...' : 'Eliminar'}
                       </button>
                     </div>
                   </td>
