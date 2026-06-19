@@ -19,22 +19,9 @@ function extractEmailAddress(from) {
   return (match ? match[1] : raw).trim().toLowerCase();
 }
 
-let warnedUnverifiedFrom = false;
 
-function resolveFromAddress({ logWarning = false } = {}) {
-  const configured = String(config.email.from || '').trim() || RESEND_TEST_FROM;
-  if (config.email.provider !== 'resend') return configured;
-
-  const address = extractEmailAddress(configured);
-  if (address.endsWith('@resend.dev')) return configured;
-
-  if (logWarning && !warnedUnverifiedFrom) {
-    warnedUnverifiedFrom = true;
-    console.warn(
-      `[Email] EMAIL_FROM "${configured}" requiere dominio verificado en Resend. Usando ${RESEND_TEST_FROM}.`
-    );
-  }
-  return RESEND_TEST_FROM;
+function resolveFromAddress() {
+  return String(config.email.from || '').trim() || RESEND_TEST_FROM;
 }
 
 function buildFrontendUrl(path = '') {
@@ -123,6 +110,8 @@ function formatResendError(status, detail, to) {
 
   return `Resend: ${normalized || `HTTP ${status}`}`;
 }
+
+async function sendViaResendApi({ from, to, subject, text, html }) {
   const { resendApiKey } = config.email;
   if (!resendApiKey) {
     throw Object.assign(new Error('RESEND_API_KEY no configurada'), { status: 503 });

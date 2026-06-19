@@ -9,7 +9,7 @@ Desde **Admin → Usuarios**, el botón **Enviar invitación** manda un correo d
 | Variable | Descripción |
 |----------|-------------|
 | `EMAIL_PROVIDER` | `console` (dev), `smtp` o `resend` |
-| `EMAIL_FROM` | Con Resend sin dominio verificado: `Inventario Px Control <onboarding@resend.dev>` (obligatorio para pruebas) |
+| `EMAIL_FROM` | Remitente. Producción (dominio verificado): `Inventario Px Control <noreply@pxcontrol.com>`. Pruebas sin dominio: `Inventario Px Control <onboarding@resend.dev>` |
 | `FRONTEND_URL` | Base del enlace, ej. `https://control-de-stock-smoky.vercel.app` |
 
 ### Opción A — Resend (recomendado en Render)
@@ -19,29 +19,38 @@ SMTP desde Render hacia Office 365 suele colgarse o fallar. **Usá Resend con AP
 ```env
 EMAIL_PROVIDER=resend
 RESEND_API_KEY=re_...
-EMAIL_FROM=Inventario Px Control <onboarding@resend.dev>
+EMAIL_FROM=Inventario Px Control <noreply@pxcontrol.com>
 ```
 
-Verificá en `https://control-de-stock-back.onrender.com/api/health` que aparezca `"provider":"resend"` y `"from"` con `onboarding@resend.dev`.
+Verificá en `https://control-de-stock-back.onrender.com/api/health` que aparezca `"provider":"resend"` y `"from"` con `noreply@pxcontrol.com`.
 
-> **Importante:** con `onboarding@resend.dev` solo podés enviar al **mismo correo con el que creaste la cuenta Resend** (en tu caso `ricardo.javier.zapata@gmail.com`). Los envíos a otros destinatarios (ej. `gustavo.lezcano@systelec.com`) aparecen como **403** en los logs de Resend y no llegan.
+> **Importante:** con `onboarding@resend.dev` (solo para pruebas sin dominio verificado) solo podés enviar al **mismo correo con el que creaste la cuenta Resend**. Para invitar a cualquier usuario, usá un dominio verificado en Resend (ej. `pxcontrol.com`) y `EMAIL_FROM` con ese dominio.
 
-### Producción: verificar dominio para invitar a todos
+### Producción: dominio verificado (pxcontrol.com)
 
-Para enviar invitaciones a operarios con correo `@systelec.com` o `@pxcontrol.com`:
+El dominio `pxcontrol.com` ya está verificado en Resend. En Render → Environment:
+
+```env
+EMAIL_FROM=Inventario Px Control <noreply@pxcontrol.com>
+```
+
+Redeploy del backend y volvé a enviar las invitaciones.
+
+### Verificar otro dominio (opcional)
+
+Para enviar desde otro dominio (ej. `systelec.com`):
 
 1. Entrá a [resend.com/domains](https://resend.com/domains) → **Add Domain**
-2. Agregá `systelec.com` (o `pxcontrol.com` si preferís ese remitente)
+2. Agregá el dominio (ej. `systelec.com`)
 3. En el DNS del dominio (donde gestionan el dominio), agregá los registros **SPF**, **DKIM** y **DMARC** que muestra Resend
 4. Esperá a que el dominio quede **Verified** (puede tardar unos minutos)
-5. En Render → Environment, actualizá:
+5. En Render → Environment, actualizá `EMAIL_FROM` con un correo de ese dominio verificado, por ejemplo:
    ```env
    EMAIL_FROM=Inventario Px Control <noreply@systelec.com>
    ```
-   (o `administracion@pxcontrol.com` si verificaste ese dominio)
 6. Redeploy del backend y volvé a enviar las invitaciones
 
-Hasta completar estos pasos, solo funcionarán las pruebas a tu Gmail personal.
+Hasta verificar un dominio, solo funcionarán las pruebas con `onboarding@resend.dev` al correo de la cuenta Resend.
 
 ### Opción B — SMTP (Office 365 / Gmail)
 
