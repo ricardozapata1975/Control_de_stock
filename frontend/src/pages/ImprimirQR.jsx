@@ -2,14 +2,22 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import QrLabel from '../components/QrLabel';
 import SearchFilters from '../components/SearchFilters';
-import { getArmarioNombre } from '../utils/ubicacion';
+import {
+  ALMACEN_DEFAULT,
+  ESTANTES,
+  buildUbicacionCodigo,
+  getAlmacenNombre,
+  getArmarioNombre,
+  getArmariosForAlmacen,
+} from '../utils/ubicacion';
 import { QR_TYPES } from '../utils/qrPayload';
 
 const TABS = [
-  { id: QR_TYPES.ITEM, label: 'Artículo' },
-  { id: QR_TYPES.CONTENEDOR, label: 'Contenedor' },
-  { id: QR_TYPES.ESTANTE, label: 'Estante' },
+  { id: QR_TYPES.ALMACEN, label: 'Almacén' },
   { id: QR_TYPES.ARMARIO, label: 'Armario' },
+  { id: QR_TYPES.ESTANTE, label: 'Estante' },
+  { id: QR_TYPES.CONTENEDOR, label: 'Contenedor' },
+  { id: QR_TYPES.ITEM, label: 'Artículo' },
 ];
 
 function itemLinea(item) {
@@ -17,41 +25,66 @@ function itemLinea(item) {
   return tipo ? `${item.nombre} - ${tipo}` : item.nombre;
 }
 
+function resolveContenedorCodigo(c) {
+  const codigo = String(c.codigo || '').toUpperCase();
+  if (/^ALM\d{2}/.test(codigo)) return codigo;
+  const alm = String(c.almacen || ALMACEN_DEFAULT).toUpperCase();
+  if (c.armario && c.estante) {
+    return buildUbicacionCodigo(alm, c.armario, c.estante, c.contenedor);
+  }
+  return codigo;
+}
+
+function matchesAlmacenFilter(almacen, filter) {
+  if (!filter) return true;
+  return String(almacen || ALMACEN_DEFAULT).toUpperCase() === filter.toUpperCase();
+}
+
 export default function ImprimirQR() {
-  const [tab, setTab] = useState(QR_TYPES.ITEM);
+  const [tab, setTab] = useState(QR_TYPES.ALMACEN);
   const [inventario, setInventario] = useState([]);
   const [contenedores, setContenedores] = useState([]);
-  const [catalogo, setCatalogo] = useState({ armarios: [], estantes: [] });
+  const [catalogo, setCatalogo] = useState({
+    almacenes: [],
+    armariosPorAlmacen: {},
+    estantes: ESTANTES,
+  });
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(new Set());
-  const [filters, setFilters] = useState({ q: '', armario: '', tipo: '' });
+  const [filters, setFilters] = useState({ q: '', almacen: '', armario: '', tipo: '' });
 
   useEffect(() => {
     setLoading(true);
     Promise.all([
       api.inventario(filters),
       api.contenedores().catch(() => ({ contenedores: [] })),
-      api.catalogoUbicacion().catch(() => ({ armarios: [], estantes: [] })),
+      api.catalogoUbicacion().catch(() => ({
+        almacenes: [],
+        armariosPorAlmacen: {},
+        estantes: ESTANTES,
+      })),
     ])
       .then(([inv, cnt, cat]) => {
         setInventario(inv.items || []);
         setContenedores(cnt.contenedores || []);
         setCatalogo({
-          armarios: cat.armarios || [],
-          estantes: cat.estantes || [],
+          almacenes: cat.almacenes || [],
+          armariosPorAlmacen: cat.armariosPorAlmacen || {},
+          estantes: cat.estantes?.length ? cat.estantes : ESTANTES,
         });
       })
       .finally(() => setLoading(false));
-  }, [filters.q, filters.armario, filters.tipo]);
+  }, [filters.q, filters.almacen, filters.armario, filters.tipo]);
 
   useEffect(() => {
     setSelected(new Set());
-  }, [tab]);
+  }, [tab, filters.almacen, filters.armario]);
 
-  const armarios = useMemo(
-    () => [...new Set(inventario.map((i) => i.armario).filter(Boolean))].sort(),
-    [inventario]
-  );
+  const almacenes = useMemo(() => {
+    if (catalogo.almacenes?.length) return catalogo.almacenes;
+    return [{ codigo: ALMACEN_DEFAULT, nombre: getAlmacenNombre(ALMACEN_DEFAULT), tipo: 'Oficina' }];
+  }, [catalogo.almacenes]);
+
   const tipos = useMemo(
     () => [...new Set(inventario.map((i) => i.tipo).filter(Boolean))].sort(),
     [inventario]
@@ -66,101 +99,166 @@ export default function ImprimirQR() {
     return [...map.values()].sort((a, b) => a.nombre.localeCompare(b.nombre));
   }, [inventario]);
 
-  const listaContenedores = useMemo(() => {
-    const map = new Map();
-    contenedores.forEach((c) => {
-      if (c.codigo) map.set(c.codigo, c);
-    });
-    inventario.forEach((i) => {
-      const cod = i.contenedorCodigo;
-      if (cod && !map.has(cod)) {
-        map.set(cod, {
-          codigo: cod,
-          armario: i.armario,
-          estante: i.estante,
-          contenedor: i.contenedor,
-        });
-      }
-    });
-    return [...map.values()].sort((a, b) => String(a.codigo).localeCompare(String(b.codigo)));
-  }, [contenedores, inventario]);
+  const almacenesActivos = useMemo(() => {
+    const almFilter = filters.almacen?.toUpperCase();
+    if (almFilter) {
+      return almacenes.filter((a) => a.codigo.toUpperCase() === almFilter);
+    }
+    return almacenes;
+  }, [almacenes, filters.almacen]);
 
-  const listaEstantes = useMemo(() => {
-    const map = new Map();
-    const arms =
-      catalogo.armarios?.length > 0
-        ? catalogo.armarios
-        : armarios.map((codigo) => ({ codigo, nombre: getArmarioNombre(codigo) }));
-    const ests =
-      catalogo.estantes?.length > 0
-        ? catalogo.estantes
-        : Array.from({ length: 9 }, (_, i) => ({
-            codigo: `E${String(i + 1).padStart(2, '0')}`,
-          }));
-    arms.forEach((a) => {
-      const ac = a.codigo || a;
-      ests.forEach((e) => {
-        const ec = e.codigo || e;
-        const codigo = `${ac}-${ec}`;
-        map.set(codigo, { codigo, armario: ac, estante: ec, nombre: `${a.nombre || getArmarioNombre(ac)} / ${ec}` });
-      });
-    });
-    inventario.forEach((i) => {
-      if (i.armario && i.estante) {
-        const codigo = `${i.armario}-${i.estante}`;
-        if (!map.has(codigo)) {
-          map.set(codigo, {
-            codigo,
-            armario: i.armario,
-            estante: i.estante,
-            nombre: formatEstanteNombre(i.armario, i.estante),
-          });
-        }
-      }
-    });
-    return [...map.values()].sort((a, b) => a.codigo.localeCompare(b.codigo));
-  }, [catalogo, armarios, inventario]);
+  const listaAlmacenes = useMemo(
+    () =>
+      almacenesActivos.map((a) => ({
+        codigo: a.codigo,
+        nombre: a.nombre || getAlmacenNombre(a.codigo),
+        tipo: a.tipo,
+      })),
+    [almacenesActivos]
+  );
 
   const listaArmarios = useMemo(() => {
     const map = new Map();
-    const arms =
-      catalogo.armarios?.length > 0
-        ? catalogo.armarios
-        : armarios.map((codigo) => ({ codigo, nombre: getArmarioNombre(codigo) }));
-    arms.forEach((a) => {
-      const codigo = a.codigo || a;
-      map.set(codigo, { codigo, nombre: a.nombre || getArmarioNombre(codigo) });
+    const almFilter = filters.almacen?.toUpperCase();
+
+    const almacenesTarget = almFilter
+      ? almacenes.filter((a) => a.codigo.toUpperCase() === almFilter)
+      : almacenes;
+
+    almacenesTarget.forEach((alm) => {
+      getArmariosForAlmacen(catalogo, alm.codigo).forEach((a) => {
+        const codigo = buildUbicacionCodigo(alm.codigo, a.codigo);
+        map.set(codigo, {
+          codigo,
+          almacen: alm.codigo,
+          armario: a.codigo,
+          nombre: a.nombre || getArmarioNombre(a.codigo, alm.codigo, catalogo.armariosPorAlmacen),
+        });
+      });
     });
+
     inventario.forEach((i) => {
-      if (i.armario && !map.has(i.armario)) {
-        map.set(i.armario, { codigo: i.armario, nombre: getArmarioNombre(i.armario) });
+      if (!i.armario) return;
+      if (!matchesAlmacenFilter(i.almacen, filters.almacen)) return;
+      const alm = String(i.almacen || ALMACEN_DEFAULT).toUpperCase();
+      const codigo = buildUbicacionCodigo(alm, i.armario);
+      if (!map.has(codigo)) {
+        map.set(codigo, {
+          codigo,
+          almacen: alm,
+          armario: i.armario,
+          nombre: getArmarioNombre(i.armario, alm, catalogo.armariosPorAlmacen),
+        });
       }
     });
-    return [...map.values()].sort((a, b) => a.codigo.localeCompare(b.codigo));
-  }, [catalogo, armarios, inventario]);
 
-  function formatEstanteNombre(armario, estante) {
-    return `${getArmarioNombre(armario)} / ${estante}`;
-  }
+    return [...map.values()].sort((a, b) => a.codigo.localeCompare(b.codigo));
+  }, [catalogo, almacenes, inventario, filters.almacen]);
+
+  const listaEstantes = useMemo(() => {
+    const map = new Map();
+    const ests = catalogo.estantes?.length ? catalogo.estantes : ESTANTES;
+    const almFilter = filters.almacen?.toUpperCase();
+    const armFilter = filters.armario?.toUpperCase();
+
+    const almacenesTarget = almFilter
+      ? almacenes.filter((a) => a.codigo.toUpperCase() === almFilter)
+      : almacenes;
+
+    almacenesTarget.forEach((alm) => {
+      const arms = getArmariosForAlmacen(catalogo, alm.codigo).filter(
+        (a) => !armFilter || a.codigo.toUpperCase() === armFilter
+      );
+      arms.forEach((a) => {
+        ests.forEach((e) => {
+          const ec = e.codigo || e;
+          const codigo = buildUbicacionCodigo(alm.codigo, a.codigo, ec);
+          const armNombre =
+            a.nombre || getArmarioNombre(a.codigo, alm.codigo, catalogo.armariosPorAlmacen);
+          map.set(codigo, {
+            codigo,
+            almacen: alm.codigo,
+            armario: a.codigo,
+            estante: ec,
+            nombre: `${armNombre} / ${ec}`,
+          });
+        });
+      });
+    });
+
+    inventario.forEach((i) => {
+      if (!i.armario || !i.estante) return;
+      if (!matchesAlmacenFilter(i.almacen, filters.almacen)) return;
+      if (armFilter && i.armario.toUpperCase() !== armFilter) return;
+      const alm = String(i.almacen || ALMACEN_DEFAULT).toUpperCase();
+      const codigo = buildUbicacionCodigo(alm, i.armario, i.estante);
+      if (!map.has(codigo)) {
+        map.set(codigo, {
+          codigo,
+          almacen: alm,
+          armario: i.armario,
+          estante: i.estante,
+          nombre: `${getArmarioNombre(i.armario, alm, catalogo.armariosPorAlmacen)} / ${i.estante}`,
+        });
+      }
+    });
+
+    return [...map.values()].sort((a, b) => a.codigo.localeCompare(b.codigo));
+  }, [catalogo, almacenes, inventario, filters.almacen, filters.armario]);
+
+  const listaContenedores = useMemo(() => {
+    const map = new Map();
+    const armFilter = filters.armario?.toUpperCase();
+
+    contenedores.forEach((c) => {
+      if (!matchesAlmacenFilter(c.almacen, filters.almacen)) return;
+      if (armFilter && String(c.armario || '').toUpperCase() !== armFilter) return;
+      const codigo = resolveContenedorCodigo(c);
+      if (!codigo) return;
+      map.set(codigo, {
+        ...c,
+        codigo,
+        nombre: c.nombre || c.ubicacion || codigo,
+      });
+    });
+
+    inventario.forEach((i) => {
+      const cod = i.contenedorCodigo || resolveContenedorCodigo(i);
+      if (!cod) return;
+      if (!matchesAlmacenFilter(i.almacen, filters.almacen)) return;
+      if (armFilter && String(i.armario || '').toUpperCase() !== armFilter) return;
+      if (!map.has(cod)) {
+        map.set(cod, {
+          codigo: cod,
+          almacen: i.almacen,
+          armario: i.armario,
+          estante: i.estante,
+          contenedor: i.contenedor,
+          nombre: cod,
+        });
+      }
+    });
+
+    return [...map.values()].sort((a, b) => String(a.codigo).localeCompare(String(b.codigo)));
+  }, [contenedores, inventario, filters.almacen, filters.armario]);
 
   const entries = useMemo(() => {
     switch (tab) {
-      case QR_TYPES.ITEM:
-        return articulos.map((i) => ({
-          key: `item:${i.itemId}`,
-          type: QR_TYPES.ITEM,
-          itemId: i.itemId,
-          codigo: i.itemId,
-          titulo: i.itemId,
-          subtitulo: itemLinea(i),
+      case QR_TYPES.ALMACEN:
+        return listaAlmacenes.map((a) => ({
+          key: `alm:${a.codigo}`,
+          type: QR_TYPES.ALMACEN,
+          codigo: a.codigo,
+          titulo: a.codigo,
+          subtitulo: a.nombre || getAlmacenNombre(a.codigo),
         }));
-      case QR_TYPES.CONTENEDOR:
-        return listaContenedores.map((c) => ({
-          key: `cnt:${c.codigo}`,
-          type: QR_TYPES.CONTENEDOR,
-          codigo: c.codigo,
-          titulo: c.codigo,
-          subtitulo: c.nombre || c.codigo,
+      case QR_TYPES.ARMARIO:
+        return listaArmarios.map((a) => ({
+          key: `arm:${a.codigo}`,
+          type: QR_TYPES.ARMARIO,
+          codigo: a.codigo,
+          titulo: a.codigo,
+          subtitulo: a.nombre || a.codigo,
         }));
       case QR_TYPES.ESTANTE:
         return listaEstantes.map((e) => ({
@@ -170,30 +268,44 @@ export default function ImprimirQR() {
           titulo: e.codigo,
           subtitulo: e.nombre || e.codigo,
         }));
-      case QR_TYPES.ARMARIO:
-        return listaArmarios.map((a) => ({
-          key: `arm:${a.codigo}`,
-          type: QR_TYPES.ARMARIO,
-          codigo: a.codigo,
-          titulo: a.codigo,
-          subtitulo: a.nombre || getArmarioNombre(a.codigo),
+      case QR_TYPES.CONTENEDOR:
+        return listaContenedores.map((c) => ({
+          key: `cnt:${c.codigo}`,
+          type: QR_TYPES.CONTENEDOR,
+          codigo: c.codigo,
+          titulo: c.codigo,
+          subtitulo: c.nombre || c.codigo,
+        }));
+      case QR_TYPES.ITEM:
+        return articulos.map((i) => ({
+          key: `item:${i.itemId}`,
+          type: QR_TYPES.ITEM,
+          itemId: i.itemId,
+          codigo: i.itemId,
+          titulo: i.itemId,
+          subtitulo: itemLinea(i),
         }));
       default:
         return [];
     }
-  }, [tab, articulos, listaContenedores, listaEstantes, listaArmarios]);
+  }, [tab, listaAlmacenes, listaArmarios, listaEstantes, listaContenedores, articulos]);
 
   const filteredEntries = useMemo(() => {
-    if (tab !== QR_TYPES.ITEM) return entries;
+    let list = entries;
+    const armFilter = filters.armario?.toUpperCase();
+    if (tab === QR_TYPES.ARMARIO && armFilter) {
+      list = list.filter((e) => e.codigo.endsWith(`-${armFilter}`));
+    }
     const q = filters.q.trim().toLowerCase();
-    if (!q) return entries;
-    return entries.filter(
+    if (!q) return list;
+    return list.filter(
       (e) =>
+        e.codigo?.toLowerCase().includes(q) ||
         e.itemId?.toLowerCase().includes(q) ||
         e.subtitulo?.toLowerCase().includes(q) ||
         e.titulo?.toLowerCase().includes(q)
     );
-  }, [entries, tab, filters.q]);
+  }, [entries, tab, filters.q, filters.armario]);
 
   const toggle = (key) => {
     setSelected((prev) => {
@@ -209,11 +321,14 @@ export default function ImprimirQR() {
   const toPrint = filteredEntries.filter((e) => selected.has(e.key));
 
   const tabHint = {
+    [QR_TYPES.ALMACEN]: 'Códigos ALM01, ALM02… (almacén completo).',
+    [QR_TYPES.ARMARIO]: 'Códigos ALM02-A00, ALM01-A01… (armario / estantería).',
+    [QR_TYPES.ESTANTE]: 'Códigos ALM02-A00-E01 (estante sin contenedor).',
+    [QR_TYPES.CONTENEDOR]: 'Códigos ALM02-A00-E01-C05, …-B12, …-H01 o …-SC.',
     [QR_TYPES.ITEM]: 'QR con item_id para identificar cada herramienta.',
-    [QR_TYPES.CONTENEDOR]: 'Códigos A01-E03-C05, A01-E03-B12, A01-E03-H01 o A01-E03-SC.',
-    [QR_TYPES.ESTANTE]: 'Códigos A01-E03 (estante sin contenedor).',
-    [QR_TYPES.ARMARIO]: 'Códigos A00, A01… (zona / armario).',
   };
+
+  const showLocationFilters = tab !== QR_TYPES.ITEM;
 
   return (
     <div>
@@ -262,16 +377,15 @@ export default function ImprimirQR() {
         ))}
       </div>
 
-      {tab === QR_TYPES.ITEM && (
-        <div className="print:hidden">
-          <SearchFilters
-            filters={filters}
-            onChange={(f) => setFilters((prev) => ({ ...prev, ...f }))}
-            armarios={armarios}
-            tipos={tipos}
-          />
-        </div>
-      )}
+      <div className="print:hidden">
+        <SearchFilters
+          filters={filters}
+          onChange={(f) => setFilters((prev) => ({ ...prev, ...f }))}
+          almacenes={almacenes}
+          armariosPorAlmacen={catalogo.armariosPorAlmacen}
+          tipos={showLocationFilters ? [] : tipos}
+        />
+      </div>
 
       {loading && <p className="text-muted print:hidden">Cargando...</p>}
 

@@ -61,6 +61,21 @@ export function formatUbicacionLabel(item) {
 import { normalizeContenedorPreview } from './contenedorCodigo';
 
 /** Vista previa: ALM01-A01-E03-C05 o A01-E03 (legacy ALM01) */
+/** Código QR: ALM02, ALM02-A00, ALM02-A00-E01, ALM02-A00-E01-C05 */
+export function buildUbicacionCodigo(almacen, armario, estante, contenedor) {
+  const alm = String(almacen || ALMACEN_DEFAULT).toUpperCase();
+  if (!armario) return alm;
+  const arm = String(armario).toUpperCase();
+  if (!estante) return `${alm}-${arm}`;
+  const preview = buildCodigoPreview(alm, arm, estante, contenedor);
+  if (preview) return preview;
+  const est = String(estante).toUpperCase();
+  if (contenedor) {
+    return `${alm}-${arm}-${est}-${String(contenedor).toUpperCase()}`;
+  }
+  return `${alm}-${arm}-${est}`;
+}
+
 export function buildCodigoPreview(almacen, armarioOrEstante, estanteOrContenedor, contenedorMaybe) {
   let alm;
   let armario;
