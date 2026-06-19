@@ -11,7 +11,11 @@ WHERE almacen IS NULL OR almacen = '';
 CREATE INDEX IF NOT EXISTS idx_contenedores_almacen ON contenedores(almacen);
 
 -- Vista inventario con almacén
-CREATE OR REPLACE VIEW v_inventario AS
+-- DROP necesario: CREATE OR REPLACE no puede insertar columna `almacen` antes de `armario`
+-- en una vista existente (PostgreSQL interpreta el cambio como renombrar columnas).
+DROP VIEW IF EXISTS v_inventario CASCADE;
+
+CREATE VIEW v_inventario AS
 SELECT
   s.id AS stock_id,
   i.id AS item_id,
