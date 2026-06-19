@@ -34,8 +34,8 @@ export function getArmarioNombre(armario, almacen, armariosPorAlmacen) {
 
 export function getArmariosForAlmacen(catalogo, almacen) {
   const alm = String(almacen || ALMACEN_DEFAULT).toUpperCase();
-  if (catalogo?.armariosPorAlmacen?.[alm]?.length) {
-    return catalogo.armariosPorAlmacen[alm];
+  if (catalogo?.armariosPorAlmacen && Object.keys(catalogo.armariosPorAlmacen).length > 0) {
+    return catalogo.armariosPorAlmacen[alm] || [];
   }
   if (catalogo?.armarios?.length && catalogo.armarios[0]?.almacen === alm) {
     return catalogo.armarios;
@@ -66,7 +66,10 @@ export function buildUbicacionCodigo(almacen, armario, estante, contenedor) {
   const alm = String(almacen || ALMACEN_DEFAULT).toUpperCase();
   if (!armario) return alm;
   const arm = String(armario).toUpperCase();
-  if (!estante) return `${alm}-${arm}`;
+  if (!estante) {
+    if (alm !== ALMACEN_DEFAULT) return `${alm}-${arm}`;
+    return arm;
+  }
   const preview = buildCodigoPreview(alm, arm, estante, contenedor);
   if (preview) return preview;
   const est = String(estante).toUpperCase();
