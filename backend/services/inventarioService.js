@@ -58,7 +58,10 @@ export async function listInventario(filters = {}) {
   } else {
     if (filters.almacen) query = query.eq('almacen', filters.almacen);
     if (filters.ubicacion) query = query.ilike('ubicacion', filters.ubicacion);
-    if (filters.armario) query = query.eq('armario', filters.armario);
+    if (filters.armario) {
+      query = query.eq('armario', filters.armario);
+      if (filters.almacen) query = query.eq('almacen', filters.almacen);
+    }
   }
   if (filters.tipo) query = query.ilike('tipo', filters.tipo);
   if (filters.q) {

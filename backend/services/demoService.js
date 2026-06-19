@@ -170,7 +170,10 @@ export async function demoListInventario(filters = {}) {
   } else {
     if (filters.almacen) items = items.filter((i) => i.almacen === filters.almacen);
     if (filters.ubicacion) items = items.filter((i) => i.ubicacion === filters.ubicacion);
-    if (filters.armario) items = items.filter((i) => i.armario === filters.armario);
+    if (filters.armario) {
+      items = items.filter((i) => i.armario === filters.armario);
+      if (filters.almacen) items = items.filter((i) => i.almacen === filters.almacen);
+    }
   }
   if (filters.tipo) items = items.filter((i) => i.tipo === filters.tipo);
 
