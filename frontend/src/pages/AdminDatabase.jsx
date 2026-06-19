@@ -38,7 +38,6 @@ export default function AdminDatabase() {
       ? [
           'almacenes',
           'nextAlmacenNum',
-          'armarios',
           'estanteMin',
           'estanteMax',
           'contenedorReglas',
@@ -61,13 +60,6 @@ export default function AdminDatabase() {
 
   const save = async () => {
     const payload = { ...form };
-    if (payload.armarios && typeof payload.armarios === 'string') {
-      try {
-        payload.armarios = JSON.parse(payload.armarios);
-      } catch {
-        /* keep */
-      }
-    }
     if (payload.almacenes && typeof payload.almacenes === 'string') {
       try {
         payload.almacenes = JSON.parse(payload.almacenes);
@@ -112,7 +104,7 @@ export default function AdminDatabase() {
     <div className="space-y-4">
       <h2 className="page-title">Base de datos</h2>
       <p className="text-muted text-sm">
-        Editá catálogo (armarios/zonas), contenedores, ítems y stock. También podés usar el editor
+        Editá catálogo (almacenes con armarios anidados), contenedores, ítems y stock. También podés usar el editor
         completo en el backend:{' '}
         <a href={dbEditorUrl} className="text-amber-400 underline" target="_blank" rel="noreferrer">
           {dbEditorUrl}
@@ -199,7 +191,7 @@ export default function AdminDatabase() {
           {cols.map((c) => (
             <div key={c}>
               <label className="text-label">{c}</label>
-              {String(form[c] || '').includes('\n') || c === 'armarios' || c === 'almacenes' ? (
+              {String(form[c] || '').includes('\n') || c === 'almacenes' || c === 'contenedorReglas' ? (
                 <textarea
                   className="input-field font-mono text-sm"
                   rows={4}

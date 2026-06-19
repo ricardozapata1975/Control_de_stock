@@ -1,6 +1,6 @@
-import { ALMACEN_DEFAULT, ALMACENES, ARMARIOS } from '../utils/ubicacion';
+import { ALMACENES, ARMARIOS, getArmarioNombre, getArmariosForAlmacen } from '../utils/ubicacion';
 
-export default function SearchFilters({ filters, onChange, almacenes, armarios, tipos }) {
+export default function SearchFilters({ filters, onChange, almacenes, armariosPorAlmacen, tipos }) {
   const almacenList =
     almacenes?.length > 0
       ? almacenes
@@ -9,6 +9,15 @@ export default function SearchFilters({ filters, onChange, almacenes, armarios, 
           nombre: info.nombre,
           tipo: info.tipo,
         }));
+
+  const selectedAlmacen = filters.almacen || '';
+  const armarioList = selectedAlmacen
+    ? getArmariosForAlmacen({ armariosPorAlmacen }, selectedAlmacen)
+    : Object.entries(ARMARIOS).map(([codigo, nombre]) => ({ codigo, nombre }));
+
+  const handleAlmacenChange = (almacen) => {
+    onChange({ almacen, armario: '' });
+  };
 
   return (
     <div className="card mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -26,7 +35,7 @@ export default function SearchFilters({ filters, onChange, almacenes, armarios, 
         <select
           className="input-field"
           value={filters.almacen || ''}
-          onChange={(e) => onChange({ almacen: e.target.value })}
+          onChange={(e) => handleAlmacenChange(e.target.value)}
         >
           <option value="">Todos</option>
           {almacenList.map((a) => (
@@ -37,16 +46,17 @@ export default function SearchFilters({ filters, onChange, almacenes, armarios, 
         </select>
       </div>
       <div>
-        <label className="text-label">Armario</label>
+        <label className="text-label">Armario / estantería</label>
         <select
           className="input-field"
           value={filters.armario}
           onChange={(e) => onChange({ armario: e.target.value })}
+          disabled={!selectedAlmacen}
         >
-          <option value="">Todos</option>
-          {(armarios || Object.keys(ARMARIOS)).map((code) => (
-            <option key={code} value={code}>
-              {code} — {ARMARIOS[code] || code}
+          <option value="">{selectedAlmacen ? 'Todos' : 'Elegí almacén primero'}</option>
+          {armarioList.map((a) => (
+            <option key={a.codigo} value={a.codigo}>
+              {a.codigo} — {a.nombre || getArmarioNombre(a.codigo, selectedAlmacen, armariosPorAlmacen)}
             </option>
           ))}
         </select>

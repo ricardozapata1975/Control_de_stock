@@ -7,7 +7,7 @@ import { listUsers } from './userService.js';
 
 const TABLES = {
   catalogo: {
-    label: 'Catálogo (armarios / rangos)',
+    label: 'Catálogo (almacenes / armarios)',
     editable: true,
     virtual: true,
   },

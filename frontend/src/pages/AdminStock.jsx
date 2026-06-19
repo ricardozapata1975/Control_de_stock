@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
-import { ARMARIOS, ALMACEN_DEFAULT, ALMACEN_TIPOS, ESTANTES, buildCodigoPreview } from '../utils/ubicacion';
+import { ALMACEN_DEFAULT, ALMACEN_TIPOS, ARMARIO_TIPOS, ESTANTES, buildCodigoPreview, getArmariosForAlmacen, pickDefaultArmario } from '../utils/ubicacion';
 import { CONTENEDOR_HELP } from '../utils/contenedorCodigo';
 
 const TIPOS = ['Herramienta', 'Medición', 'Eléctrica', 'Neumática', 'Consumible', 'Otro'];
@@ -34,9 +34,11 @@ export default function AdminStock() {
   const [modelo, setModelo] = useState('');
   const [tipo, setTipo] = useState('Herramienta');
   const [detalle, setDetalle] = useState('');
-  const [catalogo, setCatalogo] = useState({ almacenes: [], armarios: [] });
+  const [catalogo, setCatalogo] = useState({ almacenes: [], armariosPorAlmacen: {} });
   const [nuevoAlmTipo, setNuevoAlmTipo] = useState('Oficina');
   const [nuevoAlmNombre, setNuevoAlmNombre] = useState('');
+  const [nuevoArmTipo, setNuevoArmTipo] = useState('Armario');
+  const [nuevoArmNombre, setNuevoArmNombre] = useState('');
   const [almacen, setAlmacen] = useState(ALMACEN_DEFAULT);
   const [armario, setArmario] = useState('A01');
   const [estante, setEstante] = useState('E01');
@@ -67,9 +69,10 @@ export default function AdminStock() {
   const almacenes = catalogo.almacenes?.length
     ? catalogo.almacenes
     : [{ codigo: ALMACEN_DEFAULT, nombre: 'Oficina principal', tipo: 'Oficina' }];
-  const armariosCatalogo = catalogo.armarios?.length
-    ? catalogo.armarios
-    : Object.entries(ARMARIOS).map(([codigo, nombre]) => ({ codigo, nombre }));
+
+  const armariosForAlmacen = (alm) => getArmariosForAlmacen(catalogo, alm);
+  const armariosCatalogo = armariosForAlmacen(almacen);
+  const editArmariosCatalogo = armariosForAlmacen(editAlmacen);
 
   const load = async () => {
     setLoading(true);
@@ -79,7 +82,7 @@ export default function AdminStock() {
       setItems((iData.items || []).filter((i) => i.activo));
       setCatalogo({
         almacenes: cat.almacenes || [],
-        armarios: cat.armarios || [],
+        armariosPorAlmacen: cat.armariosPorAlmacen || {},
       });
     } catch (e) {
       setError(e.message);
@@ -91,6 +94,28 @@ export default function AdminStock() {
   useEffect(() => {
     load();
   }, []);
+
+  useEffect(() => {
+    const list = armariosForAlmacen(almacen);
+    if (!list.length) {
+      if (armario) setArmario('');
+      return;
+    }
+    if (!list.some((a) => a.codigo === armario)) {
+      setArmario(pickDefaultArmario(list));
+    }
+  }, [almacen, catalogo.armariosPorAlmacen]);
+
+  useEffect(() => {
+    const list = armariosForAlmacen(editAlmacen);
+    if (!list.length) {
+      if (editArmario) setEditArmario('');
+      return;
+    }
+    if (!list.some((a) => a.codigo === editArmario)) {
+      setEditArmario(pickDefaultArmario(list));
+    }
+  }, [editAlmacen, catalogo.armariosPorAlmacen]);
 
   const selectedItem = useMemo(
     () => items.find((i) => i.id === itemId),
@@ -287,7 +312,7 @@ export default function AdminStock() {
       setNuevoAlmNombre('');
       setCatalogo({
         almacenes: result.catalogo?.almacenes || [],
-        armarios: result.catalogo?.armarios || catalogo.armarios,
+        armariosPorAlmacen: result.catalogo?.armariosPorAlmacen || catalogo.armariosPorAlmacen,
       });
       setAlmacen(result.almacen.codigo);
     } catch (err) {
@@ -297,7 +322,33 @@ export default function AdminStock() {
     }
   };
 
-  const ubicacionFields = (values, setters) => (
+  const submitNuevoArmario = async (e) => {
+    e.preventDefault();
+    if (!almacen) return;
+    setError('');
+    setSuccess('');
+    setLoading(true);
+    try {
+      const result = await api.adminCreateArmario({
+        almacen,
+        tipo: nuevoArmTipo,
+        nombre: nuevoArmNombre.trim(),
+      });
+      setSuccess(`${result.armario.tipo} ${result.armario.codigo} creado en ${almacen}: ${result.armario.nombre}`);
+      setNuevoArmNombre('');
+      setCatalogo({
+        almacenes: result.catalogo?.almacenes || catalogo.almacenes,
+        armariosPorAlmacen: result.catalogo?.armariosPorAlmacen || {},
+      });
+      setArmario(result.armario.codigo);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const ubicacionFields = (values, setters, armariosList) => (
     <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-3">
       <h3 className="section-title text-base">Ubicación física</h3>
       <div>
@@ -305,7 +356,12 @@ export default function AdminStock() {
         <select
           className="input-field"
           value={values.almacen}
-          onChange={(e) => setters.setAlmacen(e.target.value)}
+          onChange={(e) => {
+            setters.setAlmacen(e.target.value);
+            setters.setArmario('');
+            setters.setEstante('E01');
+            setters.setContenedor('');
+          }}
           required
         >
           {almacenes.map((a) => (
@@ -316,18 +372,24 @@ export default function AdminStock() {
         </select>
       </div>
       <div>
-        <label className="text-label">Armario *</label>
+        <label className="text-label">Armario / estantería / gabinete *</label>
         <select
           className="input-field"
           value={values.armario}
           onChange={(e) => setters.setArmario(e.target.value)}
           required
+          disabled={!armariosList.length}
         >
-          {armariosCatalogo.map((a) => (
-            <option key={a.codigo} value={a.codigo}>
-              {a.codigo} — {a.nombre}
-            </option>
-          ))}
+          {armariosList.length ? (
+            armariosList.map((a) => (
+              <option key={a.codigo} value={a.codigo}>
+                {a.codigo} — {a.nombre}
+                {a.tipo && a.tipo !== 'armario' ? ` (${a.tipo})` : ''}
+              </option>
+            ))
+          ) : (
+            <option value="">Sin armarios — agregá uno abajo</option>
+          )}
         </select>
       </div>
       <div>
@@ -369,7 +431,7 @@ export default function AdminStock() {
     <div>
       <h2 className="page-title mb-2">Administración de stock</h2>
       <p className="mb-4 text-muted">
-        Jerarquía: Almacén → Armario → Estante → Contenedor ({CONTENEDOR_HELP}, opcional).
+        Jerarquía: Almacén → Armario/Estantería/Gabinete → Estante → Contenedor ({CONTENEDOR_HELP}, opcional).
         Los QR impresos A01, A01-E03 siguen funcionando (ALM01 implícito).
       </p>
 
@@ -404,6 +466,53 @@ export default function AdminStock() {
           </div>
           <button type="submit" className="btn-secondary sm:col-span-3" disabled={loading}>
             Crear almacén
+          </button>
+        </form>
+      </details>
+
+      <details className="card mb-4">
+        <summary className="cursor-pointer font-bold text-content">
+          Agregar armario / estantería / gabinete al almacén seleccionado
+        </summary>
+        <form onSubmit={submitNuevoArmario} className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div>
+            <label className="text-label">Almacén destino</label>
+            <select className="input-field" value={almacen} onChange={(e) => setAlmacen(e.target.value)} required>
+              {almacenes.map((a) => (
+                <option key={a.codigo} value={a.codigo}>
+                  {a.codigo} — {a.nombre}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-label">Tipo *</label>
+            <select
+              className="input-field"
+              value={nuevoArmTipo}
+              onChange={(e) => setNuevoArmTipo(e.target.value)}
+              required
+            >
+              {ARMARIO_TIPOS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div>
+            <label className="text-label">Nombre descriptivo *</label>
+            <input
+              className="input-field"
+              placeholder="Ej: Estantería repuestos, Gabinete llaves"
+              value={nuevoArmNombre}
+              onChange={(e) => setNuevoArmNombre(e.target.value)}
+              required
+            />
+            <p className="mt-1 text-xs text-subtle">El código Axx se asigna automáticamente dentro del almacén.</p>
+          </div>
+          <button type="submit" className="btn-secondary sm:col-span-3" disabled={loading || !nuevoArmNombre.trim()}>
+            Crear en {almacen}
           </button>
         </form>
       </details>
@@ -603,7 +712,8 @@ export default function AdminStock() {
                       setArmario: setEditArmario,
                       setEstante: setEditEstante,
                       setContenedor: setEditContenedor,
-                    }
+                    },
+                    editArmariosCatalogo
                   )}
                   <div>
                     <label className="text-label">Cantidad en stock *</label>
@@ -688,7 +798,8 @@ export default function AdminStock() {
           {modo !== 'editar' &&
             ubicacionFields(
               { almacen, armario, estante, contenedor, preview: codigoPreview },
-              { setAlmacen, setArmario, setEstante, setContenedor }
+              { setAlmacen, setArmario, setEstante, setContenedor },
+              armariosCatalogo
             )}
 
           {modo !== 'editar' && (

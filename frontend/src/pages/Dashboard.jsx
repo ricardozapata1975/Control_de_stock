@@ -33,9 +33,13 @@ export default function Dashboard() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [catalogoAlmacenes, setCatalogoAlmacenes] = useState([]);
+  const [armariosPorAlmacen, setArmariosPorAlmacen] = useState({});
 
   useEffect(() => {
-    api.catalogoUbicacion().then((cat) => setCatalogoAlmacenes(cat.almacenes || []));
+    api.catalogoUbicacion().then((cat) => {
+      setCatalogoAlmacenes(cat.almacenes || []);
+      setArmariosPorAlmacen(cat.armariosPorAlmacen || {});
+    });
   }, []);
 
   useEffect(() => {
@@ -54,10 +58,6 @@ export default function Dashboard() {
     fetchInventario();
   }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.codigo]);
 
-  const armarios = useMemo(
-    () => [...new Set(inventario.map((i) => i.armario).filter(Boolean))].sort(),
-    [inventario]
-  );
   const tipos = useMemo(
     () => [...new Set(inventario.map((i) => i.tipo).filter(Boolean))].sort(),
     [inventario]
@@ -169,7 +169,7 @@ export default function Dashboard() {
           }
         }}
         almacenes={catalogoAlmacenes}
-        armarios={armarios}
+        armariosPorAlmacen={armariosPorAlmacen}
         tipos={tipos}
       />
       {inventario.length > 0 && (

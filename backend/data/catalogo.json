@@ -2,15 +2,25 @@
   "almacenes": {
     "ALM01": {
       "tipo": "Oficina",
-      "nombre": "Oficina principal"
+      "nombre": "Oficina principal",
+      "nextArmarioNum": 3,
+      "armarios": {
+        "A00": {
+          "nombre": "Armario Papelería",
+          "tipo": "armario"
+        },
+        "A01": {
+          "nombre": "Armario Herramientas",
+          "tipo": "armario"
+        },
+        "A02": {
+          "nombre": "Armario Electrónica",
+          "tipo": "armario"
+        }
+      }
     }
   },
   "nextAlmacenNum": 2,
-  "armarios": {
-    "A00": "Armario Papelería",
-    "A01": "Armario Herramientas",
-    "A02": "Armario Electrónica"
-  },
   "estanteMin": 1,
   "estanteMax": 9,
   "contenedorReglas": {

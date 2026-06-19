@@ -30,7 +30,7 @@ function seed() {
     armario: 'A01',
     estante: 'E01',
     contenedor: 'C01',
-    ubicacion: getArmarioNombre('A01'),
+    ubicacion: getArmarioNombre('A01', ALMACEN_DEFAULT),
   };
   const c2 = {
     id: buildDbId('A01-E02-C03'),
@@ -39,7 +39,7 @@ function seed() {
     armario: 'A01',
     estante: 'E02',
     contenedor: 'C03',
-    ubicacion: getArmarioNombre('A01'),
+    ubicacion: getArmarioNombre('A01', ALMACEN_DEFAULT),
   };
   const c3 = {
     id: buildDbId('A02-E01-C02'),
@@ -48,7 +48,7 @@ function seed() {
     armario: 'A02',
     estante: 'E01',
     contenedor: 'C02',
-    ubicacion: getArmarioNombre('A02'),
+    ubicacion: getArmarioNombre('A02', ALMACEN_DEFAULT),
   };
   const c4 = {
     id: buildDbId('A00-E03'),
@@ -57,7 +57,7 @@ function seed() {
     armario: 'A00',
     estante: 'E03',
     contenedor: null,
-    ubicacion: getArmarioNombre('A00'),
+    ubicacion: getArmarioNombre('A00', ALMACEN_DEFAULT),
   };
 
   const i1 = {
@@ -223,7 +223,7 @@ export async function demoGetContenedor(codigo) {
       armario: parsed.armario,
       estante: null,
       contenedor: null,
-      ubicacion: getArmarioNombre(parsed.armario),
+      ubicacion: getArmarioNombre(parsed.armario, parsed.almacen || ALMACEN_DEFAULT),
     };
     return {
       contenedor: {
@@ -437,7 +437,7 @@ export function demoResolveUbicacionInMemory(db, { almacen, armario, estante, co
       armario: parsed.armario,
       estante: parsed.estante,
       contenedor: parsed.contenedor,
-      ubicacion: getArmarioNombre(parsed.armario),
+      ubicacion: getArmarioNombre(parsed.armario, parsed.almacen || ALMACEN_DEFAULT),
     };
     db.contenedores.push(cont);
   }
@@ -507,7 +507,7 @@ export async function demoResolveUbicacion({ almacen, armario, estante, contened
       armario: parsed.armario,
       estante: parsed.estante,
       contenedor: parsed.contenedor,
-      ubicacion: getArmarioNombre(parsed.armario),
+      ubicacion: getArmarioNombre(parsed.armario, parsed.almacen || ALMACEN_DEFAULT),
     };
     db.contenedores.push(cont);
     await save(db);

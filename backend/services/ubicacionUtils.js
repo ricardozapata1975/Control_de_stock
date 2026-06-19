@@ -1,15 +1,21 @@
 const ARMARIOS_DEFAULT = {
-  A00: 'Armario Papelería',
-  A01: 'Armario Herramientas',
-  A02: 'Armario Electrónica',
+  A00: { nombre: 'Armario Papelería', tipo: 'armario' },
+  A01: { nombre: 'Armario Herramientas', tipo: 'armario' },
+  A02: { nombre: 'Armario Electrónica', tipo: 'armario' },
 };
 
 const ALMACENES_DEFAULT = {
-  ALM01: { tipo: 'Oficina', nombre: 'Oficina principal' },
+  ALM01: {
+    tipo: 'Oficina',
+    nombre: 'Oficina principal',
+    nextArmarioNum: 3,
+    armarios: { ...ARMARIOS_DEFAULT },
+  },
 };
 
 export const ALMACEN_DEFAULT = 'ALM01';
 export const ALMACEN_TIPOS = ['Almacén', 'Depósito', 'Oficina'];
+export const ARMARIO_TIPOS = ['Armario', 'Estantería', 'Gabinete'];
 
 export const CONTENEDOR_ESPECIAL = 'SC';
 
@@ -23,15 +29,66 @@ const CONTENEDOR_REGLAS_DEFAULT = {
 export const CONTENEDOR_SUFIJO_RE = '(?:C\\d{2}|B\\d{2}|H\\d{2}|SC)';
 
 const ALMACEN_RE = /^ALM\d{2}$/i;
-const ARMARIO_RE = /^A\d{2}$/;
 
-let armariosMap = { ...ARMARIOS_DEFAULT };
-let almacenesMap = { ...ALMACENES_DEFAULT };
+let almacenesMap = structuredClone(ALMACENES_DEFAULT);
 let catalogRules = {
   estanteMin: 1,
   estanteMax: 9,
   contenedorReglas: { ...CONTENEDOR_REGLAS_DEFAULT },
 };
+
+function normalizeArmarioEntry(val) {
+  if (typeof val === 'string') return { nombre: val, tipo: 'armario' };
+  return {
+    nombre: val?.nombre || '',
+    tipo: val?.tipo || 'armario',
+  };
+}
+
+function nextArmarioNumFromMap(armarios = {}) {
+  const nums = Object.keys(armarios)
+    .map((k) => parseInt(k.replace(/^A/i, ''), 10))
+    .filter((n) => !Number.isNaN(n));
+  return nums.length ? Math.max(...nums) + 1 : 0;
+}
+
+/** Migra armarios globales legacy bajo ALM01 y normaliza estructura anidada. */
+export function migrateCatalogoStructure(catalogo) {
+  const c = { ...catalogo };
+  if (!c.almacenes) c.almacenes = structuredClone(ALMACENES_DEFAULT);
+
+  if (c.armarios && Object.keys(c.armarios).length) {
+    const alm01 = c.almacenes.ALM01 || {
+      tipo: 'Oficina',
+      nombre: 'Oficina principal',
+      armarios: {},
+    };
+    alm01.armarios = alm01.armarios || {};
+    for (const [codigo, val] of Object.entries(c.armarios)) {
+      if (!alm01.armarios[codigo]) {
+        alm01.armarios[codigo] = normalizeArmarioEntry(val);
+      }
+    }
+    if (alm01.nextArmarioNum === undefined) {
+      alm01.nextArmarioNum = nextArmarioNumFromMap(alm01.armarios);
+    }
+    c.almacenes.ALM01 = alm01;
+    delete c.armarios;
+  }
+
+  for (const code of Object.keys(c.almacenes)) {
+    const info = c.almacenes[code];
+    if (!info.armarios) info.armarios = {};
+    for (const [ac, val] of Object.entries(info.armarios)) {
+      info.armarios[ac] = normalizeArmarioEntry(val);
+    }
+    if (info.nextArmarioNum === undefined) {
+      info.nextArmarioNum = nextArmarioNumFromMap(info.armarios);
+    }
+  }
+
+  return c;
+}
 
 export function getContenedorHelpText() {
   return 'C01–C99, B00–B99, H01–H99 o SC (sin contenedor)';
@@ -42,28 +99,38 @@ export function getContenedorReglas() {
 }
 
 export function applyCatalogo(catalogo) {
-  if (catalogo?.armarios) armariosMap = catalogo.armarios;
-  if (catalogo?.almacenes) almacenesMap = catalogo.almacenes;
-  if (catalogo) {
+  const migrated = migrateCatalogoStructure(catalogo || {});
+  if (migrated.almacenes) almacenesMap = migrated.almacenes;
+  if (migrated) {
     catalogRules = {
-      estanteMin: catalogo.estanteMin ?? 1,
-      estanteMax: catalogo.estanteMax ?? 9,
-      contenedorReglas: catalogo.contenedorReglas || {
+      estanteMin: migrated.estanteMin ?? 1,
+      estanteMax: migrated.estanteMax ?? 9,
+      contenedorReglas: migrated.contenedorReglas || {
         C: {
-          min: catalogo.contenedorMin ?? CONTENEDOR_REGLAS_DEFAULT.C.min,
-          max: catalogo.contenedorMax ?? CONTENEDOR_REGLAS_DEFAULT.C.max,
+          min: migrated.contenedorMin ?? CONTENEDOR_REGLAS_DEFAULT.C.min,
+          max: migrated.contenedorMax ?? CONTENEDOR_REGLAS_DEFAULT.C.max,
         },
-        B: { ...CONTENEDOR_REGLAS_DEFAULT.B, ...catalogo.contenedorReglas?.B },
-        H: { ...CONTENEDOR_REGLAS_DEFAULT.H, ...catalogo.contenedorReglas?.H },
+        B: { ...CONTENEDOR_REGLAS_DEFAULT.B, ...migrated.contenedorReglas?.B },
+        H: { ...CONTENEDOR_REGLAS_DEFAULT.H, ...migrated.contenedorReglas?.H },
       },
     };
   }
 }
 
-export const ARMARIOS = armariosMap;
+export function getArmariosMapForAlmacen(almacen) {
+  const code = String(almacen || ALMACEN_DEFAULT).toUpperCase();
+  const info = almacenesMap[code];
+  if (!info?.armarios) return {};
+  const map = {};
+  for (const [ac, val] of Object.entries(info.armarios)) {
+    map[ac] = normalizeArmarioEntry(val).nombre;
+  }
+  return map;
+}
 
-export function getArmariosMapSync() {
-  return armariosMap;
+/** Compatibilidad: armarios de ALM01 (CSV legacy sin columna almacén). */
+export function getArmariosMapSync(almacen = ALMACEN_DEFAULT) {
+  return getArmariosMapForAlmacen(almacen);
 }
 
 export function getAlmacenesMapSync() {
@@ -80,7 +147,7 @@ export function listAlmacenes() {
 
 export function getAlmacenInfo(almacen) {
   const code = String(almacen || ALMACEN_DEFAULT).toUpperCase();
-  return almacenesMap[code] || { tipo: '', nombre: code };
+  return almacenesMap[code] || { tipo: '', nombre: code, armarios: {} };
 }
 
 export function getAlmacenNombre(almacen) {
@@ -105,22 +172,68 @@ export function normalizeAlmacen(almacen) {
   return code;
 }
 
-export function getArmarioNombre(armario) {
-  return armariosMap[String(armario || '').toUpperCase()] || armario || '';
+export function getArmarioInfo(armario, almacen) {
+  const ac = String(armario || '').toUpperCase();
+  if (!ac) return null;
+  const alm = almacen ? normalizeAlmacen(almacen) : null;
+  if (alm) {
+    const entry = almacenesMap[alm]?.armarios?.[ac];
+    return entry ? { ...normalizeArmarioEntry(entry), codigo: ac, almacen: alm } : null;
+  }
+  for (const [almCode, info] of Object.entries(almacenesMap)) {
+    const entry = info?.armarios?.[ac];
+    if (entry) {
+      return { ...normalizeArmarioEntry(entry), codigo: ac, almacen: almCode };
+    }
+  }
+  return null;
 }
 
-export function listArmarios() {
-  return Object.entries(armariosMap).map(([codigo, nombre]) => ({ codigo, nombre }));
+export function getArmarioNombre(armario, almacen) {
+  const info = getArmarioInfo(armario, almacen);
+  return info?.nombre || armario || '';
 }
 
-export function normalizeArmario(armario) {
+export function listArmarios(almacen) {
+  if (almacen) {
+    const alm = normalizeAlmacen(almacen);
+    const info = almacenesMap[alm];
+    return Object.entries(info?.armarios || {}).map(([codigo, val]) => {
+      const entry = normalizeArmarioEntry(val);
+      return { codigo, nombre: entry.nombre, tipo: entry.tipo, almacen: alm };
+    });
+  }
+  return Object.entries(almacenesMap).flatMap(([almCode, info]) =>
+    Object.entries(info?.armarios || {}).map(([codigo, val]) => {
+      const entry = normalizeArmarioEntry(val);
+      return { codigo, nombre: entry.nombre, tipo: entry.tipo, almacen: almCode };
+    })
+  );
+}
+
+export function listArmariosPorAlmacen() {
+  const result = {};
+  for (const a of listAlmacenes()) {
+    result[a.codigo] = listArmarios(a.codigo);
+  }
+  return result;
+}
+
+export function normalizeArmario(armario, almacen = ALMACEN_DEFAULT) {
   const code = String(armario || '')
     .trim()
     .toUpperCase()
     .replace(/\s+/g, '');
-  if (!armariosMap[code]) {
+  const alm = normalizeAlmacen(almacen);
+  const map = getArmariosMapForAlmacen(alm);
+  if (!map[code]) {
+    const valid = Object.keys(map);
     throw Object.assign(
-      new Error(`Armario inválido. Usá: ${Object.keys(armariosMap).join(', ')}`),
+      new Error(
+        valid.length
+          ? `Armario inválido en ${alm}. Usá: ${valid.join(', ')}`
+          : `No hay armarios en ${alm}. Agregá uno en Administración.`
+      ),
       { status: 400 }
     );
   }
@@ -193,8 +306,12 @@ function isAlmacenToken(token) {
   return ALMACEN_RE.test(String(token || '').toUpperCase());
 }
 
-function buildCodigoSuffix(armario, estante, contenedor) {
-  const a = normalizeArmario(armario);
+function armarioExistsInAlmacen(almacen, armarioCode) {
+  return Boolean(getArmariosMapForAlmacen(almacen)[armarioCode]);
+}
+
+function buildCodigoSuffix(armario, estante, contenedor, almacen = ALMACEN_DEFAULT) {
+  const a = normalizeArmario(armario, almacen);
   const e = normalizeEstante(estante);
   const c = normalizeContenedor(contenedor);
   return c ? `${a}-${e}-${c}` : `${a}-${e}`;
@@ -225,7 +342,7 @@ export function buildCodigo(a1, a2, a3, a4) {
     includeAlmacenPrefix = false;
   }
 
-  const suffix = buildCodigoSuffix(armario, estante, contenedor);
+  const suffix = buildCodigoSuffix(armario, estante, contenedor, almacen);
   if (includeAlmacenPrefix) return `${almacen}-${suffix}`;
   return suffix;
 }
@@ -260,7 +377,7 @@ function parseWithAlmacen(s) {
   }
 
   const armarioOnly = s.match(/^(ALM\d{2})-(A\d{2})$/);
-  if (armarioOnly && armariosMap[armarioOnly[2]]) {
+  if (armarioOnly && armarioExistsInAlmacen(armarioOnly[1], armarioOnly[2])) {
     return {
       almacen: armarioOnly[1],
       armario: armarioOnly[2],
@@ -332,7 +449,7 @@ function parseLegacy(s) {
   }
 
   const armarioOnly = s.match(/^(A\d{2})$/);
-  if (armarioOnly && armariosMap[armarioOnly[1]]) {
+  if (armarioOnly && armarioExistsInAlmacen(ALMACEN_DEFAULT, armarioOnly[1])) {
     return {
       almacen: ALMACEN_DEFAULT,
       armario: armarioOnly[1],
@@ -404,7 +521,7 @@ export function mapUbicacionFields(cont) {
   const estante = cont.estante || parsed?.estante;
   const caja = cont.contenedor ?? parsed?.contenedor ?? null;
   const almacenInfo = getAlmacenInfo(almacen);
-  const armarioNombre = getArmarioNombre(armario);
+  const armarioNombre = getArmarioNombre(armario, almacen);
   const label = [almacenInfo.nombre, armarioNombre, estante, caja].filter(Boolean).join(' / ');
   return {
     almacen,

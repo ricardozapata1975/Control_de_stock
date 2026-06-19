@@ -1,5 +1,6 @@
 export const ALMACEN_DEFAULT = 'ALM01';
 export const ALMACEN_TIPOS = ['Almacén', 'Depósito', 'Oficina'];
+export const ARMARIO_TIPOS = ['Armario', 'Estantería', 'Gabinete'];
 
 export const ALMACENES = {
   ALM01: { tipo: 'Oficina', nombre: 'Oficina principal' },
@@ -21,8 +22,28 @@ export function getAlmacenNombre(almacen) {
   return info?.nombre || almacen || '';
 }
 
-export function getArmarioNombre(armario) {
-  return ARMARIOS[String(armario || '').toUpperCase()] || armario || '';
+export function getArmarioNombre(armario, almacen, armariosPorAlmacen) {
+  const ac = String(armario || '').toUpperCase();
+  if (!ac) return '';
+  if (almacen && armariosPorAlmacen?.[almacen]) {
+    const found = armariosPorAlmacen[almacen].find((a) => a.codigo === ac);
+    if (found?.nombre) return found.nombre;
+  }
+  return ARMARIOS[ac] || armario || '';
+}
+
+export function getArmariosForAlmacen(catalogo, almacen) {
+  const alm = String(almacen || ALMACEN_DEFAULT).toUpperCase();
+  if (catalogo?.armariosPorAlmacen?.[alm]?.length) {
+    return catalogo.armariosPorAlmacen[alm];
+  }
+  if (catalogo?.armarios?.length && catalogo.armarios[0]?.almacen === alm) {
+    return catalogo.armarios;
+  }
+  if (alm === ALMACEN_DEFAULT) {
+    return Object.entries(ARMARIOS).map(([codigo, nombre]) => ({ codigo, nombre, tipo: 'armario' }));
+  }
+  return [];
 }
 
 export function formatUbicacionLabel(item) {
@@ -30,7 +51,7 @@ export function formatUbicacionLabel(item) {
   if (item.ubicacionLabel) return item.ubicacionLabel;
   const parts = [
     item.almacenNombre || getAlmacenNombre(item.almacen),
-    item.armarioNombre || getArmarioNombre(item.armario) || item.ubicacion,
+    item.armarioNombre || getArmarioNombre(item.armario, item.almacen) || item.ubicacion,
     item.estante,
     item.contenedor,
   ].filter(Boolean);
@@ -73,11 +94,17 @@ export function buildCodigoPreview(almacen, armarioOrEstante, estanteOrContenedo
   return suffix;
 }
 
-export function applyCatalogoToState(catalogo, setAlmacenes, setArmarios) {
+export function applyCatalogoToState(catalogo, setAlmacenes, setArmariosPorAlmacen) {
   if (catalogo?.almacenes && setAlmacenes) {
     setAlmacenes(catalogo.almacenes);
   }
-  if (catalogo?.armarios && setArmarios) {
-    Object.assign(ARMARIOS, catalogo.armarios);
+  if (catalogo?.armariosPorAlmacen && setArmariosPorAlmacen) {
+    setArmariosPorAlmacen(catalogo.armariosPorAlmacen);
   }
+}
+
+export function pickDefaultArmario(armarios) {
+  if (!armarios?.length) return '';
+  const preferred = armarios.find((a) => a.codigo === 'A01');
+  return preferred?.codigo || armarios[0].codigo;
 }

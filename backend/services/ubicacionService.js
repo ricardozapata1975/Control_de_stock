@@ -3,32 +3,35 @@ import * as demo from './demoService.js';
 import { config } from '../config.js';
 import {
   ALMACEN_DEFAULT,
-  buildCodigo,
-  codigoLookupVariants,
   getArmarioNombre,
   getContenedorHelpText,
   listAlmacenes,
   listArmarios,
+  listArmariosPorAlmacen,
   mapUbicacionFields,
   normalizeAlmacen,
   normalizeArmario,
   normalizeContenedor,
   normalizeEstante,
   parseCodigo,
+  buildCodigo,
+  codigoLookupVariants,
 } from './ubicacionUtils.js';
 
 function isDemoMode() {
   return config.demoMode;
 }
 
-export function getCatalogoUbicacion() {
+export function getCatalogoUbicacion(almacenFilter) {
   const estantes = Array.from({ length: 9 }, (_, i) => {
     const code = `E${String(i + 1).padStart(2, '0')}`;
     return { codigo: code, nombre: `Estante ${i + 1}` };
   });
+  const armariosPorAlmacen = listArmariosPorAlmacen();
   return {
     almacenes: listAlmacenes(),
-    armarios: listArmarios(),
+    armarios: almacenFilter ? listArmarios(almacenFilter) : [],
+    armariosPorAlmacen,
     estantes,
     contenedorOpcional: true,
     contenedorValidos: getContenedorHelpText(),
@@ -61,7 +64,7 @@ export async function resolveUbicacion({ almacen, armario, estante, contenedor, 
     const alm = almacen ? normalizeAlmacen(almacen) : ALMACEN_DEFAULT;
     parsed = {
       almacen: alm,
-      armario: normalizeArmario(armario),
+      armario: normalizeArmario(armario, alm),
       estante: normalizeEstante(estante),
       contenedor: normalizeContenedor(contenedor),
       codigo: almacen
@@ -83,7 +86,7 @@ export async function resolveUbicacion({ almacen, armario, estante, contenedor, 
     armario: parsed.armario,
     estante: parsed.estante,
     contenedor: parsed.contenedor,
-    ubicacion: getArmarioNombre(parsed.armario),
+    ubicacion: getArmarioNombre(parsed.armario, alm),
   };
 
   const { data: created, error: insErr } = await supabase.from('contenedores').insert(row).select('*').single();

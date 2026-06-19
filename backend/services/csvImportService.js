@@ -3,6 +3,7 @@ import * as demo from './demoService.js';
 import { getSupabase } from '../db/supabase.js';
 import { resolveUbicacion } from './ubicacionService.js';
 import {
+  ALMACEN_DEFAULT,
   getArmariosMapSync,
   normalizeArmario,
   normalizeContenedor,
@@ -49,7 +50,7 @@ export function getImportSpec() {
         nombre: 'armario',
         obligatorio: true,
         ejemplo: 'A01',
-        descripcion: `Código de armario: ${Object.keys(getArmariosMapSync()).join(', ')}`,
+        descripcion: `Código de armario en ${ALMACEN_DEFAULT}: ${Object.keys(getArmariosMapSync(ALMACEN_DEFAULT)).join(', ')}`,
       },
       {
         nombre: 'estante',
@@ -83,7 +84,7 @@ export function getImportSpec() {
         descripcion: 'Fecha alta/actualización. AAAA-MM-DD o DD/MM/AAAA (ej. 21/5/2026). Vacío = hoy',
       },
     ],
-    armarios: getArmariosMapSync(),
+    armarios: getArmariosMapSync(ALMACEN_DEFAULT),
     modos: {
       agregar: 'Suma stock si ya existe el ítem en la misma ubicación; crea ítem/ubicación si no existen.',
       reemplazar: 'Solo modo demo: borra inventario actual e importa el CSV desde cero.',
@@ -179,7 +180,7 @@ function validateRow(row) {
   if (Number.isNaN(cantidad) || cantidad < 0 || !Number.isInteger(cantidad)) {
     throw new Error('cantidad debe ser un entero ≥ 0');
   }
-  normalizeArmario(row.armario);
+  normalizeArmario(row.armario, ALMACEN_DEFAULT);
   normalizeEstante(row.estante);
   if (row.contenedor?.trim()) normalizeContenedor(row.contenedor);
   return {
@@ -188,7 +189,7 @@ function validateRow(row) {
     modelo: row.modelo?.trim() || '',
     tipo: row.tipo?.trim() || '',
     detalle: row.detalle?.trim() || '',
-    armario: normalizeArmario(row.armario),
+    armario: normalizeArmario(row.armario, ALMACEN_DEFAULT),
     estante: normalizeEstante(row.estante),
     contenedor: row.contenedor?.trim() ? normalizeContenedor(row.contenedor) : null,
     cantidad,

@@ -18,7 +18,7 @@ import { getUsers, postUser, putUser, deleteUserHandler, postResetPassword, post
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem } from './controllers/adminController.js';
-import { getCatalogo, postAlmacen } from './controllers/ubicacionController.js';
+import { getCatalogo, postAlmacen, postArmario } from './controllers/ubicacionController.js';
 import docsRouter from './routes/docs.js';
 import {
   getEspecificacion,
@@ -119,6 +119,7 @@ app.get('/api/health', (_req, res) => {
 // Catálogo de ubicación (almacén / armario / estante / contenedor)
 app.get('/api/ubicacion/catalogo', getCatalogo);
 app.post('/api/admin/catalogo/almacen', requireAuth, requireAdmin, postAlmacen);
+app.post('/api/admin/catalogo/armario', requireAuth, requireAdmin, postArmario);
 
 // Inventario
 app.get('/api/inventario', getInventario);

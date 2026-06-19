@@ -83,6 +83,8 @@ export const api = {
   catalogoUbicacion: () => request('/api/ubicacion/catalogo'),
   adminCreateAlmacen: (body) =>
     request('/api/admin/catalogo/almacen', { method: 'POST', body: JSON.stringify(body) }),
+  adminCreateArmario: (body) =>
+    request('/api/admin/catalogo/armario', { method: 'POST', body: JSON.stringify(body) }),
   egreso: (body) => request('/api/egreso', { method: 'POST', body: JSON.stringify(body) }),
   ingreso: (body) => request('/api/ingreso', { method: 'POST', body: JSON.stringify(body) }),
   sync: (actions) => request('/api/sync', { method: 'POST', body: JSON.stringify(actions) }),
