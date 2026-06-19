@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
-import { ARMARIOS, ESTANTES, buildCodigoPreview } from '../utils/ubicacion';
+import { ARMARIOS, ALMACEN_DEFAULT, ALMACEN_TIPOS, ESTANTES, buildCodigoPreview } from '../utils/ubicacion';
 import { CONTENEDOR_HELP } from '../utils/contenedorCodigo';
 
 const TIPOS = ['Herramienta', 'Medición', 'Eléctrica', 'Neumática', 'Consumible', 'Otro'];
@@ -12,7 +12,8 @@ function pickPrincipalUbicacion(ubicaciones = []) {
 
 function applyUbicacionToForm(ubi, setters) {
   if (!ubi) return;
-  const { setArmario, setEstante, setContenedor } = setters;
+  const { setAlmacen, setArmario, setEstante, setContenedor } = setters;
+  if (ubi.almacen) setAlmacen(ubi.almacen);
   if (ubi.armario) setArmario(ubi.armario);
   if (ubi.estante) setEstante(ubi.estante);
   setContenedor(ubi.contenedor || '');
@@ -33,6 +34,10 @@ export default function AdminStock() {
   const [modelo, setModelo] = useState('');
   const [tipo, setTipo] = useState('Herramienta');
   const [detalle, setDetalle] = useState('');
+  const [catalogo, setCatalogo] = useState({ almacenes: [], armarios: [] });
+  const [nuevoAlmTipo, setNuevoAlmTipo] = useState('Oficina');
+  const [nuevoAlmNombre, setNuevoAlmNombre] = useState('');
+  const [almacen, setAlmacen] = useState(ALMACEN_DEFAULT);
   const [armario, setArmario] = useState('A01');
   const [estante, setEstante] = useState('E01');
   const [contenedor, setContenedor] = useState('');
@@ -48,6 +53,7 @@ export default function AdminStock() {
   const [editModelo, setEditModelo] = useState('');
   const [editTipo, setEditTipo] = useState('Herramienta');
   const [editDetalle, setEditDetalle] = useState('');
+  const [editAlmacen, setEditAlmacen] = useState(ALMACEN_DEFAULT);
   const [editArmario, setEditArmario] = useState('A01');
   const [editEstante, setEditEstante] = useState('E01');
   const [editContenedor, setEditContenedor] = useState('');
@@ -55,15 +61,26 @@ export default function AdminStock() {
 
   const [bajaItemId, setBajaItemId] = useState('');
 
-  const codigoPreview = buildCodigoPreview(armario, estante, contenedor);
-  const editCodigoPreview = buildCodigoPreview(editArmario, editEstante, editContenedor);
+  const codigoPreview = buildCodigoPreview(almacen, armario, estante, contenedor);
+  const editCodigoPreview = buildCodigoPreview(editAlmacen, editArmario, editEstante, editContenedor);
+
+  const almacenes = catalogo.almacenes?.length
+    ? catalogo.almacenes
+    : [{ codigo: ALMACEN_DEFAULT, nombre: 'Oficina principal', tipo: 'Oficina' }];
+  const armariosCatalogo = catalogo.armarios?.length
+    ? catalogo.armarios
+    : Object.entries(ARMARIOS).map(([codigo, nombre]) => ({ codigo, nombre }));
 
   const load = async () => {
     setLoading(true);
     setError('');
     try {
-      const iData = await api.adminItems();
+      const [iData, cat] = await Promise.all([api.adminItems(), api.catalogoUbicacion()]);
       setItems((iData.items || []).filter((i) => i.activo));
+      setCatalogo({
+        almacenes: cat.almacenes || [],
+        armarios: cat.armarios || [],
+      });
     } catch (e) {
       setError(e.message);
     } finally {
@@ -87,7 +104,7 @@ export default function AdminStock() {
     const item = items.find((i) => i.id === itemId);
     const ubi = pickPrincipalUbicacion(item?.ubicaciones?.filter((u) => u.cantidad > 0));
     if (ubi?.stockId) setUbicacionStockId(ubi.stockId);
-    applyUbicacionToForm(ubi, { setArmario, setEstante, setContenedor });
+    applyUbicacionToForm(ubi, { setAlmacen, setArmario, setEstante, setContenedor });
   }, [itemId, modo, items]);
 
   const editItem = useMemo(() => items.find((i) => i.id === editItemId), [items, editItemId]);
@@ -106,6 +123,7 @@ export default function AdminStock() {
     if (ubi?.stockId) setEditStockId(ubi.stockId);
     if (ubi) {
       applyUbicacionToForm(ubi, {
+        setAlmacen: setEditAlmacen,
         setArmario: setEditArmario,
         setEstante: setEditEstante,
         setContenedor: setEditContenedor,
@@ -119,6 +137,7 @@ export default function AdminStock() {
     const ubi = editUbicaciones.find((u) => u.stockId === editStockId);
     if (!ubi) return;
     applyUbicacionToForm(ubi, {
+      setAlmacen: setEditAlmacen,
       setArmario: setEditArmario,
       setEstante: setEditEstante,
       setContenedor: setEditContenedor,
@@ -129,7 +148,7 @@ export default function AdminStock() {
   const onUbicacionExistenteChange = (stockId) => {
     setUbicacionStockId(stockId);
     const ubi = ubicacionesItem.find((u) => u.stockId === stockId);
-    applyUbicacionToForm(ubi, { setArmario, setEstante, setContenedor });
+    applyUbicacionToForm(ubi, { setAlmacen, setArmario, setEstante, setContenedor });
   };
 
   const resetAltaForm = () => {
@@ -141,6 +160,7 @@ export default function AdminStock() {
     setModelo('');
     setTipo('Herramienta');
     setDetalle('');
+    setAlmacen(ALMACEN_DEFAULT);
     setArmario('A01');
     setEstante('E01');
     setContenedor('');
@@ -158,6 +178,7 @@ export default function AdminStock() {
     setEditModelo('');
     setEditTipo('Herramienta');
     setEditDetalle('');
+    setEditAlmacen(ALMACEN_DEFAULT);
     setEditArmario('A01');
     setEditEstante('E01');
     setEditContenedor('');
@@ -178,6 +199,7 @@ export default function AdminStock() {
         modelo,
         tipo,
         detalle,
+        almacen,
         armario,
         estante,
         contenedor: contenedor.trim() || null,
@@ -213,6 +235,7 @@ export default function AdminStock() {
         detalle: editDetalle,
         stockId: editStockId,
         cantidad: Number(editCantidad),
+        almacen: editAlmacen,
         armario: editArmario,
         estante: editEstante,
         contenedor: editContenedor.trim() || null,
@@ -250,9 +273,48 @@ export default function AdminStock() {
 
   const itemsActivos = items.filter((i) => i.activo);
 
-  const ubicacionFields = (prefix, values, setters) => (
+  const submitNuevoAlmacen = async (e) => {
+    e.preventDefault();
+    setError('');
+    setSuccess('');
+    setLoading(true);
+    try {
+      const result = await api.adminCreateAlmacen({
+        tipo: nuevoAlmTipo,
+        nombre: nuevoAlmNombre.trim(),
+      });
+      setSuccess(`Almacén ${result.almacen.codigo} creado: ${result.almacen.nombre}`);
+      setNuevoAlmNombre('');
+      setCatalogo({
+        almacenes: result.catalogo?.almacenes || [],
+        armarios: result.catalogo?.armarios || catalogo.armarios,
+      });
+      setAlmacen(result.almacen.codigo);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const ubicacionFields = (values, setters) => (
     <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-3">
       <h3 className="section-title text-base">Ubicación física</h3>
+      <div>
+        <label className="text-label">Almacén *</label>
+        <select
+          className="input-field"
+          value={values.almacen}
+          onChange={(e) => setters.setAlmacen(e.target.value)}
+          required
+        >
+          {almacenes.map((a) => (
+            <option key={a.codigo} value={a.codigo}>
+              {a.codigo} — {a.nombre} ({a.tipo})
+            </option>
+          ))}
+        </select>
+      </div>
       <div>
         <label className="text-label">Armario *</label>
         <select
@@ -261,9 +323,9 @@ export default function AdminStock() {
           onChange={(e) => setters.setArmario(e.target.value)}
           required
         >
-          {Object.entries(ARMARIOS).map(([codigo, nom]) => (
-            <option key={codigo} value={codigo}>
-              {codigo} — {nom}
+          {armariosCatalogo.map((a) => (
+            <option key={a.codigo} value={a.codigo}>
+              {a.codigo} — {a.nombre}
             </option>
           ))}
         </select>
@@ -307,8 +369,44 @@ export default function AdminStock() {
     <div>
       <h2 className="page-title mb-2">Administración de stock</h2>
       <p className="mb-4 text-muted">
-        Ubicación: armario + estante (obligatorio). Contenedor {CONTENEDOR_HELP} (opcional).
+        Jerarquía: Almacén → Armario → Estante → Contenedor ({CONTENEDOR_HELP}, opcional).
+        Los QR impresos A01, A01-E03 siguen funcionando (ALM01 implícito).
       </p>
+
+      <details className="card mb-4">
+        <summary className="cursor-pointer font-bold text-content">Agregar almacén / depósito / oficina</summary>
+        <form onSubmit={submitNuevoAlmacen} className="mt-4 grid gap-3 sm:grid-cols-3">
+          <div>
+            <label className="text-label">Tipo *</label>
+            <select
+              className="input-field"
+              value={nuevoAlmTipo}
+              onChange={(e) => setNuevoAlmTipo(e.target.value)}
+              required
+            >
+              {ALMACEN_TIPOS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
+          </div>
+          <div className="sm:col-span-2">
+            <label className="text-label">Nombre descriptivo *</label>
+            <input
+              className="input-field"
+              placeholder="Ej: Depósito norte, Oficina planta baja"
+              value={nuevoAlmNombre}
+              onChange={(e) => setNuevoAlmNombre(e.target.value)}
+              required
+            />
+            <p className="mt-1 text-xs text-subtle">El código ALMxx se asigna automáticamente.</p>
+          </div>
+          <button type="submit" className="btn-secondary sm:col-span-3" disabled={loading}>
+            Crear almacén
+          </button>
+        </form>
+      </details>
 
       <div className="mb-4 flex flex-wrap gap-2">
         <button
@@ -493,9 +591,19 @@ export default function AdminStock() {
                     />
                   </div>
                   {ubicacionFields(
-                    'edit',
-                    { armario: editArmario, estante: editEstante, contenedor: editContenedor, preview: editCodigoPreview },
-                    { setArmario: setEditArmario, setEstante: setEditEstante, setContenedor: setEditContenedor }
+                    {
+                      almacen: editAlmacen,
+                      armario: editArmario,
+                      estante: editEstante,
+                      contenedor: editContenedor,
+                      preview: editCodigoPreview,
+                    },
+                    {
+                      setAlmacen: setEditAlmacen,
+                      setArmario: setEditArmario,
+                      setEstante: setEditEstante,
+                      setContenedor: setEditContenedor,
+                    }
                   )}
                   <div>
                     <label className="text-label">Cantidad en stock *</label>
@@ -579,9 +687,8 @@ export default function AdminStock() {
 
           {modo !== 'editar' &&
             ubicacionFields(
-              'alta',
-              { armario, estante, contenedor, preview: codigoPreview },
-              { setArmario, setEstante, setContenedor }
+              { almacen, armario, estante, contenedor, preview: codigoPreview },
+              { setAlmacen, setArmario, setEstante, setContenedor }
             )}
 
           {modo !== 'editar' && (

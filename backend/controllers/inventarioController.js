@@ -4,6 +4,7 @@ export async function getInventario(req, res) {
   const data = await listInventario({
     q: req.query.q,
     ubicacion: req.query.ubicacion,
+    almacen: req.query.almacen,
     armario: req.query.armario,
     tipo: req.query.tipo,
     codigo: req.query.codigo,

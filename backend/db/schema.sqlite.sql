@@ -3,12 +3,15 @@ PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS contenedores (
   id TEXT PRIMARY KEY,
   codigo TEXT NOT NULL UNIQUE,
+  almacen TEXT NOT NULL DEFAULT 'ALM01',
   armario TEXT NOT NULL,
   estante TEXT NOT NULL,
   contenedor TEXT,
   ubicacion TEXT NOT NULL,
   created_at TEXT DEFAULT (datetime('now'))
 );
+
+CREATE INDEX IF NOT EXISTS idx_contenedores_almacen ON contenedores(almacen);
 
 CREATE TABLE IF NOT EXISTS items (
   id TEXT PRIMARY KEY,

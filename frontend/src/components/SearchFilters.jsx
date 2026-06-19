@@ -1,8 +1,17 @@
-import { ARMARIOS } from '../utils/ubicacion';
+import { ALMACEN_DEFAULT, ALMACENES, ARMARIOS } from '../utils/ubicacion';
 
-export default function SearchFilters({ filters, onChange, armarios, tipos }) {
+export default function SearchFilters({ filters, onChange, almacenes, armarios, tipos }) {
+  const almacenList =
+    almacenes?.length > 0
+      ? almacenes
+      : Object.entries(ALMACENES).map(([codigo, info]) => ({
+          codigo,
+          nombre: info.nombre,
+          tipo: info.tipo,
+        }));
+
   return (
-    <div className="card mb-4 grid gap-3 sm:grid-cols-3">
+    <div className="card mb-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
       <div>
         <label className="text-label">Buscar</label>
         <input
@@ -11,6 +20,21 @@ export default function SearchFilters({ filters, onChange, armarios, tipos }) {
           value={filters.q}
           onChange={(e) => onChange({ q: e.target.value })}
         />
+      </div>
+      <div>
+        <label className="text-label">Almacén</label>
+        <select
+          className="input-field"
+          value={filters.almacen || ''}
+          onChange={(e) => onChange({ almacen: e.target.value })}
+        >
+          <option value="">Todos</option>
+          {almacenList.map((a) => (
+            <option key={a.codigo} value={a.codigo}>
+              {a.codigo} — {a.nombre || a.codigo}
+            </option>
+          ))}
+        </select>
       </div>
       <div>
         <label className="text-label">Armario</label>

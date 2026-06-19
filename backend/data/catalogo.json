@@ -1,4 +1,11 @@
 {
+  "almacenes": {
+    "ALM01": {
+      "tipo": "Oficina",
+      "nombre": "Oficina principal"
+    }
+  },
+  "nextAlmacenNum": 2,
   "armarios": {
     "A00": "Armario Papelería",
     "A01": "Armario Herramientas",

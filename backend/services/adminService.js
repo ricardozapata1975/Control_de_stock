@@ -29,7 +29,7 @@ export async function listItemsAdmin() {
   const { data: stock, error: e2 } = await supabase.from('stock').select('id, item_id, contenedor_id, cantidad');
   if (e2) throw Object.assign(new Error(e2.message), { status: 500 });
 
-  const { data: contenedores } = await supabase.from('contenedores').select('id, codigo, armario, estante, contenedor');
+  const { data: contenedores } = await supabase.from('contenedores').select('id, codigo, almacen, armario, estante, contenedor');
 
   return (items || []).map((item) => {
     const rows = (stock || []).filter((s) => s.item_id === item.id);
@@ -71,6 +71,7 @@ export async function altaStock(body, adminName) {
     comentario = '',
     fecha_relevamiento,
     contenedorId,
+    almacen,
     armario,
     estante,
     contenedor,
@@ -99,7 +100,7 @@ export async function altaStock(body, adminName) {
     if (!cont) throw Object.assign(new Error('Ubicación no encontrada'), { status: 404 });
     ubicacion = cont;
   } else {
-    ubicacion = await resolveUbicacion({ armario, estante, contenedor });
+    ubicacion = await resolveUbicacion({ almacen, armario, estante, contenedor });
   }
 
   const resolvedContenedorId = ubicacion.id;
@@ -189,7 +190,7 @@ export async function altaStock(body, adminName) {
   };
 }
 
-async function updateItemStock(itemId, { stockId, cantidad, armario, estante, contenedor }) {
+async function updateItemStock(itemId, { stockId, cantidad, almacen, armario, estante, contenedor }) {
   if (!stockId) {
     throw Object.assign(new Error('stockId requerido para editar ubicación/cantidad'), { status: 400 });
   }
@@ -211,7 +212,7 @@ async function updateItemStock(itemId, { stockId, cantidad, armario, estante, co
 
   let targetContenedorId = stockRow.contenedor_id;
   if (armario && estante) {
-    const ubicacion = await resolveUbicacion({ armario, estante, contenedor });
+    const ubicacion = await resolveUbicacion({ almacen, armario, estante, contenedor });
     targetContenedorId = ubicacion.id;
   }
 
@@ -268,10 +269,11 @@ export async function updateItem(itemId, body) {
   if (!itemId) throw Object.assign(new Error('itemId requerido'), { status: 400 });
   if (isDemoMode()) return demo.demoUpdateItem(itemId, body);
 
-  const { stockId, cantidad, armario, estante, contenedor, ...itemBody } = body;
+  const { stockId, cantidad, almacen, armario, estante, contenedor, ...itemBody } = body;
   const hasStockUpdate =
     stockId !== undefined ||
     cantidad !== undefined ||
+    almacen !== undefined ||
     armario !== undefined ||
     estante !== undefined ||
     contenedor !== undefined;
@@ -299,7 +301,7 @@ export async function updateItem(itemId, body) {
   }
 
   if (hasStockUpdate) {
-    await updateItemStock(itemId, { stockId, cantidad, armario, estante, contenedor });
+    await updateItemStock(itemId, { stockId, cantidad, almacen, armario, estante, contenedor });
   }
 
   if (!hasItemUpdate && !hasStockUpdate) {

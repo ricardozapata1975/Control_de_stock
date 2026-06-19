@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
@@ -32,10 +31,15 @@ export default function Dashboard() {
   const [actionError, setActionError] = useState('');
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
+  const [catalogoAlmacenes, setCatalogoAlmacenes] = useState([]);
+
+  useEffect(() => {
+    api.catalogoUbicacion().then((cat) => setCatalogoAlmacenes(cat.almacenes || []));
+  }, []);
 
   useEffect(() => {
     setPage(1);
-  }, [filters.q, filters.armario, filters.tipo, filters.codigo, filters.scanType, pageSize]);
+  }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.codigo, filters.scanType, pageSize]);
 
   useEffect(() => {
     const codigo = searchParams.get('codigo');
@@ -47,7 +51,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchInventario();
-  }, [filters.q, filters.armario, filters.tipo, filters.codigo]);
+  }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.codigo]);
 
   const armarios = useMemo(
     () => [...new Set(inventario.map((i) => i.armario).filter(Boolean))].sort(),
@@ -156,13 +160,14 @@ export default function Dashboard() {
       <SearchFilters
         filters={filters}
         onChange={(f) => {
-          if (f.armario !== undefined && f.armario) {
+          if ((f.armario !== undefined && f.armario) || (f.almacen !== undefined && f.almacen)) {
             setFilters({ ...f, codigo: '', scanType: '' });
             setSearchParams({});
           } else {
             setFilters(f);
           }
         }}
+        almacenes={catalogoAlmacenes}
         armarios={armarios}
         tipos={tipos}
       />

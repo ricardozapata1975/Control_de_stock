@@ -4,8 +4,10 @@
 import { config } from '../config.js';
 import { loadInventoryData, saveInventoryData } from '../db/sqlite.js';
 import {
+  ALMACEN_DEFAULT,
   buildCodigo,
   buildDbId,
+  codigoLookupVariants,
   getArmarioNombre,
   mapUbicacionFields,
   parseCodigo,
@@ -24,6 +26,7 @@ function seed() {
   const c1 = {
     id: buildDbId('A01-E01-C01'),
     codigo: 'A01-E01-C01',
+    almacen: ALMACEN_DEFAULT,
     armario: 'A01',
     estante: 'E01',
     contenedor: 'C01',
@@ -32,6 +35,7 @@ function seed() {
   const c2 = {
     id: buildDbId('A01-E02-C03'),
     codigo: 'A01-E02-C03',
+    almacen: ALMACEN_DEFAULT,
     armario: 'A01',
     estante: 'E02',
     contenedor: 'C03',
@@ -40,6 +44,7 @@ function seed() {
   const c3 = {
     id: buildDbId('A02-E01-C02'),
     codigo: 'A02-E01-C02',
+    almacen: ALMACEN_DEFAULT,
     armario: 'A02',
     estante: 'E01',
     contenedor: 'C02',
@@ -48,6 +53,7 @@ function seed() {
   const c4 = {
     id: buildDbId('A00-E03'),
     codigo: 'A00-E03',
+    almacen: ALMACEN_DEFAULT,
     armario: 'A00',
     estante: 'E03',
     contenedor: null,
@@ -147,16 +153,22 @@ export async function demoListInventario(filters = {}) {
   }
   if (filters.codigo) {
     const parsed = parseCodigo(filters.codigo);
-    if (parsed?.armario && !parsed.estante) {
+    if (parsed?.almacen && !parsed.armario) {
+      items = items.filter((i) => i.almacen === parsed.almacen);
+    } else if (parsed?.armario && !parsed.estante) {
       items = items.filter((i) => i.armario === parsed.armario);
+      if (parsed.almacen) items = items.filter((i) => i.almacen === parsed.almacen);
     } else if (parsed?.estante && !parsed.contenedor) {
       items = items.filter(
         (i) => i.armario === parsed.armario && i.estante === parsed.estante
       );
+      if (parsed.almacen) items = items.filter((i) => i.almacen === parsed.almacen);
     } else if (parsed?.codigo) {
-      items = items.filter((i) => i.contenedorCodigo === parsed.codigo);
+      const variants = new Set(codigoLookupVariants(parsed));
+      items = items.filter((i) => variants.has(i.contenedorCodigo));
     }
   } else {
+    if (filters.almacen) items = items.filter((i) => i.almacen === filters.almacen);
     if (filters.ubicacion) items = items.filter((i) => i.ubicacion === filters.ubicacion);
     if (filters.armario) items = items.filter((i) => i.armario === filters.armario);
   }
@@ -171,13 +183,43 @@ export async function demoGetContenedor(codigo) {
   const parsed = parseCodigo(codigo);
   const normalized = parsed?.codigo || codigo.toUpperCase();
 
+  if (parsed?.almacen && !parsed.armario) {
+    const items = db.stock
+      .map((s) => mapStockRow(db, s))
+      .filter((i) => i && i.almacen === parsed.almacen);
+    const cont = {
+      id: `alm-${parsed.almacen}`,
+      codigo: parsed.almacen,
+      almacen: parsed.almacen,
+      armario: null,
+      estante: null,
+      contenedor: null,
+      ubicacion: parsed.almacen,
+    };
+    return {
+      contenedor: {
+        ...mapUbicacionFields(cont),
+        itemCount: items.length,
+        totalStock: items.reduce((sum, i) => sum + i.cantidad, 0),
+      },
+      items,
+      total: items.length,
+    };
+  }
+
   if (parsed?.armario && !parsed.estante) {
     const items = db.stock
       .map((s) => mapStockRow(db, s))
-      .filter((i) => i && i.armario === parsed.armario);
+      .filter(
+        (i) =>
+          i &&
+          i.armario === parsed.armario &&
+          (!parsed.almacen || i.almacen === parsed.almacen)
+      );
     const cont = {
-      id: `arm-${parsed.armario}`,
-      codigo: parsed.armario,
+      id: `arm-${parsed.almacen || 'alm01'}-${parsed.armario}`,
+      codigo: parsed.codigo,
+      almacen: parsed.almacen,
       armario: parsed.armario,
       estante: null,
       contenedor: null,
@@ -194,7 +236,8 @@ export async function demoGetContenedor(codigo) {
     };
   }
 
-  let cont = db.contenedores.find((c) => c.codigo === normalized);
+  const variants = codigoLookupVariants(parsed);
+  let cont = db.contenedores.find((c) => variants.includes(c.codigo));
   if (!cont && parsed) {
     cont = await demoResolveUbicacion({ codigo: normalized });
   }
@@ -204,7 +247,13 @@ export async function demoGetContenedor(codigo) {
   if (parsed?.estante && !parsed.contenedor) {
     items = db.stock
       .map((s) => mapStockRow(db, s))
-      .filter((i) => i && i.armario === parsed.armario && i.estante === parsed.estante);
+      .filter(
+        (i) =>
+          i &&
+          i.armario === parsed.armario &&
+          i.estante === parsed.estante &&
+          (!parsed.almacen || i.almacen === parsed.almacen)
+      );
   } else {
     items = db.stock
       .filter((s) => s.contenedor_id === cont.id)
@@ -363,23 +412,28 @@ export async function demoResetInventario() {
   await save({ contenedores: [], items: [], stock: [], movimientos: [] });
 }
 
-export function demoResolveUbicacionInMemory(db, { armario, estante, contenedor, codigo }) {
+export function demoResolveUbicacionInMemory(db, { almacen, armario, estante, contenedor, codigo }) {
   let parsed = codigo ? parseCodigo(codigo) : null;
   if (!parsed && armario && estante) {
     parsed = {
+      almacen: almacen || ALMACEN_DEFAULT,
       armario,
       estante,
       contenedor: contenedor ?? null,
-      codigo: buildCodigo(armario, estante, contenedor),
+      codigo: almacen
+        ? buildCodigo(almacen, armario, estante, contenedor)
+        : buildCodigo(armario, estante, contenedor),
     };
   }
   if (!parsed) throw Object.assign(new Error('Ubicación inválida'), { status: 400 });
 
-  let cont = db.contenedores.find((c) => c.codigo === parsed.codigo);
+  const variants = codigoLookupVariants(parsed);
+  let cont = db.contenedores.find((c) => variants.includes(c.codigo));
   if (!cont) {
     cont = {
       id: buildDbId(parsed.codigo),
       codigo: parsed.codigo,
+      almacen: parsed.almacen || ALMACEN_DEFAULT,
       armario: parsed.armario,
       estante: parsed.estante,
       contenedor: parsed.contenedor,
@@ -427,24 +481,29 @@ export async function demoListItemsAdmin() {
   });
 }
 
-export async function demoResolveUbicacion({ armario, estante, contenedor, codigo }) {
+export async function demoResolveUbicacion({ almacen, armario, estante, contenedor, codigo }) {
   const db = await load();
   let parsed = codigo ? parseCodigo(codigo) : null;
   if (!parsed && armario && estante) {
     parsed = {
+      almacen: almacen || ALMACEN_DEFAULT,
       armario,
       estante,
       contenedor: contenedor ?? null,
-      codigo: buildCodigo(armario, estante, contenedor),
+      codigo: almacen
+        ? buildCodigo(almacen, armario, estante, contenedor)
+        : buildCodigo(armario, estante, contenedor),
     };
   }
   if (!parsed) throw Object.assign(new Error('Ubicación inválida'), { status: 400 });
 
-  let cont = db.contenedores.find((c) => c.codigo === parsed.codigo);
+  const variants = codigoLookupVariants(parsed);
+  let cont = db.contenedores.find((c) => variants.includes(c.codigo));
   if (!cont) {
     cont = {
       id: buildDbId(parsed.codigo),
       codigo: parsed.codigo,
+      almacen: parsed.almacen || ALMACEN_DEFAULT,
       armario: parsed.armario,
       estante: parsed.estante,
       contenedor: parsed.contenedor,

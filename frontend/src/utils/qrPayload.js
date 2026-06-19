@@ -1,5 +1,6 @@
 /** Tipos de etiqueta QR */
 export const QR_TYPES = {
+  ALMACEN: 'almacen',
   ARMARIO: 'armario',
   ESTANTE: 'estante',
   CONTENEDOR: 'contenedor',
@@ -25,7 +26,9 @@ export function parseQrScan(text) {
   const s = String(text || '').trim();
   if (!s) return null;
 
-  const deepLink = s.match(/inventario:\/\/(armario|estante|contenedor|item)\/([^?\s#]+)/i);
+  const deepLink = s.match(
+    /inventario:\/\/(almacen|armario|estante|contenedor|item)\/([^?\s#]+)/i
+  );
   if (deepLink) {
     const type = deepLink[1].toLowerCase();
     const raw = decodeURIComponent(deepLink[2]);
@@ -48,6 +51,22 @@ export function parseQrScan(text) {
   const codigo = extractCodigoUbicacion(s);
   if (!codigo) return null;
 
+  if (/^ALM\d{2}$/i.test(codigo)) {
+    return { type: QR_TYPES.ALMACEN, codigo };
+  }
+  if (/^ALM\d{2}-A\d{2}$/i.test(codigo)) {
+    return { type: QR_TYPES.ARMARIO, codigo };
+  }
+  if (/^ALM\d{2}-A\d{2}-E\d{2}$/i.test(codigo)) {
+    return { type: QR_TYPES.ESTANTE, codigo };
+  }
+  if (
+    /^ALM\d{2}-A\d{2}-E\d{2}-(?:C|B|H)\d{2}$/i.test(codigo) ||
+    /^ALM\d{2}-A\d{2}-E\d{2}-SC$/i.test(codigo)
+  ) {
+    return { type: QR_TYPES.CONTENEDOR, codigo };
+  }
+
   if (/^[A-Z]\d{2}$/.test(codigo)) {
     return { type: QR_TYPES.ARMARIO, codigo };
   }
@@ -63,10 +82,29 @@ export function parseQrScan(text) {
 export function extractCodigoUbicacion(text) {
   const s = String(text || '').trim();
   const sufijo = '(?:C\\d{2}|B\\d{2}|H\\d{2}|SC)';
+  const almPrefix = 'ALM\\d{2}';
+
   const urlMatch = s.match(
-    new RegExp(`(?:contenedor|estante|armario)/([A-Z]\\d{2}(?:-E\\d{2})?(?:-${sufijo})?)`, 'i')
+    new RegExp(
+      `(?:almacen|contenedor|estante|armario)/((?:${almPrefix}-)?[A-Z]\\d{2}(?:-E\\d{2})?(?:-${sufijo})?)`,
+      'i'
+    )
   );
   if (urlMatch) return urlMatch[1].toUpperCase();
+
+  const almOnly = s.match(/\b(ALM\d{2})\b/i);
+  if (almOnly && !s.includes('-')) return almOnly[1].toUpperCase();
+
+  const almFull = s.match(
+    new RegExp(`\\b(${almPrefix}-[A-Z]\\d{2}-E\\d{2}-${sufijo})\\b`, 'i')
+  );
+  if (almFull) return almFull[1].toUpperCase();
+
+  const almShelf = s.match(new RegExp(`\\b(${almPrefix}-[A-Z]\\d{2}-E\\d{2})\\b`, 'i'));
+  if (almShelf) return almShelf[1].toUpperCase();
+
+  const almArm = s.match(new RegExp(`\\b(${almPrefix}-[A-Z]\\d{2})\\b`, 'i'));
+  if (almArm) return almArm[1].toUpperCase();
 
   const full = s.match(new RegExp(`\\b([A-Z]\\d{2}-E\\d{2}-${sufijo})\\b`, 'i'));
   if (full) return full[1].toUpperCase();
@@ -101,6 +139,8 @@ export function extractContenedorIdFromScan(text) {
 
 export function qrTypeLabel(type) {
   switch (type) {
+    case QR_TYPES.ALMACEN:
+      return 'Almacén';
     case QR_TYPES.ARMARIO:
       return 'Armario';
     case QR_TYPES.ESTANTE:

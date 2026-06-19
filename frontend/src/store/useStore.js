@@ -7,15 +7,15 @@ export const useStore = create((set, get) => ({
   lowStockThreshold: 2,
   loading: false,
   error: null,
-  filters: { q: '', armario: '', tipo: '', codigo: '', scanType: '' },
+  filters: { q: '', almacen: '', armario: '', tipo: '', codigo: '', scanType: '' },
 
   setFilters: (f) => set({ filters: { ...get().filters, ...f } }),
 
   fetchInventario: async () => {
     set({ loading: true, error: null });
     try {
-      const { q, armario, tipo, codigo } = get().filters;
-      const data = await api.inventario({ q, armario, tipo, codigo });
+      const { q, almacen, armario, tipo, codigo } = get().filters;
+      const data = await api.inventario({ q, almacen, armario, tipo, codigo });
       set({
         inventario: data.items,
         lowStock: data.lowStock,

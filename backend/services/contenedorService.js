@@ -1,7 +1,7 @@
 import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
 import { enrichContenedor, resolveUbicacion } from './ubicacionService.js';
-import { mapUbicacionFields, parseCodigo } from './ubicacionUtils.js';
+import { codigoLookupVariants, mapUbicacionFields, parseCodigo } from './ubicacionUtils.js';
 
 function mapInventarioRows(rows) {
   return (rows || []).map((r) => ({
@@ -12,6 +12,7 @@ function mapInventarioRows(rows) {
     contenedorCodigo: r.contenedor_codigo,
     ...mapUbicacionFields({
       codigo: r.contenedor_codigo,
+      almacen: r.almacen,
       armario: r.armario,
       estante: r.estante,
       contenedor: r.contenedor,
@@ -34,16 +35,44 @@ export async function getByCodigo(codigo) {
   const parsed = parseCodigo(codigo);
   const normalized = parsed?.codigo || String(codigo || '').trim().toUpperCase();
 
-  if (parsed?.armario && !parsed.estante) {
+  if (parsed?.almacen && !parsed.armario) {
     const { data: rows, error: errI } = await supabase
       .from('v_inventario')
       .select('*')
-      .eq('armario', parsed.armario);
+      .eq('almacen', parsed.almacen);
+    if (errI) throw Object.assign(new Error(errI.message), { status: 500 });
+    const items = mapInventarioRows(rows);
+    const almInfo = items[0] || mapUbicacionFields({ almacen: parsed.almacen, codigo: parsed.almacen });
+    const cont = enrichContenedor({
+      id: `alm-${parsed.almacen}`,
+      codigo: parsed.almacen,
+      almacen: parsed.almacen,
+      armario: null,
+      estante: null,
+      contenedor: null,
+      ubicacion: almInfo.almacenNombre || parsed.almacen,
+    });
+    return {
+      contenedor: {
+        ...cont,
+        itemCount: items.length,
+        totalStock: items.reduce((s, i) => s + i.cantidad, 0),
+      },
+      items,
+      total: items.length,
+    };
+  }
+
+  if (parsed?.armario && !parsed.estante) {
+    let queryArm = supabase.from('v_inventario').select('*').eq('armario', parsed.armario);
+    if (parsed.almacen) queryArm = queryArm.eq('almacen', parsed.almacen);
+    const { data: rows, error: errI } = await queryArm;
     if (errI) throw Object.assign(new Error(errI.message), { status: 500 });
     const items = mapInventarioRows(rows);
     const cont = enrichContenedor({
-      id: `arm-${parsed.armario}`,
-      codigo: parsed.armario,
+      id: `arm-${parsed.almacen || 'alm01'}-${parsed.armario}`,
+      codigo: parsed.codigo,
+      almacen: parsed.almacen,
       armario: parsed.armario,
       estante: null,
       contenedor: null,
@@ -61,20 +90,26 @@ export async function getByCodigo(codigo) {
   }
 
   let cont;
-  const { data: found, error: errC } = await supabase
-    .from('contenedores')
-    .select('*')
-    .eq('codigo', normalized)
-    .maybeSingle();
-
-  if (errC) throw Object.assign(new Error(errC.message), { status: 500 });
-  if (found) cont = found;
-  else if (parsed) cont = await resolveUbicacion({ codigo: normalized });
+  const variants = codigoLookupVariants(parsed);
+  for (const variant of variants) {
+    const { data: found, error: errC } = await supabase
+      .from('contenedores')
+      .select('*')
+      .eq('codigo', variant)
+      .maybeSingle();
+    if (errC) throw Object.assign(new Error(errC.message), { status: 500 });
+    if (found) {
+      cont = found;
+      break;
+    }
+  }
+  if (!cont && parsed) cont = await resolveUbicacion({ codigo: normalized });
   if (!cont) throw Object.assign(new Error('Ubicación no encontrada'), { status: 404 });
 
   let query = supabase.from('v_inventario').select('*');
   if (parsed?.estante && !parsed.contenedor) {
     query = query.eq('armario', parsed.armario).eq('estante', parsed.estante);
+    if (parsed.almacen) query = query.eq('almacen', parsed.almacen);
   } else {
     query = query.eq('contenedor_id', cont.id);
   }

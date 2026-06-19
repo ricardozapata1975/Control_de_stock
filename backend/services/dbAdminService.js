@@ -13,7 +13,7 @@ const TABLES = {
   },
   contenedores: {
     label: 'Contenedores / ubicaciones',
-    fields: ['id', 'codigo', 'armario', 'estante', 'contenedor', 'ubicacion'],
+    fields: ['id', 'codigo', 'almacen', 'armario', 'estante', 'contenedor', 'ubicacion'],
   },
   items: {
     label: 'Ítems (herramientas)',

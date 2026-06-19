@@ -8,12 +8,15 @@ CREATE EXTENSION IF NOT EXISTS "pgcrypto";
 CREATE TABLE IF NOT EXISTS contenedores (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   codigo TEXT NOT NULL UNIQUE,
+  almacen TEXT NOT NULL DEFAULT 'ALM01',
   armario TEXT NOT NULL,
   estante TEXT NOT NULL,
   contenedor TEXT,
   ubicacion TEXT NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+CREATE INDEX IF NOT EXISTS idx_contenedores_almacen ON contenedores(almacen);
 
 CREATE TABLE IF NOT EXISTS items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
@@ -66,6 +69,7 @@ SELECT
   i.id AS item_id,
   c.id AS contenedor_id,
   c.codigo AS contenedor_codigo,
+  c.almacen,
   c.armario,
   c.ubicacion,
   c.estante,

@@ -29,6 +29,16 @@ function runSchema() {
   const sql = fs.readFileSync(SCHEMA_PATH, 'utf-8');
   getDb().exec(sql);
   migrateUserColumns();
+  migrateContenedorColumns();
+}
+
+function migrateContenedorColumns() {
+  const db = getDb();
+  const cols = db.prepare(`PRAGMA table_info(contenedores)`).all().map((c) => c.name);
+  if (!cols.includes('almacen')) {
+    db.exec(`ALTER TABLE contenedores ADD COLUMN almacen TEXT NOT NULL DEFAULT 'ALM01'`);
+    db.exec(`UPDATE contenedores SET almacen = 'ALM01' WHERE almacen IS NULL OR almacen = ''`);
+  }
 }
 
 function migrateUserColumns() {
@@ -62,13 +72,14 @@ export function saveInventoryData(data) {
     db.prepare('DELETE FROM contenedores').run();
 
     const insCont = db.prepare(
-      `INSERT OR REPLACE INTO contenedores (id, codigo, armario, estante, contenedor, ubicacion, created_at)
-       VALUES (@id, @codigo, @armario, @estante, @contenedor, @ubicacion, @created_at)`
+      `INSERT OR REPLACE INTO contenedores (id, codigo, almacen, armario, estante, contenedor, ubicacion, created_at)
+       VALUES (@id, @codigo, @almacen, @armario, @estante, @contenedor, @ubicacion, @created_at)`
     );
     for (const row of data.contenedores || []) {
       insCont.run({
         id: row.id,
         codigo: row.codigo,
+        almacen: row.almacen || 'ALM01',
         armario: row.armario,
         estante: row.estante,
         contenedor: row.contenedor ?? null,

@@ -1,12 +1,13 @@
 import { config } from '../config.js';
 import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
-import { mapUbicacionFields, parseCodigo } from './ubicacionUtils.js';
+import { mapUbicacionFields, parseCodigo, codigoLookupVariants } from './ubicacionUtils.js';
 import { mapItemCampos } from './itemFields.js';
 
 function mapInventarioRow(row) {
   const ubi = mapUbicacionFields({
     codigo: row.contenedor_codigo || row.contenedorCodigo,
+    almacen: row.almacen,
     armario: row.armario,
     estante: row.estante,
     contenedor: row.contenedor,
@@ -38,14 +39,24 @@ export async function listInventario(filters = {}) {
 
   if (filters.codigo) {
     const parsed = parseCodigo(filters.codigo);
-    if (parsed?.armario && !parsed.estante) {
+    if (parsed?.almacen && !parsed.armario) {
+      query = query.eq('almacen', parsed.almacen);
+    } else if (parsed?.armario && !parsed.estante) {
       query = query.eq('armario', parsed.armario);
+      if (parsed.almacen) query = query.eq('almacen', parsed.almacen);
     } else if (parsed?.estante && !parsed.contenedor) {
       query = query.eq('armario', parsed.armario).eq('estante', parsed.estante);
+      if (parsed.almacen) query = query.eq('almacen', parsed.almacen);
     } else if (parsed?.codigo) {
-      query = query.eq('contenedor_codigo', parsed.codigo);
+      const variants = codigoLookupVariants(parsed);
+      if (variants.length === 1) {
+        query = query.eq('contenedor_codigo', variants[0]);
+      } else {
+        query = query.in('contenedor_codigo', variants);
+      }
     }
   } else {
+    if (filters.almacen) query = query.eq('almacen', filters.almacen);
     if (filters.ubicacion) query = query.ilike('ubicacion', filters.ubicacion);
     if (filters.armario) query = query.eq('armario', filters.armario);
   }

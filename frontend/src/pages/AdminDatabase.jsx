@@ -35,7 +35,15 @@ export default function AdminDatabase() {
 
   const cols =
     table === 'catalogo'
-      ? ['armarios', 'estanteMin', 'estanteMax', 'contenedorReglas', 'contenedorEspecial']
+      ? [
+          'almacenes',
+          'nextAlmacenNum',
+          'armarios',
+          'estanteMin',
+          'estanteMax',
+          'contenedorReglas',
+          'contenedorEspecial',
+        ]
       : rows[0]
         ? Object.keys(rows[0])
         : [];
@@ -60,7 +68,14 @@ export default function AdminDatabase() {
         /* keep */
       }
     }
-    ['estanteMin', 'estanteMax'].forEach((k) => {
+    if (payload.almacenes && typeof payload.almacenes === 'string') {
+      try {
+        payload.almacenes = JSON.parse(payload.almacenes);
+      } catch {
+        /* keep */
+      }
+    }
+    ['estanteMin', 'estanteMax', 'nextAlmacenNum'].forEach((k) => {
       if (payload[k] !== undefined && payload[k] !== '') payload[k] = Number(payload[k]);
     });
     try {
@@ -184,7 +199,7 @@ export default function AdminDatabase() {
           {cols.map((c) => (
             <div key={c}>
               <label className="text-label">{c}</label>
-              {String(form[c] || '').includes('\n') || c === 'armarios' ? (
+              {String(form[c] || '').includes('\n') || c === 'armarios' || c === 'almacenes' ? (
                 <textarea
                   className="input-field font-mono text-sm"
                   rows={4}
