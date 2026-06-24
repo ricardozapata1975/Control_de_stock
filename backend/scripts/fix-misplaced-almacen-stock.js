@@ -10,11 +10,12 @@
  */
 import { getSupabase } from '../db/supabase.js';
 import { assertConfig } from '../config.js';
+import { loadCatalogo } from '../services/catalogoService.js';
 import {
   ALMACEN_DEFAULT,
+  applyCatalogo,
   buildCodigo,
   getArmarioNombre,
-  normalizeAlmacen,
 } from '../services/ubicacionUtils.js';
 
 function parseArgs(argv) {
@@ -25,6 +26,20 @@ function parseArgs(argv) {
     else if (argv[i] === '--armario') args.armario = argv[++i] || '';
   }
   return args;
+}
+
+function parseTargetAlmacen(almacen) {
+  const code = String(almacen || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '');
+  if (!/^ALM\d{2}$/.test(code)) {
+    throw new Error('Almacén inválido. Usá ALM02, ALM03…');
+  }
+  if (code === ALMACEN_DEFAULT) {
+    throw new Error('El almacén destino no puede ser ALM01 en este script.');
+  }
+  return code;
 }
 
 async function ensureTargetContenedor(supabase, targetAlm, sourceCont) {
@@ -103,7 +118,10 @@ async function main() {
   }
 
   assertConfig();
-  const targetAlm = normalizeAlmacen(almacen);
+  const catalogo = await loadCatalogo();
+  applyCatalogo(catalogo);
+
+  const targetAlm = parseTargetAlmacen(almacen);
   const armarioCode = armario.toUpperCase();
   const supabase = getSupabase();
 
