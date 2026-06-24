@@ -30,6 +30,19 @@ export const CONTENEDOR_SUFIJO_RE = '(?:C\\d{2}|B\\d{2}|H\\d{2}|SC)';
 
 const ALMACEN_RE = /^ALM\d{2}$/i;
 
+/** ALM002, ALM2 → ALM02; rechaza fuera de ALM01–ALM99 */
+export function canonicalAlmacenCode(almacen) {
+  const s = String(almacen || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '');
+  const m = s.match(/^ALM(\d+)$/i);
+  if (!m) return null;
+  const num = parseInt(m[1], 10);
+  if (Number.isNaN(num) || num < 1 || num > 99) return null;
+  return `ALM${String(num).padStart(2, '0')}`;
+}
+
 let almacenesMap = structuredClone(ALMACENES_DEFAULT);
 let catalogRules = {
   estanteMin: 1,
@@ -156,11 +169,8 @@ export function getAlmacenNombre(almacen) {
 }
 
 export function normalizeAlmacen(almacen) {
-  const code = String(almacen || ALMACEN_DEFAULT)
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, '');
-  if (!ALMACEN_RE.test(code)) {
+  const code = canonicalAlmacenCode(almacen || ALMACEN_DEFAULT);
+  if (!code) {
     throw Object.assign(new Error('Almacén inválido. Usá ALM01, ALM02…'), { status: 400 });
   }
   if (!almacenesMap[code]) {
@@ -303,7 +313,7 @@ export function isContenedorSuffix(token) {
 }
 
 function isAlmacenToken(token) {
-  return ALMACEN_RE.test(String(token || '').toUpperCase());
+  return Boolean(canonicalAlmacenCode(token));
 }
 
 function armarioExistsInAlmacen(almacen, armarioCode) {
@@ -462,10 +472,15 @@ function parseLegacy(s) {
   return null;
 }
 
-export function parseCodigo(codigo) {
-  const s = String(codigo || '')
+function normalizeAlmacenInCodigo(codigo) {
+  return String(codigo || '')
     .trim()
-    .toUpperCase();
+    .toUpperCase()
+    .replace(/^(ALM\d+)(?=-|$)/i, (token) => canonicalAlmacenCode(token) || token);
+}
+
+export function parseCodigo(codigo) {
+  const s = normalizeAlmacenInCodigo(codigo);
   if (!s) return null;
 
   if (isAlmacenToken(s)) {

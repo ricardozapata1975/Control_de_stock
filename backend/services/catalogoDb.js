@@ -1,5 +1,5 @@
 import { getSupabase } from '../db/supabase.js';
-import { migrateCatalogoStructure } from './ubicacionUtils.js';
+import { canonicalAlmacenCode, migrateCatalogoStructure } from './ubicacionUtils.js';
 
 const CONFIG_KEYS = [
   'nextAlmacenNum',
@@ -16,15 +16,7 @@ function rowToConfigValue(key, value) {
 }
 
 export function normalizeAlmacenCode(code) {
-  const s = String(code || '')
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, '');
-  const m = s.match(/^ALM(\d+)$/);
-  if (!m) return null;
-  const num = parseInt(m[1], 10);
-  if (Number.isNaN(num) || num < 1 || num > 99) return null;
-  return `ALM${String(num).padStart(2, '0')}`;
+  return canonicalAlmacenCode(code);
 }
 
 function buildCatalogoFromRows(almacenesRows, armariosRows, configRows) {

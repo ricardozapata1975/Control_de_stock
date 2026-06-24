@@ -7,8 +7,10 @@ import {
   ALMACEN_DEFAULT,
   applyCatalogo,
   buildCodigo,
+  canonicalAlmacenCode,
   codigoLookupVariants,
   contenedorMatchesParsed,
+  normalizeAlmacen,
   parseCodigo,
 } from '../services/ubicacionUtils.js';
 
@@ -78,6 +80,10 @@ assert(
   buildCodigo('ALM02', 'A00', 'E01', null) === 'ALM02-A00-E01',
   'buildCodigo debe prefijar ALM02'
 );
+
+// ALM002 → ALM02 (cero extra al escribir manualmente)
+assert(canonicalAlmacenCode('ALM002') === 'ALM02', 'ALM002 debe normalizarse a ALM02');
+assert(normalizeAlmacen('ALM002') === 'ALM02', 'normalizeAlmacen acepta ALM002');
 
 console.log(`\nResultado: ${passed} ok, ${failed} fallos`);
 if (failed > 0) process.exit(1);
