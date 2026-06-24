@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useStore } from '../store/useStore';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
@@ -8,12 +8,14 @@ import SearchFilters from '../components/SearchFilters';
 import InventoryTable from '../components/InventoryTable';
 import PaginationBar from '../components/PaginationBar';
 import ItemEditModal from '../components/ItemEditModal';
-import { getUbicacionScanLabel, parsedFromCodigoParam } from '../utils/scanMatch';
+import ItemDetailModal from '../components/ItemDetailModal';
+import { buildEgresoUrlForItem, getUbicacionScanLabel, parsedFromCodigoParam } from '../utils/scanMatch';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 25;
 
 export default function Dashboard() {
+  const navigate = useNavigate();
   const { isAdmin } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
@@ -27,6 +29,7 @@ export default function Dashboard() {
     clearError,
   } = useStore();
 
+  const [detailItem, setDetailItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -102,6 +105,17 @@ export default function Dashboard() {
     }
   };
 
+  const handleEgreso = (item) => {
+    if (item.cantidad <= 0) return;
+    setDetailItem(null);
+    navigate(buildEgresoUrlForItem(item));
+  };
+
+  const handleEditFromDetail = (item) => {
+    setDetailItem(null);
+    setEditItem(item);
+  };
+
   const handleDelete = async (item) => {
     if (
       !window.confirm(
@@ -113,6 +127,7 @@ export default function Dashboard() {
     setActionError('');
     try {
       await api.adminBajaItem(item.itemId);
+      setDetailItem(null);
       await fetchInventario();
     } catch (e) {
       setActionError(e.message);
@@ -184,12 +199,7 @@ export default function Dashboard() {
           onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
         />
       )}
-      <InventoryTable
-        items={paginatedItems}
-        isAdmin={isAdmin}
-        onEdit={setEditItem}
-        onDelete={handleDelete}
-      />
+      <InventoryTable items={paginatedItems} onRowClick={setDetailItem} />
       {inventario.length > 0 && (
         <PaginationBar
           page={page}
@@ -199,6 +209,17 @@ export default function Dashboard() {
           onPageSizeChange={setPageSize}
           onPrev={() => setPage((p) => Math.max(1, p - 1))}
           onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
+        />
+      )}
+
+      {detailItem && (
+        <ItemDetailModal
+          item={detailItem}
+          isAdmin={isAdmin}
+          onClose={() => setDetailItem(null)}
+          onEgreso={handleEgreso}
+          onEdit={handleEditFromDetail}
+          onDelete={handleDelete}
         />
       )}
 

@@ -1,212 +1,53 @@
-import { useEffect, useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { formatUbicacionLabel } from '../utils/contenedor';
-import { buildEgresoUrlForItem } from '../utils/scanMatch';
 
-const FIXED_WIDTH = 332;
-const COL_WIDTH = 96;
-
-const FIXED_COLS = [
-  { key: 'herramienta', label: 'Herramienta', width: 140, left: 0 },
-  { key: 'ubicacion', label: 'Ubicación', width: 120, left: 140 },
-  { key: 'stock', label: 'Stock', width: 72, left: 260 },
-];
-
-const SCROLL_COLUMNS = [
-  { key: 'egreso', label: 'Egreso', minWidth: 104 },
-  { key: 'tipo', label: 'Tipo', minWidth: 0 },
-  { key: 'calibracion', label: 'Calibración', minWidth: 96 },
-  { key: 'comentario', label: 'Comentario', minWidth: 192 },
-  { key: 'fecha', label: 'Fecha relev.', minWidth: 288 },
-  { key: 'acciones', label: 'Acciones', minWidth: 384, adminOnly: true },
-];
-
-function formatFecha(iso) {
-  if (!iso) return '—';
-  const d = String(iso).slice(0, 10);
-  const [y, m, day] = d.split('-');
-  return day && m && y ? `${day}/${m}/${y}` : iso;
-}
-
-function cellFixed(col) {
-  return {
-    left: `${col.left}px`,
-    minWidth: col.width,
-    maxWidth: col.width,
-  };
-}
-
-function renderScrollCell(col, item, { isAdmin, onEdit, onDelete, onEgreso }) {
-  switch (col.key) {
-    case 'egreso':
-      return (
-        <td key={col.key} className="inventory-col-scroll px-3 py-3">
-          {item.cantidad > 0 ? (
-            <button
-              type="button"
-              className="min-h-[44px] whitespace-nowrap rounded-lg border border-accent/50 bg-accent/10 px-3 py-2 text-sm font-semibold text-accent transition hover:bg-accent/20 active:scale-[0.98]"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEgreso?.(item);
-              }}
-              aria-label={`Egresar ${item.nombre}`}
-            >
-              Egresar
-            </button>
-          ) : (
-            <span className="text-xs text-subtle">Sin stock</span>
-          )}
-        </td>
-      );
-    case 'tipo':
-      return (
-        <td key={col.key} className="inventory-col-scroll px-4 py-3 table-cell-muted">
-          {item.tipo || '—'}
-        </td>
-      );
-    case 'calibracion':
-      return (
-        <td key={col.key} className="inventory-col-scroll px-4 py-3 table-cell-muted">
-          {item.calibracion || '—'}
-        </td>
-      );
-    case 'comentario':
-      return (
-        <td
-          key={col.key}
-          className="inventory-col-scroll max-w-[200px] px-4 py-3 text-sm text-subtle"
-        >
-          {item.comentario || '—'}
-        </td>
-      );
-    case 'fecha':
-      return (
-        <td key={col.key} className="inventory-col-scroll px-4 py-3 table-cell-muted text-sm">
-          {formatFecha(item.fecha_relevamiento)}
-        </td>
-      );
-    case 'acciones':
-      if (!isAdmin) return null;
-      return (
-        <td key={col.key} className="inventory-col-scroll px-4 py-3 min-w-[140px]">
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              className="min-h-[44px] rounded-lg border border-border px-3 py-2 text-sm font-semibold text-content hover:bg-surface-hover"
-              onClick={(e) => {
-                e.stopPropagation();
-                onEdit?.(item);
-              }}
-            >
-              Editar
-            </button>
-            <button
-              type="button"
-              className="min-h-[44px] rounded-lg border border-red-700 px-3 py-2 text-sm font-semibold text-red-200 hover:bg-red-950"
-              onClick={(e) => {
-                e.stopPropagation();
-                onDelete?.(item);
-              }}
-            >
-              Eliminar
-            </button>
-          </div>
-        </td>
-      );
-    default:
-      return null;
-  }
-}
-
-export default function InventoryTable({ items, isAdmin, onEdit, onDelete }) {
-  const navigate = useNavigate();
-  const wrapRef = useRef(null);
-  const [visibleScroll, setVisibleScroll] = useState(SCROLL_COLUMNS.length);
-
-  const handleEgreso = (item) => {
-    if (item.cantidad <= 0) return;
-    navigate(buildEgresoUrlForItem(item));
-  };
-
-  const handleRowClick = (item, event) => {
-    if (item.cantidad <= 0) return;
-    if (event.target.closest('button')) return;
-    handleEgreso(item);
-  };
-
-  useEffect(() => {
-    const el = wrapRef.current;
-    if (!el) return;
-    const update = () => {
-      const w = el.clientWidth;
-      const extra = Math.max(0, w - FIXED_WIDTH);
-      let count = Math.floor(extra / COL_WIDTH);
-      const max = SCROLL_COLUMNS.filter((c) => !c.adminOnly || isAdmin).length;
-      setVisibleScroll(Math.min(max, Math.max(0, count)));
-    };
-    update();
-    const ro = new ResizeObserver(update);
-    ro.observe(el);
-    return () => ro.disconnect();
-  }, [isAdmin]);
-
+export default function InventoryTable({ items, onRowClick }) {
   if (!items.length) {
     return <p className="card text-center text-muted">Sin resultados</p>;
   }
 
-  const scrollCols = SCROLL_COLUMNS.filter((c) => !c.adminOnly || isAdmin).slice(0, visibleScroll);
-  const stockCol = FIXED_COLS[2];
-
   return (
-    <div ref={wrapRef} className="inventory-table-wrap card p-0">
-      <div className="inventory-table-scroll">
-        <table className="inventory-table w-full text-left">
+    <div className="inventory-table-wrap card p-0">
+      <div className="overflow-x-auto">
+        <table className="inventory-list-table w-full text-left text-sm">
           <thead className="table-head">
             <tr>
-              {FIXED_COLS.map((col) => (
-                <th key={col.key} className="inventory-col-fixed px-4 py-3" style={cellFixed(col)}>
-                  {col.label}
-                </th>
-              ))}
-              {scrollCols.map((col) => (
-                <th key={col.key} className="inventory-col-scroll px-4 py-3">
-                  {col.label}
-                </th>
-              ))}
+              <th className="w-[38%] px-3 py-2">Herramienta</th>
+              <th className="w-[42%] px-3 py-2">Ubicación</th>
+              <th className="w-[20%] px-3 py-2 text-right">Stock</th>
             </tr>
           </thead>
           <tbody>
             {items.map((item) => (
               <tr
                 key={item.id}
-                className={`table-row ${item.cantidad > 0 ? 'cursor-pointer hover:bg-surface-hover' : ''}`}
-                onClick={(e) => handleRowClick(item, e)}
+                className="table-row cursor-pointer"
+                onClick={() => onRowClick?.(item)}
                 onKeyDown={(e) => {
-                  if (item.cantidad <= 0) return;
                   if (e.key === 'Enter' || e.key === ' ') {
                     e.preventDefault();
-                    handleEgreso(item);
+                    onRowClick?.(item);
                   }
                 }}
-                tabIndex={item.cantidad > 0 ? 0 : undefined}
-                role={item.cantidad > 0 ? 'button' : undefined}
-                aria-label={item.cantidad > 0 ? `Egresar ${item.nombre}` : undefined}
+                tabIndex={0}
+                role="button"
+                aria-label={`Ver detalle de ${item.nombre}`}
               >
-                <td className="inventory-col-fixed px-4 py-3" style={cellFixed(FIXED_COLS[0])}>
-                  <p className="font-medium text-content">{item.nombre}</p>
+                <td className="px-3 py-2 align-middle">
+                  <p className="truncate font-medium text-content" title={item.nombre}>
+                    {item.nombre}
+                  </p>
                   {item.marca && (
-                    <p className="text-xs text-subtle">
+                    <p className="truncate text-xs text-subtle" title={`${item.marca} ${item.modelo || ''}`.trim()}>
                       {item.marca} {item.modelo || ''}
                     </p>
                   )}
                 </td>
-                <td
-                  className="inventory-col-fixed px-4 py-3 table-cell-muted"
-                  style={cellFixed(FIXED_COLS[1])}
-                >
-                  {formatUbicacionLabel(item)}
+                <td className="px-3 py-2 align-middle table-cell-muted">
+                  <span className="line-clamp-2 break-words" title={formatUbicacionLabel(item)}>
+                    {formatUbicacionLabel(item)}
+                  </span>
                 </td>
-                <td className="inventory-col-fixed px-4 py-3" style={cellFixed(stockCol)}>
+                <td className="px-3 py-2 align-middle text-right">
                   <span
                     className={`badge-stock ${
                       item.cantidad <= 2
@@ -217,16 +58,13 @@ export default function InventoryTable({ items, isAdmin, onEdit, onDelete }) {
                     {item.cantidad}
                   </span>
                 </td>
-                {scrollCols.map((col) =>
-                  renderScrollCell(col, item, { isAdmin, onEdit, onDelete, onEgreso: handleEgreso })
-                )}
               </tr>
             ))}
           </tbody>
         </table>
       </div>
       <p className="border-t border-border px-3 py-2 text-xs text-subtle">
-        Tocá una fila con stock o usá Egresar. Deslizá para ver más columnas.
+        Tocá una fila para ver el detalle completo.
       </p>
     </div>
   );

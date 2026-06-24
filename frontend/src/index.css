@@ -165,6 +165,13 @@
     @apply min-w-[88px] whitespace-nowrap;
   }
 
+  .inventory-list-table th {
+    @apply text-xs font-semibold uppercase tracking-wide text-subtle;
+  }
+  .inventory-list-table tbody tr:focus-visible {
+    @apply outline outline-2 outline-offset-[-2px] outline-accent;
+  }
+
   .nav-link {
     @apply flex min-h-[48px] items-center rounded-lg px-4 text-base font-bold uppercase tracking-wide transition;
   }
