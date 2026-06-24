@@ -8,7 +8,6 @@ export default function Login() {
   const { login, beginFirstLogin, completeLogin, setPassword: savePassword, isLoggedIn, isAdmin } =
     useAuth();
   const navigate = useNavigate();
-  const [modo, setModo] = useState('operario');
   const [step, setStep] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPasswordValue] = useState('');
@@ -102,210 +101,204 @@ export default function Login() {
 
   const isSetupStep = step === 'setup' || step === 'change';
   const isFirstStep = step === 'primer-ingreso';
+  const isLoginStep = step === 'login';
 
-  const title = isFirstStep
+  const stepTitle = isFirstStep
     ? 'Primer ingreso'
     : step === 'setup'
       ? 'Crear contraseña'
       : step === 'change'
         ? 'Nueva contraseña'
-        : modo === 'admin'
-          ? 'Administrador'
-          : 'Operario';
+        : null;
 
-  const subtitle = isFirstStep
-    ? 'Ingresá el usuario que te dio el administrador. Luego vas a crear tu contraseña.'
-    : step === 'setup'
-      ? `Bienvenido/a ${pendingUser?.name || pendingUser?.username || username}. Definí tu contraseña.`
-      : step === 'change'
-        ? `Actualizá la contraseña de ${pendingUser?.name || pendingUser?.username}.`
-        : 'F-M-02 Control de Herramientas Compartidas';
+  const subtitle = isLoginStep
+    ? 'F-M-02 Control de Herramientas Compartidas'
+    : isFirstStep
+      ? 'Ingresá el usuario que te dio el administrador. Luego vas a crear tu contraseña.'
+      : step === 'setup'
+        ? `Bienvenido/a ${pendingUser?.name || pendingUser?.username || username}. Definí tu contraseña.`
+        : step === 'change'
+          ? `Actualizá la contraseña de ${pendingUser?.name || pendingUser?.username}.`
+          : '';
 
   return (
-    <div className="relative flex min-h-screen flex-col items-center justify-center bg-surface p-6">
+    <div className="relative flex min-h-screen flex-col items-center justify-center bg-surface px-6 py-10">
       <div className="absolute right-4 top-4 safe-top">
         <ThemeToggle />
       </div>
-      <div className="card w-full max-w-md">
-        <div className="mb-6 flex flex-col items-center text-center">
+
+      <div className="w-full max-w-md">
+        <header className="mb-8 flex flex-col items-center text-center">
           <img
             src="/px-control-logo.png"
             alt="PX Control — Process Automation Experts"
-            className="h-14 w-auto max-w-full object-contain"
+            className="h-28 w-auto max-w-[min(100%,320px)] object-contain sm:h-32"
           />
-          <h1 className="mt-4 text-xl font-bold text-content">Inventario Px Control</h1>
-          <p className="text-muted">{subtitle}</p>
+          <h1 className="mt-6 text-2xl font-bold tracking-tight text-content sm:text-3xl">
+            Inventario Px Control
+          </h1>
+          <p className="mt-2 text-sm text-muted sm:text-base">{subtitle}</p>
           {(isSetupStep || isFirstStep) && (
-            <p className="mt-2 font-mono text-sm text-amber-300">{pendingUser?.username || username}</p>
+            <p className="mt-2 font-mono text-sm text-amber-300">
+              {pendingUser?.username || username}
+            </p>
           )}
-        </div>
+        </header>
 
-        {!isSetupStep && !isFirstStep && (
-          <div className="mb-4 flex rounded-lg border border-border p-1">
-            <button
-              type="button"
-              className={`flex-1 min-h-[44px] rounded-md py-2 text-sm font-bold ${
-                modo === 'operario' ? 'bg-accent text-accent-foreground' : 'text-content-muted'
-              }`}
-              onClick={() => {
-                setModo('operario');
-                setError('');
-              }}
-            >
-              Operario
-            </button>
-            <button
-              type="button"
-              className={`flex-1 min-h-[44px] rounded-md py-2 text-sm font-bold ${
-                modo === 'admin' ? 'bg-accent text-accent-foreground' : 'text-content-muted'
-              }`}
-              onClick={() => {
-                setModo('admin');
-                setError('');
-              }}
-            >
-              Administrador
-            </button>
-          </div>
-        )}
+        <div className="card">
+          {stepTitle && (
+            <h2 className="mb-4 text-center text-lg font-bold text-accent">{stepTitle}</h2>
+          )}
 
-        <h2 className="mb-4 text-center text-lg font-bold text-amber-400">{title}</h2>
+          {error && <div className="alert-error mb-4 text-sm">{error}</div>}
 
-        {error && <div className="alert-error mb-4 text-sm">{error}</div>}
+          {isLoginStep && (
+            <>
+              <form
+                onSubmit={submitLogin}
+                className="space-y-4 rounded-lg border border-border bg-surface-muted/60 p-5"
+              >
+                <div>
+                  <label className="text-label" htmlFor="login-username">
+                    Usuario
+                  </label>
+                  <input
+                    id="login-username"
+                    className="input-field"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    autoComplete="username"
+                    required
+                    autoFocus
+                  />
+                </div>
+                <div>
+                  <label className="text-label" htmlFor="login-password">
+                    Contraseña
+                  </label>
+                  <input
+                    id="login-password"
+                    type="password"
+                    className="input-field"
+                    value={password}
+                    onChange={(e) => setPasswordValue(e.target.value)}
+                    autoComplete="current-password"
+                    required
+                    placeholder="Tu contraseña"
+                  />
+                </div>
+                <button type="submit" className="btn-primary w-full" disabled={loading}>
+                  {loading ? 'INGRESANDO...' : 'ENTRAR'}
+                </button>
+              </form>
 
-        {step === 'login' && (
-          <>
-            <form onSubmit={submitLogin} className="space-y-4 rounded-lg border border-border bg-surface-muted/60 p-4">
+              <div className="mt-5 space-y-2 text-center text-sm">
+                <p>
+                  <Link
+                    to="/olvide-contrasena"
+                    className="text-content-muted underline hover:text-content"
+                  >
+                    Olvidé mi contraseña
+                  </Link>
+                </p>
+                <p>
+                  <button
+                    type="button"
+                    className="text-content-muted underline hover:text-content"
+                    onClick={() => {
+                      setError('');
+                      setPasswordValue('');
+                      setStep('primer-ingreso');
+                    }}
+                  >
+                    Primer ingreso — crear contraseña
+                  </button>
+                </p>
+              </div>
+            </>
+          )}
+
+          {isFirstStep && (
+            <form onSubmit={submitFirstLogin} className="space-y-4">
               <div>
-                <label className="text-label" htmlFor="login-username">
+                <label className="text-label" htmlFor="first-login-username">
                   Usuario
                 </label>
                 <input
-                  id="login-username"
+                  id="first-login-username"
                   className="input-field"
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   autoComplete="username"
+                  placeholder="El que te asignó el administrador"
+                  required
+                  autoFocus
+                />
+              </div>
+              <p className="text-xs text-subtle">
+                Si el administrador ya te creó la cuenta, en el siguiente paso vas a elegir tu
+                contraseña personal.
+              </p>
+              <button type="submit" className="btn-primary w-full" disabled={loading}>
+                {loading ? 'VERIFICANDO...' : 'CONTINUAR'}
+              </button>
+              <button
+                type="button"
+                className="w-full min-h-[44px] text-sm text-content-subtle underline hover:text-content"
+                onClick={resetToLogin}
+              >
+                Volver al login
+              </button>
+            </form>
+          )}
+
+          {isSetupStep && (
+            <form onSubmit={submitPassword} className="space-y-4">
+              <div>
+                <label className="text-label" htmlFor="new-password">
+                  Nueva contraseña
+                </label>
+                <input
+                  id="new-password"
+                  type="password"
+                  className="input-field"
+                  value={newPassword}
+                  onChange={(e) => setNewPassword(e.target.value)}
+                  autoComplete="new-password"
+                  minLength={6}
                   required
                   autoFocus
                 />
               </div>
               <div>
-                <label className="text-label" htmlFor="login-password">
-                  Contraseña
+                <label className="text-label" htmlFor="confirm-password">
+                  Confirmar contraseña
                 </label>
                 <input
-                  id="login-password"
+                  id="confirm-password"
                   type="password"
                   className="input-field"
-                  value={password}
-                  onChange={(e) => setPasswordValue(e.target.value)}
-                  autoComplete="current-password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  autoComplete="new-password"
+                  minLength={6}
                   required
-                  placeholder="Tu contraseña"
                 />
               </div>
+              <p className="text-xs text-subtle">Mínimo 6 caracteres.</p>
               <button type="submit" className="btn-primary w-full" disabled={loading}>
-                {loading ? 'INGRESANDO...' : 'ENTRAR'}
+                {loading ? 'GUARDANDO...' : 'GUARDAR Y ENTRAR'}
+              </button>
+              <button
+                type="button"
+                className="w-full min-h-[44px] text-sm text-content-subtle underline hover:text-content"
+                onClick={resetToLogin}
+              >
+                Volver al login
               </button>
             </form>
-
-            <p className="mt-3 text-center text-sm">
-              <Link to="/olvide-contrasena" className="text-content-muted underline hover:text-content">
-                Olvidé mi contraseña
-              </Link>
-            </p>
-
-            {modo === 'operario' && (
-              <div className="mt-4 space-y-2">
-                <p className="text-center text-xs text-subtle">¿Todavía no creaste tu contraseña?</p>
-                <button
-                  type="button"
-                  className="btn-secondary w-full border-sky-700 text-sky-100"
-                  onClick={() => {
-                    setError('');
-                    setPasswordValue('');
-                    setStep('primer-ingreso');
-                  }}
-                >
-                  Primer ingreso — crear contraseña
-                </button>
-              </div>
-            )}
-          </>
-        )}
-
-        {step === 'primer-ingreso' && (
-          <form onSubmit={submitFirstLogin} className="space-y-4">
-            <div>
-              <label className="text-label">Usuario</label>
-              <input
-                className="input-field"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                autoComplete="username"
-                placeholder="El que te asignó el administrador"
-                required
-                autoFocus
-              />
-            </div>
-            <p className="text-xs text-subtle">
-              Si el administrador ya te creó la cuenta, en el siguiente paso vas a elegir tu contraseña
-              personal.
-            </p>
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'VERIFICANDO...' : 'CONTINUAR'}
-            </button>
-            <button
-              type="button"
-              className="w-full min-h-[44px] text-sm text-content-subtle underline hover:text-content"
-              onClick={resetToLogin}
-            >
-              Volver al login de operario
-            </button>
-          </form>
-        )}
-
-        {isSetupStep && (
-          <form onSubmit={submitPassword} className="space-y-4">
-            <div>
-              <label className="text-label">Nueva contraseña</label>
-              <input
-                type="password"
-                className="input-field"
-                value={newPassword}
-                onChange={(e) => setNewPassword(e.target.value)}
-                autoComplete="new-password"
-                minLength={6}
-                required
-                autoFocus
-              />
-            </div>
-            <div>
-              <label className="text-label">Confirmar contraseña</label>
-              <input
-                type="password"
-                className="input-field"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                autoComplete="new-password"
-                minLength={6}
-                required
-              />
-            </div>
-            <p className="text-xs text-subtle">Mínimo 6 caracteres.</p>
-            <button type="submit" className="btn-primary w-full" disabled={loading}>
-              {loading ? 'GUARDANDO...' : 'GUARDAR Y ENTRAR'}
-            </button>
-            <button
-              type="button"
-              className="w-full min-h-[44px] text-sm text-content-subtle underline hover:text-content"
-              onClick={resetToLogin}
-            >
-              Volver al login
-            </button>
-          </form>
-        )}
+          )}
+        </div>
       </div>
     </div>
   );
