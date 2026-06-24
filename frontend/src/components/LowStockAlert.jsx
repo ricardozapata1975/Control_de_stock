@@ -16,7 +16,9 @@ export default function LowStockAlert({ items }) {
         aria-expanded={open}
       >
         <div className="min-w-0 flex-1">
-          <h2 className="section-title mb-0">Sin stock (0 u.)</h2>
+          <h2 className="mb-0 text-lg font-bold text-amber-900 dark:text-amber-100">
+            Sin stock (0 u.)
+          </h2>
           {!open && (
             <p className="mt-1 truncate text-sm text-amber-800 dark:text-amber-100/90">
               {zeroStock.length} ítem{zeroStock.length !== 1 ? 's' : ''} sin unidades — tocá para ver

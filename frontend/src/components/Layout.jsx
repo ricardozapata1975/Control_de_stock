@@ -82,7 +82,7 @@ export default function Layout() {
           drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
-        <div className="border-b border-border p-4">
+        <div className="shrink-0 border-b border-border p-4">
           <img
             src="/px-control-logo.png"
             alt="PX Control"
@@ -95,7 +95,7 @@ export default function Layout() {
           <NavItems items={navLinks} onNavigate={closeDrawer} />
         </nav>
 
-        <div className="space-y-3 border-t border-border p-4">
+        <div className="shrink-0 space-y-3 border-t border-border p-4">
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-content">{user?.name}</p>
             {isAdmin && (
@@ -118,7 +118,7 @@ export default function Layout() {
       </aside>
 
       <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden lg:ml-72">
-        <header className="sticky top-0 z-30 border-b border-border bg-surface-elevated">
+        <header className="shrink-0 border-b border-border bg-surface-elevated">
           <div className="flex items-center gap-3 px-4 py-3">
             <button
               type="button"
