@@ -18,7 +18,7 @@ export default function LowStockAlert({ items }) {
         <div className="min-w-0 flex-1">
           <h2 className="section-title mb-0">Sin stock (0 u.)</h2>
           {!open && (
-            <p className="mt-1 truncate text-sm text-amber-100/90">
+            <p className="mt-1 truncate text-sm text-amber-800 dark:text-amber-100/90">
               {zeroStock.length} ítem{zeroStock.length !== 1 ? 's' : ''} sin unidades — tocá para ver
             </p>
           )}
@@ -29,19 +29,19 @@ export default function LowStockAlert({ items }) {
         >
           {zeroStock.length}
         </span>
-        <span className="shrink-0 text-amber-200" aria-hidden>
+        <span className="shrink-0 text-amber-700 dark:text-amber-200" aria-hidden>
           {open ? '▲' : '▼'}
         </span>
       </button>
 
       {open && (
-        <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto border-t border-amber-700/50 pt-3">
+        <ul className="mt-3 max-h-48 space-y-1 overflow-y-auto border-t border-amber-300 pt-3 dark:border-amber-700/50">
           {zeroStock.map((i) => (
-            <li key={i.id} className="flex justify-between gap-2 text-amber-50">
+            <li key={i.id} className="flex justify-between gap-2 text-amber-900 dark:text-amber-50">
               <span className="min-w-0 truncate">
                 {i.nombre} — {formatUbicacionLabel(i)}
               </span>
-              <span className="shrink-0 font-bold text-red-300">0 u.</span>
+              <span className="shrink-0 font-bold text-red-700 dark:text-red-300">0 u.</span>
             </li>
           ))}
         </ul>

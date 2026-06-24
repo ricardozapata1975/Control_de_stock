@@ -67,7 +67,7 @@ export default function Layout() {
   const closeDrawer = () => setDrawerOpen(false);
 
   return (
-    <div className="flex min-h-screen bg-surface">
+    <div className="flex h-screen overflow-hidden bg-surface">
       {drawerOpen && (
         <button
           type="button"
@@ -78,7 +78,7 @@ export default function Layout() {
       )}
 
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-72 max-w-[85vw] flex-col border-r border-border bg-surface-elevated transition-transform duration-200 ease-in-out lg:static lg:z-auto lg:max-w-none lg:translate-x-0 ${
+        className={`fixed inset-y-0 left-0 z-50 flex h-screen w-72 max-w-[85vw] flex-col border-r border-border bg-surface-elevated transition-transform duration-200 ease-in-out lg:max-w-none lg:translate-x-0 ${
           drawerOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
         }`}
       >
@@ -117,7 +117,7 @@ export default function Layout() {
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      <div className="flex h-screen min-w-0 flex-1 flex-col overflow-hidden lg:ml-72">
         <header className="sticky top-0 z-30 border-b border-border bg-surface-elevated">
           <div className="flex items-center gap-3 px-4 py-3">
             <button
@@ -151,7 +151,7 @@ export default function Layout() {
           <OfflineStatus />
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 overflow-x-hidden p-4 sm:p-5">
+        <main className="mx-auto w-full max-w-6xl flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-5">
           <Outlet />
         </main>
       </div>
