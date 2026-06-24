@@ -5,6 +5,7 @@ import { useSync } from '../context/SyncContext';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
 import FilterableSelect from '../components/FilterableSelect';
+import FocusedPage from '../components/FocusedPage';
 import { filterInventarioByScan, parsedFromCodigoParam } from '../utils/scanMatch';
 
 export default function Egreso() {
@@ -143,7 +144,7 @@ export default function Egreso() {
     (searchParams.get('itemId') && !searchParams.get('codigo'));
 
   return (
-    <div>
+    <FocusedPage>
       <div className="mb-6 flex items-center justify-between gap-2">
         <h2 className="page-title">REGISTRAR EGRESO</h2>
         <Link to="/escanear" className="btn-secondary shrink-0 py-2 text-base">
@@ -172,7 +173,7 @@ export default function Egreso() {
         </div>
       )}
 
-      <form onSubmit={handleSubmit} className="card max-w-lg space-y-5">
+      <form onSubmit={handleSubmit} className="card w-full space-y-5">
         <div>
           <label className="text-label">Herramienta</label>
           <p className="mb-2 text-xs text-subtle">
@@ -236,6 +237,6 @@ export default function Egreso() {
           {loading ? 'PROCESANDO...' : 'RETIRAR'}
         </button>
       </form>
-    </div>
+    </FocusedPage>
   );
 }

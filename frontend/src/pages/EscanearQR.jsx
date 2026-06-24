@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import FocusedPage from '../components/FocusedPage';
 import QrScanner from '../components/QrScanner';
 import ScanResultPanel from '../components/ScanResultPanel';
 import { api } from '../api/client';
@@ -45,15 +46,15 @@ export default function EscanearQR() {
   };
 
   return (
-    <div>
-      <h2 className="page-title mb-2">ESCANEAR QR</h2>
-      <p className="mb-6 text-muted">
+    <FocusedPage>
+      <h2 className="page-title mb-2 text-center sm:text-left">ESCANEAR QR</h2>
+      <p className="mb-6 text-center text-muted sm:text-left">
         Escaneá y elegí <strong className="text-content">egreso</strong> o{' '}
         <strong className="text-content">ingreso</strong> sin salir del flujo.
       </p>
 
       {!result && (
-        <button type="button" className="btn-primary w-full max-w-md" onClick={() => setScanning(true)}>
+        <button type="button" className="btn-primary mx-auto block w-full sm:mx-0" onClick={() => setScanning(true)}>
           📷 Escanear QR
         </button>
       )}
@@ -81,12 +82,12 @@ export default function EscanearQR() {
       )}
 
       {!result && (
-        <p className="mt-4 text-sm text-muted">
+        <p className="mt-4 text-center text-sm text-muted sm:text-left">
           Ubicación: A01 · A01-E03 · A01-E03-C05 / B12 / H01 / SC · o QR de artículo con item_id
         </p>
       )}
 
       {scanning && <QrScanner onScan={handleScan} onClose={() => setScanning(false)} />}
-    </div>
+    </FocusedPage>
   );
 }

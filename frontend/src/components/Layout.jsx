@@ -151,7 +151,7 @@ export default function Layout() {
           <OfflineStatus />
         </header>
 
-        <main className="mx-auto w-full max-w-6xl flex-1 overflow-x-hidden overflow-y-auto p-4 sm:p-5">
+        <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col overflow-x-hidden overflow-y-auto p-4 sm:p-5">
           <Outlet />
         </main>
       </div>
