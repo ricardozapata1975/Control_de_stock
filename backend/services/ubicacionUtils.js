@@ -486,7 +486,22 @@ export function parseCodigo(codigo) {
   return parseLegacy(s);
 }
 
-/** Variantes de código para búsqueda en BD (legacy sin prefijo ALM + con prefijo). */
+/** Almacén esperado al resolver una ubicación parseada. */
+export function expectedAlmacen(parsed) {
+  return parsed?.almacen || ALMACEN_DEFAULT;
+}
+
+/** Verifica que un contenedor de BD corresponda al almacén de la ubicación pedida. */
+export function contenedorMatchesParsed(cont, parsed) {
+  if (!cont || !parsed) return false;
+  const rowAlm = cont.almacen || ALMACEN_DEFAULT;
+  return rowAlm === expectedAlmacen(parsed);
+}
+
+/**
+ * Variantes de código para búsqueda en BD.
+ * Legacy sin prefijo ALM solo para ALM01; otros almacenes usan código con prefijo ALMxx-.
+ */
 export function codigoLookupVariants(parsed) {
   if (!parsed) return [];
   const variants = new Set();
@@ -497,10 +512,15 @@ export function codigoLookupVariants(parsed) {
 
   if (armario && estante) {
     const legacy = buildCodigo(armario, estante, contenedor);
-    variants.add(legacy);
-    variants.add(`${alm}-${legacy}`);
+    if (alm === ALMACEN_DEFAULT) {
+      variants.add(legacy);
+    } else {
+      variants.add(`${alm}-${legacy}`);
+    }
   } else if (armario) {
-    variants.add(armario);
+    if (alm === ALMACEN_DEFAULT) {
+      variants.add(armario);
+    }
     variants.add(`${alm}-${armario}`);
   } else if (alm) {
     variants.add(alm);

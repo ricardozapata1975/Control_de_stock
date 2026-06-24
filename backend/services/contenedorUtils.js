@@ -6,6 +6,7 @@ export {
   buildContenedorId,
   buildDbId,
   codigoLookupVariants,
+  contenedorMatchesParsed,
   getAlmacenNombre,
   getArmarioNombre,
   getArmariosMapForAlmacen,

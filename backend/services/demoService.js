@@ -8,6 +8,7 @@ import {
   buildCodigo,
   buildDbId,
   codigoLookupVariants,
+  contenedorMatchesParsed,
   getArmarioNombre,
   mapUbicacionFields,
   parseCodigo,
@@ -240,7 +241,7 @@ export async function demoGetContenedor(codigo) {
   }
 
   const variants = codigoLookupVariants(parsed);
-  let cont = db.contenedores.find((c) => variants.includes(c.codigo));
+  let cont = db.contenedores.find((c) => variants.includes(c.codigo) && contenedorMatchesParsed(c, parsed));
   if (!cont && parsed) {
     cont = await demoResolveUbicacion({ codigo: normalized });
   }
@@ -431,7 +432,7 @@ export function demoResolveUbicacionInMemory(db, { almacen, armario, estante, co
   if (!parsed) throw Object.assign(new Error('Ubicación inválida'), { status: 400 });
 
   const variants = codigoLookupVariants(parsed);
-  let cont = db.contenedores.find((c) => variants.includes(c.codigo));
+  let cont = db.contenedores.find((c) => variants.includes(c.codigo) && contenedorMatchesParsed(c, parsed));
   if (!cont) {
     cont = {
       id: buildDbId(parsed.codigo),
@@ -501,7 +502,7 @@ export async function demoResolveUbicacion({ almacen, armario, estante, contened
   if (!parsed) throw Object.assign(new Error('Ubicación inválida'), { status: 400 });
 
   const variants = codigoLookupVariants(parsed);
-  let cont = db.contenedores.find((c) => variants.includes(c.codigo));
+  let cont = db.contenedores.find((c) => variants.includes(c.codigo) && contenedorMatchesParsed(c, parsed));
   if (!cont) {
     cont = {
       id: buildDbId(parsed.codigo),

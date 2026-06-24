@@ -9,7 +9,8 @@
     "db:export-seed": "node -e \"import('./db/sqlite.js').then(m=>console.log(m.exportSeedDatabase()))\"",
     "db:apply-patch": "node scripts/apply-schema-patch.js",
     "db:check-schema": "node scripts/check-schema.js",
-    "db:migrate-supabase": "node scripts/migrate-demo-to-supabase.js"
+    "db:migrate-supabase": "node scripts/migrate-demo-to-supabase.js",
+    "test:ubicacion-almacen": "node scripts/test-ubicacion-almacen.js"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.49.1",

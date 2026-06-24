@@ -16,6 +16,7 @@ import {
   parseCodigo,
   buildCodigo,
   codigoLookupVariants,
+  contenedorMatchesParsed,
 } from './ubicacionUtils.js';
 
 function isDemoMode() {
@@ -48,7 +49,7 @@ async function findContenedorByParsed(supabase, parsed) {
       .eq('codigo', codigo)
       .maybeSingle();
     if (error) throw Object.assign(new Error(error.message), { status: 500 });
-    if (data) return data;
+    if (data && contenedorMatchesParsed(data, parsed)) return data;
   }
   return null;
 }

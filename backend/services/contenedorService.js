@@ -1,7 +1,12 @@
 import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
 import { enrichContenedor, resolveUbicacion } from './ubicacionService.js';
-import { codigoLookupVariants, mapUbicacionFields, parseCodigo } from './ubicacionUtils.js';
+import {
+  codigoLookupVariants,
+  contenedorMatchesParsed,
+  mapUbicacionFields,
+  parseCodigo,
+} from './ubicacionUtils.js';
 
 function mapInventarioRows(rows) {
   return (rows || []).map((r) => ({
@@ -98,7 +103,7 @@ export async function getByCodigo(codigo) {
       .eq('codigo', variant)
       .maybeSingle();
     if (errC) throw Object.assign(new Error(errC.message), { status: 500 });
-    if (found) {
+    if (found && contenedorMatchesParsed(found, parsed)) {
       cont = found;
       break;
     }
