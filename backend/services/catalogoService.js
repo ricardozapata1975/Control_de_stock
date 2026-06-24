@@ -1,7 +1,16 @@
 import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { config } from '../config.js';
 import { ALMACEN_TIPOS, ARMARIO_TIPOS, applyCatalogo, migrateCatalogoStructure } from './ubicacionUtils.js';
+import {
+  ensureCatalogoSeededInDb,
+  insertAlmacenToDb,
+  insertArmarioToDb,
+  saveCatalogoToDb,
+  updateNextAlmacenNumInDb,
+  updateNextArmarioNumInDb,
+} from './catalogoDb.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATALOGO_PATH = path.join(__dirname, '../data/catalogo.json');
@@ -32,6 +41,10 @@ const DEFAULT = {
 
 let cache = null;
 
+function useSupabaseCatalogo() {
+  return !config.demoMode;
+}
+
 function normalizeArmarioTipo(tipo) {
   const t = String(tipo || '').trim();
   if (!ARMARIO_TIPOS.includes(t)) {
@@ -46,24 +59,47 @@ function normalizeArmarioTipo(tipo) {
     .toLowerCase();
 }
 
-export async function loadCatalogo() {
-  if (cache) return cache;
+async function loadCatalogoFromFile() {
   try {
     const raw = await fs.readFile(CATALOGO_PATH, 'utf-8');
-    cache = migrateCatalogoStructure({ ...DEFAULT, ...JSON.parse(raw) });
-    if (!cache.nextAlmacenNum) {
-      cache.nextAlmacenNum = Object.keys(cache.almacenes || {}).length + 1;
+    const data = migrateCatalogoStructure({ ...DEFAULT, ...JSON.parse(raw) });
+    if (!data.nextAlmacenNum) {
+      data.nextAlmacenNum = Object.keys(data.almacenes || {}).length + 1;
     }
+    return data;
   } catch {
-    cache = migrateCatalogoStructure({ ...DEFAULT });
+    return migrateCatalogoStructure({ ...DEFAULT });
   }
+}
+
+async function saveCatalogoToFile(data) {
+  const migrated = migrateCatalogoStructure({ ...DEFAULT, ...data });
+  await fs.mkdir(path.dirname(CATALOGO_PATH), { recursive: true });
+  await fs.writeFile(CATALOGO_PATH, JSON.stringify(migrated, null, 2));
+  return migrated;
+}
+
+export async function loadCatalogo() {
+  if (cache) return cache;
+
+  if (useSupabaseCatalogo()) {
+    cache = await ensureCatalogoSeededInDb(DEFAULT);
+    return cache;
+  }
+
+  cache = await loadCatalogoFromFile();
   return cache;
 }
 
 export async function saveCatalogo(data) {
-  cache = migrateCatalogoStructure({ ...DEFAULT, ...data });
-  await fs.mkdir(path.dirname(CATALOGO_PATH), { recursive: true });
-  await fs.writeFile(CATALOGO_PATH, JSON.stringify(cache, null, 2));
+  const migrated = migrateCatalogoStructure({ ...DEFAULT, ...data });
+
+  if (useSupabaseCatalogo()) {
+    cache = await saveCatalogoToDb(migrated);
+    return cache;
+  }
+
+  cache = await saveCatalogoToFile(migrated);
   return cache;
 }
 
@@ -104,6 +140,7 @@ export async function addAlmacen({ tipo, nombre }) {
   if (c.almacenes[codigo]) {
     throw Object.assign(new Error(`Código ${codigo} ya existe`), { status: 409 });
   }
+
   c.almacenes[codigo] = {
     tipo: tipoNorm,
     nombre: nombreNorm,
@@ -111,8 +148,19 @@ export async function addAlmacen({ tipo, nombre }) {
     nextArmarioNum: 0,
   };
   c.nextAlmacenNum = num + 1;
-  await saveCatalogo(c);
-  applyCatalogo(c);
+
+  if (useSupabaseCatalogo()) {
+    await insertAlmacenToDb({ codigo, tipo: tipoNorm, nombre: nombreNorm, nextArmarioNum: 0 });
+    await updateNextAlmacenNumInDb(c.nextAlmacenNum);
+    invalidateCatalogoCache();
+    const fresh = await loadCatalogo();
+    applyCatalogo(fresh);
+  } else {
+    await saveCatalogoToFile(c);
+    cache = c;
+    applyCatalogo(c);
+  }
+
   return { codigo, tipo: tipoNorm, nombre: nombreNorm };
 }
 
@@ -142,8 +190,19 @@ export async function addArmario({ almacen, tipo, nombre }) {
 
   alm.armarios[codigo] = { nombre: nombreNorm, tipo: tipoKey };
   alm.nextArmarioNum = num + 1;
-  await saveCatalogo(c);
-  applyCatalogo(c);
+
+  if (useSupabaseCatalogo()) {
+    await insertArmarioToDb({ almacen: almCode, codigo, nombre: nombreNorm, tipo: tipoKey });
+    await updateNextArmarioNumInDb(almCode, alm.nextArmarioNum);
+    invalidateCatalogoCache();
+    const fresh = await loadCatalogo();
+    applyCatalogo(fresh);
+  } else {
+    await saveCatalogoToFile(c);
+    cache = c;
+    applyCatalogo(c);
+  }
+
   return { codigo, nombre: nombreNorm, tipo: tipoKey, almacen: almCode };
 }
 

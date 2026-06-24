@@ -18,6 +18,29 @@ CREATE TABLE IF NOT EXISTS contenedores (
 
 CREATE INDEX IF NOT EXISTS idx_contenedores_almacen ON contenedores(almacen);
 
+CREATE TABLE IF NOT EXISTS catalogo_almacenes (
+  codigo TEXT PRIMARY KEY,
+  tipo TEXT NOT NULL,
+  nombre TEXT NOT NULL,
+  next_armario_num INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+);
+
+CREATE TABLE IF NOT EXISTS catalogo_armarios (
+  almacen_codigo TEXT NOT NULL REFERENCES catalogo_almacenes(codigo) ON DELETE CASCADE,
+  codigo TEXT NOT NULL,
+  nombre TEXT NOT NULL,
+  tipo TEXT NOT NULL DEFAULT 'armario',
+  PRIMARY KEY (almacen_codigo, codigo)
+);
+
+CREATE INDEX IF NOT EXISTS idx_catalogo_armarios_almacen ON catalogo_armarios(almacen_codigo);
+
+CREATE TABLE IF NOT EXISTS catalogo_config (
+  key TEXT PRIMARY KEY,
+  value JSONB NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS items (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   nombre TEXT NOT NULL,
