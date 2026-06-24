@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import FocusedPage from '../components/FocusedPage';
 import { api } from '../api/client';
 import { ALMACEN_DEFAULT, ALMACEN_TIPOS, ARMARIO_TIPOS, ESTANTES, buildCodigoPreview, getArmariosForAlmacen, pickDefaultArmario } from '../utils/ubicacion';
 import { CONTENEDOR_HELP } from '../utils/contenedorCodigo';
@@ -428,7 +429,7 @@ export default function AdminStock() {
   );
 
   return (
-    <div>
+    <FocusedPage maxWidth="max-w-5xl" align="start">
       <h2 className="page-title mb-2">Administración de stock</h2>
       <p className="mb-4 text-muted">
         Jerarquía: Almacén → Armario/Estantería/Gabinete → Estante → Contenedor ({CONTENEDOR_HELP}, opcional).
@@ -878,6 +879,6 @@ export default function AdminStock() {
           </ul>
         )}
       </div>
-    </div>
+    </FocusedPage>
   );
 }

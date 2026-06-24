@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import FocusedPage from '../components/FocusedPage';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 import UserFilters from '../components/UserFilters';
@@ -362,7 +363,7 @@ export default function AdminUsers() {
   };
 
   return (
-    <div>
+    <FocusedPage maxWidth="max-w-5xl" align="start">
       <h2 className="page-title mb-2">Usuarios</h2>
       <p className="mb-6 text-muted">
         Creá cuentas de operarios y administradores. Sin contraseña inicial: el usuario la define en
@@ -674,6 +675,6 @@ export default function AdminUsers() {
         </a>{' '}
         (solo lectura).
       </p>
-    </div>
+    </FocusedPage>
   );
 }

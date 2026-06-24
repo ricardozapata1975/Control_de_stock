@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import FocusedPage from '../components/FocusedPage';
 import { api, getDocsUrl } from '../api/client';
 
 export default function AdminDatabase() {
@@ -101,7 +102,8 @@ export default function AdminDatabase() {
   const readOnly = meta?.readOnly;
 
   return (
-    <div className="space-y-4">
+    <FocusedPage maxWidth="max-w-5xl" align="start">
+      <div className="space-y-4">
       <h2 className="page-title">Base de datos</h2>
       <p className="text-muted text-sm">
         Editá catálogo (almacenes con armarios anidados), contenedores, ítems y stock. También podés usar el editor
@@ -217,6 +219,7 @@ export default function AdminDatabase() {
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </FocusedPage>
   );
 }

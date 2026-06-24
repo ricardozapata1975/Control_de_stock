@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import FocusedPage from '../components/FocusedPage';
 import { api, getDocsUrl } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 
@@ -41,7 +42,7 @@ export default function ImportarCSV() {
   };
 
   return (
-    <div>
+    <FocusedPage maxWidth="max-w-5xl" align="start">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="page-title">Importar datos (CSV)</h2>
@@ -165,6 +166,6 @@ export default function ImportarCSV() {
       {!token && (
         <p className="mt-4 text-sm text-amber-200">Sesión admin requerida para importar.</p>
       )}
-    </div>
+    </FocusedPage>
   );
 }
