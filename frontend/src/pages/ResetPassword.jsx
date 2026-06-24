@@ -3,6 +3,7 @@ import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
+import { isAdminRole } from '../utils/role';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -21,7 +22,7 @@ export default function ResetPassword() {
     try {
       const data = await api.resetPassword({ token, newPassword, confirmPassword });
       const profile = completeLogin(data);
-      navigate(profile?.role === 'admin' ? '/admin' : '/', { replace: true });
+      navigate(isAdminRole(profile?.role) ? '/admin' : '/', { replace: true });
     } catch (err) {
       setError(err.message || 'No se pudo restablecer la contraseña');
     } finally {

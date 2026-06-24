@@ -1,5 +1,11 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
 
+let onUnauthorized = null;
+
+export function setUnauthorizedHandler(handler) {
+  onUnauthorized = typeof handler === 'function' ? handler : null;
+}
+
 export function getDocsUrl(path = '/docs/') {
   const base = API_URL || '';
   return `${base}${path.startsWith('/') ? path : `/${path}`}`;
@@ -12,7 +18,7 @@ function getToken() {
 }
 
 async function request(path, options = {}) {
-  const { timeoutMs, ...fetchOptions } = options;
+  const { timeoutMs, skipUnauthorizedHandler, ...fetchOptions } = options;
   const headers = { 'Content-Type': 'application/json', ...fetchOptions.headers };
   const token = getToken();
   if (token) headers.Authorization = `Bearer ${token}`;
@@ -37,6 +43,9 @@ async function request(path, options = {}) {
       /* respuesta HTML u otro formato no JSON */
     }
     if (!res.ok) {
+      if (res.status === 401 && onUnauthorized && !skipUnauthorizedHandler) {
+        onUnauthorized();
+      }
       if (res.status === 404) {
         throw new Error(
           data.error ||
@@ -60,6 +69,7 @@ async function request(path, options = {}) {
 
 export const api = {
   health: () => request('/api/health'),
+  me: () => request('/api/auth/me', { skipUnauthorizedHandler: true }),
   login: (body) => request('/api/auth/login', { method: 'POST', body: JSON.stringify(body) }),
   firstLogin: (body) =>
     request('/api/auth/first-login', { method: 'POST', body: JSON.stringify(body) }),

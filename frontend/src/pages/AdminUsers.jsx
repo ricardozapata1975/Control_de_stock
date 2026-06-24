@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 import UserFilters from '../components/UserFilters';
+import { normalizeRole } from '../utils/role';
 
 const DEFAULT_FILTERS = { q: '', domain: '', status: 'all' };
 
@@ -9,10 +10,6 @@ const ROLE_LABELS = {
   admin: 'Administrador',
   operario: 'Operario',
 };
-
-function normalizeRole(role) {
-  return role === 'admin' ? 'admin' : 'operario';
-}
 
 function canReceiveInvite(user) {
   return Boolean(user.email && user.isActive && !user.hasPassword);

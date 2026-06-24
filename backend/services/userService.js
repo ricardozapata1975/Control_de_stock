@@ -18,6 +18,23 @@ export function normalizeUsernamePublic(username) {
   return normalizeUsername(username);
 }
 
+/** Rol canónico: 'admin' | 'operario' (tolera etiquetas legacy como "Administrador"). */
+export function normalizeRole(role) {
+  const value = String(role || '')
+    .trim()
+    .toLowerCase();
+  if (value === 'admin' || value === 'administrador') return 'admin';
+  return 'operario';
+}
+
+/** Perfil actual desde DB; null si no existe o está inactivo. */
+export async function getSessionUser(userId) {
+  const row = await findById(userId);
+  if (!row || row.is_active === false) return null;
+  const profile = mapUserPublic(row);
+  return { ...profile, role: normalizeRole(profile.role) };
+}
+
 function normalizeUsername(username) {
   return String(username || '')
     .trim()
@@ -220,7 +237,7 @@ function buildAuthProfile(row) {
     id: row.id,
     username: row.username,
     name: row.display_name,
-    role: row.role,
+    role: normalizeRole(row.role),
     mustChangePassword: !!row.must_change_password,
   };
 }

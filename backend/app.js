@@ -13,7 +13,7 @@ import {
   postIngreso,
 } from './controllers/movimientosController.js';
 import { postSync } from './controllers/syncController.js';
-import { postFirstLogin, postForgotPassword, postLogin, postResetPassword as postAuthResetPassword, postSetPassword } from './controllers/authController.js';
+import { getMe, postFirstLogin, postForgotPassword, postLogin, postResetPassword as postAuthResetPassword, postSetPassword } from './controllers/authController.js';
 import { getUsers, postUser, putUser, deleteUserHandler, postResetPassword, postSendWelcome, getUsersImportSpecHandler, postUsersImportPreview, postUsersImport } from './controllers/userController.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { ensureSeedAdmin } from './services/userService.js';
@@ -144,6 +144,7 @@ app.post('/api/sync', postSync);
 app.post('/sync', postSync);
 
 // Autenticación
+app.get('/api/auth/me', requireAuth, getMe);
 app.post('/api/auth/login', postLogin);
 app.post('/api/auth/first-login', postFirstLogin);
 app.post('/api/auth/set-password', postSetPassword);

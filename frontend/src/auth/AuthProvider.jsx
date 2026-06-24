@@ -1,5 +1,6 @@
-import { createContext, useContext, useEffect, useState, useCallback } from 'react';
-import { api } from '../api/client';
+import { createContext, useContext, useEffect, useState, useCallback, useRef } from 'react';
+import { api, setUnauthorizedHandler } from '../api/client';
+import { isAdminRole } from '../utils/role';
 
 const STORAGE_KEY = 'inventario_usuario';
 const TOKEN_KEY = 'inventario_token';
@@ -10,20 +11,15 @@ export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(null);
   const [ready, setReady] = useState(false);
+  const sessionTokenRef = useRef(null);
 
-  useEffect(() => {
-    const saved = localStorage.getItem(STORAGE_KEY);
-    const savedToken =
-      localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
-    if (saved && savedToken) {
-      setUser(JSON.parse(saved));
-      setToken(savedToken);
-    } else {
-      localStorage.removeItem(STORAGE_KEY);
-      localStorage.removeItem(TOKEN_KEY);
-      localStorage.removeItem(LEGACY_TOKEN_KEY);
-    }
-    setReady(true);
+  const clearSession = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEY);
+    localStorage.removeItem(TOKEN_KEY);
+    localStorage.removeItem(LEGACY_TOKEN_KEY);
+    sessionTokenRef.current = null;
+    setUser(null);
+    setToken(null);
   }, []);
 
   const persist = useCallback((profile, authToken) => {
@@ -32,17 +28,68 @@ export function AuthProvider({ children }) {
     if (authToken) {
       localStorage.setItem(TOKEN_KEY, authToken);
       localStorage.setItem(LEGACY_TOKEN_KEY, authToken);
+      sessionTokenRef.current = authToken;
       setToken(authToken);
     }
   }, []);
 
-  const clearSession = useCallback(() => {
-    localStorage.removeItem(STORAGE_KEY);
-    localStorage.removeItem(TOKEN_KEY);
-    localStorage.removeItem(LEGACY_TOKEN_KEY);
-    setUser(null);
-    setToken(null);
-  }, []);
+  const refreshSession = useCallback(async () => {
+    const savedToken =
+      sessionTokenRef.current ||
+      localStorage.getItem(TOKEN_KEY) ||
+      localStorage.getItem(LEGACY_TOKEN_KEY);
+    if (!savedToken) return null;
+
+    try {
+      const data = await api.me();
+      if (data?.user) {
+        persist(data.user, savedToken);
+        return data.user;
+      }
+    } catch {
+      clearSession();
+    }
+    return null;
+  }, [clearSession, persist]);
+
+  useEffect(() => {
+    setUnauthorizedHandler(() => {
+      clearSession();
+    });
+    return () => setUnauthorizedHandler(null);
+  }, [clearSession]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    (async () => {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      const savedToken =
+        localStorage.getItem(TOKEN_KEY) || localStorage.getItem(LEGACY_TOKEN_KEY);
+
+      if (!saved || !savedToken) {
+        clearSession();
+        if (!cancelled) setReady(true);
+        return;
+      }
+
+      sessionTokenRef.current = savedToken;
+      setUser(JSON.parse(saved));
+      setToken(savedToken);
+
+      try {
+        await refreshSession();
+      } catch {
+        /* logout ya aplicado en refreshSession si corresponde */
+      } finally {
+        if (!cancelled) setReady(true);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [clearSession, refreshSession]);
 
   const login = useCallback(async (username, password) => {
     const data = await api.login({ username: username.trim(), password: password || '' });
@@ -75,7 +122,7 @@ export function AuthProvider({ children }) {
     clearSession();
   }, [clearSession]);
 
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = isAdminRole(user?.role);
 
   return (
     <AuthContext.Provider
@@ -87,6 +134,7 @@ export function AuthProvider({ children }) {
         completeLogin,
         setPassword,
         logout,
+        refreshSession,
         ready,
         isLoggedIn: !!user && !!token,
         isAdmin,

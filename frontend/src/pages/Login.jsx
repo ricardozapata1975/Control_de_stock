@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { isAdminRole } from '../utils/role';
 import ThemeToggle from '../components/ThemeToggle';
 
 export default function Login() {
@@ -24,7 +25,7 @@ export default function Login() {
   }
 
   const goHome = (profile) => {
-    navigate(profile?.role === 'admin' ? '/admin' : '/');
+    navigate(isAdminRole(profile?.role) ? '/admin' : '/');
   };
 
   const resetToLogin = () => {

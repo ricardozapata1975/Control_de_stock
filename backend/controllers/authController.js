@@ -6,6 +6,10 @@ import {
   setUserPassword,
 } from '../services/userService.js';
 
+export async function getMe(req, res) {
+  return res.json({ user: req.user });
+}
+
 export async function postLogin(req, res) {
   const { username, password, nombre } = req.body;
   const user = String(username || nombre || '').trim();
