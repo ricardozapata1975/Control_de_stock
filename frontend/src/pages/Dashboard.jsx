@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useStore } from '../store/useStore';
+import { useStore, hasActiveInventoryFilters, cleanupLegacyFilterStorage } from '../store/useStore';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
 import LowStockAlert from '../components/LowStockAlert';
@@ -25,6 +25,7 @@ export default function Dashboard() {
     error,
     filters,
     setFilters,
+    resetFilters,
     fetchInventario,
     clearError,
   } = useStore();
@@ -40,12 +41,44 @@ export default function Dashboard() {
   const [tipos, setTipos] = useState([]);
 
   useEffect(() => {
+    cleanupLegacyFilterStorage();
+  }, []);
+
+  useEffect(() => {
     Promise.all([api.catalogoUbicacion(), api.tipos()]).then(([cat, tiposData]) => {
       setCatalogoAlmacenes(cat.almacenes || []);
       setArmariosPorAlmacen(cat.armariosPorAlmacen || {});
       setTipos(tiposData.tipos || []);
     });
   }, []);
+
+  useEffect(() => {
+    if (!catalogoAlmacenes.length && !tipos.length) return;
+
+    const validAlmacenes = new Set(catalogoAlmacenes.map((a) => a.codigo));
+    const patch = {};
+
+    if (filters.almacen && !validAlmacenes.has(filters.almacen)) {
+      patch.almacen = '';
+      patch.armario = '';
+    }
+
+    if (filters.armario && filters.almacen) {
+      const armarios = armariosPorAlmacen[filters.almacen] || [];
+      const validArmarios = new Set(armarios.map((a) => a.codigo));
+      if (!validArmarios.has(filters.armario)) {
+        patch.armario = '';
+      }
+    }
+
+    if (filters.tipo && tipos.length && !tipos.includes(filters.tipo)) {
+      patch.tipo = '';
+    }
+
+    if (Object.keys(patch).length) {
+      setFilters(patch);
+    }
+  }, [catalogoAlmacenes, armariosPorAlmacen, tipos, filters.almacen, filters.armario, filters.tipo, setFilters]);
 
   useEffect(() => {
     setPage(1);
@@ -86,6 +119,14 @@ export default function Dashboard() {
     setFilters({ codigo: '', scanType: '' });
     setSearchParams({});
   };
+
+  const clearAllFilters = () => {
+    resetFilters();
+    setSearchParams({});
+    setPage(1);
+  };
+
+  const activeFilters = hasActiveInventoryFilters(filters);
 
   const handleSave = async (form) => {
     if (!editItem?.itemId) return;
@@ -172,6 +213,8 @@ export default function Dashboard() {
       <LowStockAlert items={lowStock} />
       <SearchFilters
         filters={filters}
+        showClear={activeFilters}
+        onClear={clearAllFilters}
         onChange={(f) => {
           if ((f.armario !== undefined && f.armario) || (f.almacen !== undefined && f.almacen)) {
             setFilters({ ...f, codigo: '', scanType: '' });
@@ -196,7 +239,15 @@ export default function Dashboard() {
           onNext={() => setPage((p) => Math.min(totalPages, p + 1))}
         />
       )}
-      <InventoryTable items={paginatedItems} onRowClick={setDetailItem} />
+      <InventoryTable items={paginatedItems} onRowClick={setDetailItem} loading={loading} />
+      {!loading && inventario.length === 0 && activeFilters && (
+        <p className="mt-3 text-center text-sm text-content-muted">
+          No hay resultados con los filtros actuales.{' '}
+          <button type="button" className="underline hover:text-content" onClick={clearAllFilters}>
+            Limpiar filtros
+          </button>
+        </p>
+      )}
       {inventario.length > 0 && (
         <PaginationBar
           page={page}

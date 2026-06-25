@@ -1,6 +1,10 @@
 import { formatUbicacionLabel } from '../utils/contenedor';
 
-export default function InventoryTable({ items, onRowClick }) {
+export default function InventoryTable({ items, onRowClick, loading = false }) {
+  if (loading && !items.length) {
+    return <p className="card text-center text-muted">Cargando inventario...</p>;
+  }
+
   if (!items.length) {
     return <p className="card text-center text-muted">Sin resultados</p>;
   }

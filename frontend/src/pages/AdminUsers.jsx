@@ -667,14 +667,6 @@ export default function AdminUsers() {
           </tbody>
         </table>
       </div>
-
-      <p className="mt-4 text-xs text-subtle">
-        También podés ver la tabla en{' '}
-        <a href="/admin/base-datos" className="text-sky-300 underline">
-          Base datos → Usuarios
-        </a>{' '}
-        (solo lectura).
-      </p>
     </FocusedPage>
   );
 }

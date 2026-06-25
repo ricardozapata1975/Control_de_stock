@@ -185,8 +185,8 @@ export function normalizeAlmacen(almacen) {
 export function getArmarioInfo(armario, almacen) {
   const ac = String(armario || '').toUpperCase();
   if (!ac) return null;
-  const alm = almacen ? normalizeAlmacen(almacen) : null;
-  if (alm) {
+  const alm = almacen ? canonicalAlmacenCode(almacen) : null;
+  if (alm && almacenesMap[alm]) {
     const entry = almacenesMap[alm]?.armarios?.[ac];
     return entry ? { ...normalizeArmarioEntry(entry), codigo: ac, almacen: alm } : null;
   }
