@@ -30,10 +30,10 @@ export default function SearchFilters({
   };
 
   return (
-    <div className="mb-4 space-y-3">
+    <div className="mb-4 space-y-2">
       {showClear && onClear && (
         <div className="flex justify-end">
-          <button type="button" className="btn-secondary py-2 text-sm" onClick={onClear}>
+          <button type="button" className="text-sm font-semibold text-accent underline hover:text-content" onClick={onClear}>
             Limpiar filtros
           </button>
         </div>

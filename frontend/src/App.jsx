@@ -81,6 +81,7 @@ export default function App() {
                   </AdminRoute>
                 }
               />
+              <Route path="admin/base-datos" element={<Navigate to="/admin/usuarios" replace />} />
             </Route>
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

@@ -80,7 +80,10 @@ export const api = {
   resetPassword: (body) =>
     request('/api/auth/reset-password', { method: 'POST', body: JSON.stringify(body) }),
   inventario: (params = {}) => {
-    const qs = new URLSearchParams(params).toString();
+    const clean = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v != null && String(v).trim() !== '')
+    );
+    const qs = new URLSearchParams(clean).toString();
     return request(`/api/inventario${qs ? `?${qs}` : ''}`);
   },
   movimientos: (params = {}) => {

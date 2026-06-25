@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import { useStore, hasActiveInventoryFilters, cleanupLegacyFilterStorage } from '../store/useStore';
+import { useStore, hasActiveInventoryFilters, cleanupLegacyFilterStorage, DEFAULT_FILTERS } from '../store/useStore';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
 import LowStockAlert from '../components/LowStockAlert';
@@ -42,6 +42,15 @@ export default function Dashboard() {
 
   useEffect(() => {
     cleanupLegacyFilterStorage();
+    const codigo = searchParams.get('codigo');
+    const tipoUbicacion = searchParams.get('tipoUbicacion') || '';
+    if (codigo) {
+      setFilters({ ...DEFAULT_FILTERS, codigo, scanType: tipoUbicacion, armario: '' });
+    } else {
+      resetFilters();
+    }
+    // Solo al montar Inventario: no restaurar filtros de otra pantalla en la misma sesión.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {

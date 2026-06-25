@@ -1,4 +1,4 @@
-const CACHE = 'inventario-v6';
+const CACHE = 'inventario-v7';
 
 self.addEventListener('install', (event) => {
   self.skipWaiting();
