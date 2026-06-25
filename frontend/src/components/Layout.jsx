@@ -17,7 +17,6 @@ const adminLinks = [
   { to: '/admin', label: 'Admin' },
   { to: '/admin/usuarios', label: 'Usuarios' },
   { to: '/admin/importar', label: 'Importar' },
-  { to: '/admin/base-datos', label: 'Base datos' },
 ];
 
 function NavItems({ items, onNavigate }) {
@@ -151,7 +150,7 @@ export default function Layout() {
           <OfflineStatus />
         </header>
 
-        <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col overflow-x-hidden overflow-y-auto p-4 sm:p-5">
+        <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-center overflow-x-hidden overflow-y-auto p-4 sm:p-5">
           <Outlet />
         </main>
       </div>

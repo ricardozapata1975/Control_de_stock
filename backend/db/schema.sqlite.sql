@@ -72,3 +72,10 @@ CREATE INDEX IF NOT EXISTS idx_movimientos_fecha ON movimientos(fecha DESC);
 CREATE INDEX IF NOT EXISTS idx_movimientos_usuario ON movimientos(usuario);
 CREATE INDEX IF NOT EXISTS idx_movimientos_offline ON movimientos(offline_id);
 CREATE INDEX IF NOT EXISTS idx_users_username ON users(lower(username));
+
+CREATE TABLE IF NOT EXISTS item_tipos (
+  id TEXT PRIMARY KEY,
+  nombre TEXT NOT NULL UNIQUE,
+  activo INTEGER NOT NULL DEFAULT 1,
+  orden INTEGER
+);

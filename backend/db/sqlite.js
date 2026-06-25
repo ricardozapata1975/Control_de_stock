@@ -30,6 +30,18 @@ function runSchema() {
   getDb().exec(sql);
   migrateUserColumns();
   migrateContenedorColumns();
+  migrateItemTiposTable();
+}
+
+function migrateItemTiposTable() {
+  getDb().exec(`
+    CREATE TABLE IF NOT EXISTS item_tipos (
+      id TEXT PRIMARY KEY,
+      nombre TEXT NOT NULL UNIQUE,
+      activo INTEGER NOT NULL DEFAULT 1,
+      orden INTEGER
+    );
+  `);
 }
 
 function migrateContenedorColumns() {
@@ -173,7 +185,7 @@ export function resetSqliteDatabase() {
   runSchema();
 }
 
-export function initSqliteDatabase() {
+export async function initSqliteDatabase() {
   const dbPath = getSqlitePath();
   const seedDb = config.sqlite.seedPath;
   if (!fs.existsSync(dbPath) && fs.existsSync(seedDb)) {
@@ -189,5 +201,7 @@ export function initSqliteDatabase() {
       console.log('[SQLite] Inventario inicial cargado desde demo-db.seed.json');
     }
   }
+  const { ensureTiposSeededInSqlite } = await import('../services/tiposService.js');
+  ensureTiposSeededInSqlite();
   console.log(`[SQLite] Base de datos: ${getSqlitePath()}`);
 }

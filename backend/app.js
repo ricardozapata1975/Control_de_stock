@@ -19,6 +19,7 @@ import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem } from './controllers/adminController.js';
 import { getCatalogo, postAlmacen, postArmario } from './controllers/ubicacionController.js';
+import { getTipos } from './controllers/tiposController.js';
 import docsRouter from './routes/docs.js';
 import {
   getEspecificacion,
@@ -118,6 +119,7 @@ app.get('/api/health', (_req, res) => {
 
 // Catálogo de ubicación (almacén / armario / estante / contenedor)
 app.get('/api/ubicacion/catalogo', getCatalogo);
+app.get('/api/tipos', getTipos);
 app.post('/api/admin/catalogo/almacen', requireAuth, requireAdmin, postAlmacen);
 app.post('/api/admin/catalogo/armario', requireAuth, requireAdmin, postArmario);
 
@@ -186,7 +188,7 @@ app.use(errorHandler);
 
 if (config.demoMode) {
   const { initSqliteDatabase } = await import('./db/sqlite.js');
-  initSqliteDatabase();
+  await initSqliteDatabase();
 }
 await ensureSeedAdmin();
 

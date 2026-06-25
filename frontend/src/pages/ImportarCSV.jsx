@@ -42,7 +42,7 @@ export default function ImportarCSV() {
   };
 
   return (
-    <FocusedPage maxWidth="max-w-5xl" align="start">
+    <FocusedPage maxWidth="max-w-5xl">
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
         <div>
           <h2 className="page-title">Importar datos (CSV)</h2>

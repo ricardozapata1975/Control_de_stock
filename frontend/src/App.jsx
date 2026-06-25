@@ -13,7 +13,6 @@ import ImprimirQR from './pages/ImprimirQR';
 import Item from './pages/Item';
 import AdminStock from './pages/AdminStock';
 import ImportarCSV from './pages/ImportarCSV';
-import AdminDatabase from './pages/AdminDatabase';
 import AdminUsers from './pages/AdminUsers';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -71,14 +70,6 @@ export default function App() {
                 element={
                   <AdminRoute>
                     <ImportarCSV />
-                  </AdminRoute>
-                }
-              />
-              <Route
-                path="admin/base-datos"
-                element={
-                  <AdminRoute>
-                    <AdminDatabase />
                   </AdminRoute>
                 }
               />

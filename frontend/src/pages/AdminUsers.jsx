@@ -363,7 +363,7 @@ export default function AdminUsers() {
   };
 
   return (
-    <FocusedPage maxWidth="max-w-5xl" align="start">
+    <FocusedPage maxWidth="max-w-5xl">
       <h2 className="page-title mb-2">Usuarios</h2>
       <p className="mb-6 text-muted">
         Creá cuentas de operarios y administradores. Sin contraseña inicial: el usuario la define en
@@ -373,7 +373,7 @@ export default function AdminUsers() {
       {error && <div className="alert-error mb-4">{error}</div>}
       {message && <div className="alert-success mb-4">{message}</div>}
 
-      <form onSubmit={createUser} className="card mb-6 max-w-xl space-y-4">
+      <form onSubmit={createUser} className="card mx-auto mb-6 max-w-xl space-y-4">
         <h3 className="section-title">Nuevo usuario</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>

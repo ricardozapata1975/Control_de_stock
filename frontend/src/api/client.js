@@ -91,6 +91,7 @@ export const api = {
   contenedor: (codigo) => request(`/api/contenedor/${encodeURIComponent(codigo)}`),
   contenedores: () => request('/api/contenedor'),
   catalogoUbicacion: () => request('/api/ubicacion/catalogo'),
+  tipos: () => request('/api/tipos'),
   adminCreateAlmacen: (body) =>
     request('/api/admin/catalogo/almacen', { method: 'POST', body: JSON.stringify(body) }),
   adminCreateArmario: (body) =>

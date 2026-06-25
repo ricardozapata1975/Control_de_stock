@@ -1,8 +1,6 @@
 import { useEffect, useState } from 'react';
 
-const TIPOS = ['Herramienta', 'Medición', 'Eléctrica', 'Neumática', 'Consumible', 'Otro'];
-
-export default function ItemEditModal({ item, onClose, onSave, saving }) {
+export default function ItemEditModal({ item, tipos = [], onClose, onSave, saving }) {
   const [form, setForm] = useState({
     nombre: '',
     marca: '',
@@ -31,6 +29,8 @@ export default function ItemEditModal({ item, onClose, onSave, saving }) {
   if (!item) return null;
 
   const set = (key) => (e) => setForm((f) => ({ ...f, [key]: e.target.value }));
+  const opciones = [...tipos];
+  if (form.tipo && !opciones.includes(form.tipo)) opciones.push(form.tipo);
 
   const submit = (e) => {
     e.preventDefault();
@@ -67,14 +67,11 @@ export default function ItemEditModal({ item, onClose, onSave, saving }) {
             <label className="text-label">Tipo</label>
             <select className="input-field" value={form.tipo} onChange={set('tipo')}>
               <option value="">—</option>
-              {TIPOS.map((t) => (
+              {opciones.map((t) => (
                 <option key={t} value={t}>
                   {t}
                 </option>
               ))}
-              {form.tipo && !TIPOS.includes(form.tipo) && (
-                <option value={form.tipo}>{form.tipo}</option>
-              )}
             </select>
           </div>
           <div>

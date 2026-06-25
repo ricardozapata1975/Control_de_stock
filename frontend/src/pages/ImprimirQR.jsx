@@ -44,6 +44,7 @@ export default function ImprimirQR() {
   const [loading, setLoading] = useState(true);
   const [selected, setSelected] = useState(new Set());
   const [filters, setFilters] = useState({ q: '', almacen: '', armario: '', tipo: '' });
+  const [tipos, setTipos] = useState([]);
 
   useEffect(() => {
     setLoading(true);
@@ -56,8 +57,9 @@ export default function ImprimirQR() {
         armariosPorAlmacen: {},
         estantes: [],
       })),
+      api.tipos().catch(() => ({ tipos: [] })),
     ])
-      .then(([inv, cnt, cat]) => {
+      .then(([inv, cnt, cat, tiposData]) => {
         setInventario(inv.items || []);
         setContenedores(cnt.contenedores || []);
         setCatalogo({
@@ -65,6 +67,7 @@ export default function ImprimirQR() {
           armariosPorAlmacen: cat.armariosPorAlmacen || {},
           estantes: cat.estantes?.length ? cat.estantes : ESTANTES,
         });
+        setTipos(tiposData.tipos || []);
       })
       .finally(() => setLoading(false));
   }, [tab, filters.q, filters.almacen, filters.armario, filters.tipo]);
@@ -79,11 +82,6 @@ export default function ImprimirQR() {
         ? catalogo.almacenes
         : [{ codigo: ALMACEN_DEFAULT, nombre: getAlmacenNombre(ALMACEN_DEFAULT) }],
     [catalogo.almacenes]
-  );
-
-  const tipos = useMemo(
-    () => [...new Set(inventario.map((i) => i.tipo).filter(Boolean))].sort(),
-    [inventario]
   );
 
   const selectedAlmacen = filters.almacen || '';

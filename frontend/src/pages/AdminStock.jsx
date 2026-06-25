@@ -4,7 +4,7 @@ import { api } from '../api/client';
 import { ALMACEN_DEFAULT, ALMACEN_TIPOS, ARMARIO_TIPOS, ESTANTES, buildCodigoPreview, getArmariosForAlmacen, pickDefaultArmario } from '../utils/ubicacion';
 import { CONTENEDOR_HELP } from '../utils/contenedorCodigo';
 
-const TIPOS = ['Herramienta', 'Medición', 'Eléctrica', 'Neumática', 'Consumible', 'Otro'];
+const DEFAULT_TIPO = 'Herramienta';
 
 function pickPrincipalUbicacion(ubicaciones = []) {
   if (!ubicaciones.length) return null;
@@ -33,9 +33,10 @@ export default function AdminStock() {
   const [nombre, setNombre] = useState('');
   const [marca, setMarca] = useState('');
   const [modelo, setModelo] = useState('');
-  const [tipo, setTipo] = useState('Herramienta');
+  const [tipo, setTipo] = useState(DEFAULT_TIPO);
   const [detalle, setDetalle] = useState('');
   const [catalogo, setCatalogo] = useState({ almacenes: [], armariosPorAlmacen: {} });
+  const [tipos, setTipos] = useState([DEFAULT_TIPO]);
   const [nuevoAlmTipo, setNuevoAlmTipo] = useState('Oficina');
   const [nuevoAlmNombre, setNuevoAlmNombre] = useState('');
   const [nuevoArmTipo, setNuevoArmTipo] = useState('Armario');
@@ -54,7 +55,7 @@ export default function AdminStock() {
   const [editNombre, setEditNombre] = useState('');
   const [editMarca, setEditMarca] = useState('');
   const [editModelo, setEditModelo] = useState('');
-  const [editTipo, setEditTipo] = useState('Herramienta');
+  const [editTipo, setEditTipo] = useState(DEFAULT_TIPO);
   const [editDetalle, setEditDetalle] = useState('');
   const [editAlmacen, setEditAlmacen] = useState(ALMACEN_DEFAULT);
   const [editArmario, setEditArmario] = useState('A01');
@@ -79,12 +80,17 @@ export default function AdminStock() {
     setLoading(true);
     setError('');
     try {
-      const [iData, cat] = await Promise.all([api.adminItems(), api.catalogoUbicacion()]);
+      const [iData, cat, tiposData] = await Promise.all([
+        api.adminItems(),
+        api.catalogoUbicacion(),
+        api.tipos(),
+      ]);
       setItems((iData.items || []).filter((i) => i.activo));
       setCatalogo({
         almacenes: cat.almacenes || [],
         armariosPorAlmacen: cat.armariosPorAlmacen || {},
       });
+      setTipos(tiposData.tipos?.length ? tiposData.tipos : [DEFAULT_TIPO]);
     } catch (e) {
       setError(e.message);
     } finally {
@@ -143,7 +149,7 @@ export default function AdminStock() {
     setEditNombre(item.nombre || '');
     setEditMarca(item.marca || '');
     setEditModelo(item.modelo || '');
-    setEditTipo(item.tipo || 'Herramienta');
+    setEditTipo(item.tipo || DEFAULT_TIPO);
     setEditDetalle(item.detalle || '');
     const ubi = pickPrincipalUbicacion(item.ubicaciones);
     if (ubi?.stockId) setEditStockId(ubi.stockId);
@@ -184,7 +190,7 @@ export default function AdminStock() {
     setNombre('');
     setMarca('');
     setModelo('');
-    setTipo('Herramienta');
+    setTipo(DEFAULT_TIPO);
     setDetalle('');
     setAlmacen(ALMACEN_DEFAULT);
     setArmario('A01');
@@ -202,7 +208,7 @@ export default function AdminStock() {
     setEditNombre('');
     setEditMarca('');
     setEditModelo('');
-    setEditTipo('Herramienta');
+    setEditTipo(DEFAULT_TIPO);
     setEditDetalle('');
     setEditAlmacen(ALMACEN_DEFAULT);
     setEditArmario('A01');
@@ -429,7 +435,7 @@ export default function AdminStock() {
   );
 
   return (
-    <FocusedPage maxWidth="max-w-5xl" align="start">
+    <FocusedPage maxWidth="max-w-5xl">
       <h2 className="page-title mb-2">Administración de stock</h2>
       <p className="mb-4 text-muted">
         Jerarquía: Almacén → Armario/Estantería/Gabinete → Estante → Contenedor ({CONTENEDOR_HELP}, opcional).
@@ -539,7 +545,7 @@ export default function AdminStock() {
       {success && <div className="alert-success mb-4">{success}</div>}
 
       {tab === 'alta' && (
-        <form onSubmit={modo === 'editar' ? submitEditar : submitAlta} className="card max-w-xl space-y-4">
+        <form onSubmit={modo === 'editar' ? submitEditar : submitAlta} className="card mx-auto max-w-xl space-y-4">
           <div className="flex flex-wrap gap-1 rounded-lg border border-border p-1">
             <button
               type="button"
@@ -685,7 +691,7 @@ export default function AdminStock() {
                       value={editTipo}
                       onChange={(e) => setEditTipo(e.target.value)}
                     >
-                      {TIPOS.map((t) => (
+                      {tipos.map((t) => (
                         <option key={t} value={t}>
                           {t}
                         </option>
@@ -755,7 +761,7 @@ export default function AdminStock() {
               <div>
                 <label className="text-label">Tipo</label>
                 <select className="input-field" value={tipo} onChange={(e) => setTipo(e.target.value)}>
-                  {TIPOS.map((t) => (
+                  {tipos.map((t) => (
                     <option key={t} value={t}>
                       {t}
                     </option>
@@ -835,7 +841,7 @@ export default function AdminStock() {
       )}
 
       {tab === 'baja' && (
-        <form onSubmit={submitBaja} className="card max-w-xl space-y-4">
+        <form onSubmit={submitBaja} className="card mx-auto max-w-xl space-y-4">
           <p className="text-sm text-muted">
             La baja oculta el ítem del inventario. No se permite si hay egresos pendientes.
           </p>

@@ -37,11 +37,13 @@ export default function Dashboard() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [catalogoAlmacenes, setCatalogoAlmacenes] = useState([]);
   const [armariosPorAlmacen, setArmariosPorAlmacen] = useState({});
+  const [tipos, setTipos] = useState([]);
 
   useEffect(() => {
-    api.catalogoUbicacion().then((cat) => {
+    Promise.all([api.catalogoUbicacion(), api.tipos()]).then(([cat, tiposData]) => {
       setCatalogoAlmacenes(cat.almacenes || []);
       setArmariosPorAlmacen(cat.armariosPorAlmacen || {});
+      setTipos(tiposData.tipos || []);
     });
   }, []);
 
@@ -60,11 +62,6 @@ export default function Dashboard() {
   useEffect(() => {
     fetchInventario();
   }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.codigo]);
-
-  const tipos = useMemo(
-    () => [...new Set(inventario.map((i) => i.tipo).filter(Boolean))].sort(),
-    [inventario]
-  );
 
   const scanLabel = useMemo(() => {
     if (!filters.codigo) return null;
@@ -226,6 +223,7 @@ export default function Dashboard() {
       {editItem && (
         <ItemEditModal
           item={editItem}
+          tipos={tipos}
           onClose={() => setEditItem(null)}
           onSave={handleSave}
           saving={saving}
