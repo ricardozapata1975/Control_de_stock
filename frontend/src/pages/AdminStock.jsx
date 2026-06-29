@@ -355,84 +355,160 @@ export default function AdminStock() {
     }
   };
 
-  const ubicacionFields = (values, setters, armariosList) => (
-    <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-3">
-      <h3 className="section-title text-base">Ubicación física</h3>
-      <div>
-        <label className="text-label">Almacén *</label>
-        <select
-          className="input-field"
-          value={values.almacen}
-          onChange={(e) => {
-            setters.setAlmacen(e.target.value);
-            setters.setArmario('');
-            setters.setEstante('E01');
-            setters.setContenedor('');
-          }}
-          required
-        >
-          {almacenes.map((a) => (
+  const ubicacionCascade = {
+    onAlmacenChange: (setters) => (e) => {
+      setters.setAlmacen(e.target.value);
+      setters.setArmario('');
+      setters.setEstante('E01');
+      setters.setContenedor('');
+    },
+    onArmarioChange: (setters) => (e) => {
+      setters.setArmario(e.target.value);
+      setters.setEstante('E01');
+      setters.setContenedor('');
+    },
+    onEstanteChange: (setters) => (e) => {
+      setters.setEstante(e.target.value);
+      setters.setContenedor('');
+    },
+  };
+
+  const ubicacionFields = (values, setters, armariosList, { compact = false } = {}) => {
+    const armarioSelect = (
+      <select
+        className="input-field"
+        value={values.armario}
+        onChange={ubicacionCascade.onArmarioChange(setters)}
+        required
+        disabled={!armariosList.length}
+      >
+        {armariosList.length ? (
+          armariosList.map((a) => (
             <option key={a.codigo} value={a.codigo}>
-              {a.codigo} — {a.nombre} ({a.tipo})
+              {compact ? a.codigo : `${a.codigo} — ${a.nombre}${a.tipo && a.tipo !== 'armario' ? ` (${a.tipo})` : ''}`}
             </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="text-label">Armario / estantería / gabinete *</label>
-        <select
-          className="input-field"
-          value={values.armario}
-          onChange={(e) => setters.setArmario(e.target.value)}
-          required
-          disabled={!armariosList.length}
-        >
-          {armariosList.length ? (
-            armariosList.map((a) => (
+          ))
+        ) : (
+          <option value="">{compact ? '—' : 'Sin armarios — agregá uno abajo'}</option>
+        )}
+      </select>
+    );
+
+    if (compact) {
+      return (
+        <div className="rounded-lg border-2 border-accent/40 bg-surface-muted p-3 space-y-2">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h3 className="section-title text-base">Ubicación física</h3>
+            {values.preview && (
+              <p className="font-mono text-sm font-bold text-accent">{values.preview}</p>
+            )}
+          </div>
+          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            <div>
+              <label className="text-label text-xs">Almacén *</label>
+              <select
+                className="input-field py-2 text-sm"
+                value={values.almacen}
+                onChange={ubicacionCascade.onAlmacenChange(setters)}
+                required
+              >
+                {almacenes.map((a) => (
+                  <option key={a.codigo} value={a.codigo}>
+                    {a.codigo}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-label text-xs">Armario *</label>
+              <div className="[&_.input-field]:py-2 [&_.input-field]:text-sm">{armarioSelect}</div>
+            </div>
+            <div>
+              <label className="text-label text-xs">Estante *</label>
+              <select
+                className="input-field py-2 text-sm"
+                value={values.estante}
+                onChange={ubicacionCascade.onEstanteChange(setters)}
+                required
+              >
+                {ESTANTES.map((est) => (
+                  <option key={est.codigo} value={est.codigo}>
+                    {est.codigo}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="text-label text-xs">Cont.</label>
+              <input
+                className="input-field py-2 text-sm font-mono"
+                placeholder="C01"
+                value={values.contenedor}
+                onChange={(e) => setters.setContenedor(e.target.value)}
+              />
+            </div>
+          </div>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-3">
+        <h3 className="section-title text-base">Ubicación física</h3>
+        <div>
+          <label className="text-label">Almacén *</label>
+          <select
+            className="input-field"
+            value={values.almacen}
+            onChange={ubicacionCascade.onAlmacenChange(setters)}
+            required
+          >
+            {almacenes.map((a) => (
               <option key={a.codigo} value={a.codigo}>
-                {a.codigo} — {a.nombre}
-                {a.tipo && a.tipo !== 'armario' ? ` (${a.tipo})` : ''}
+                {a.codigo} — {a.nombre} ({a.tipo})
               </option>
-            ))
-          ) : (
-            <option value="">Sin armarios — agregá uno abajo</option>
-          )}
-        </select>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-label">Armario / estantería / gabinete *</label>
+          {armarioSelect}
+        </div>
+        <div>
+          <label className="text-label">Estante * (E01–E09)</label>
+          <select
+            className="input-field"
+            value={values.estante}
+            onChange={ubicacionCascade.onEstanteChange(setters)}
+            required
+          >
+            {ESTANTES.map((est) => (
+              <option key={est.codigo} value={est.codigo}>
+                {est.codigo} — {est.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-label">Contenedor (opcional)</label>
+          <input
+            className="input-field"
+            placeholder="Ej: C05, B12, H01 o SC"
+            value={values.contenedor}
+            onChange={(e) => setters.setContenedor(e.target.value)}
+          />
+          <p className="mt-1 text-xs text-subtle">
+            {CONTENEDOR_HELP}. Vacío = suelto en estante; SC = sin contenedor (código explícito).
+          </p>
+        </div>
+        {values.preview && (
+          <p className="font-mono text-sm text-accent">
+            Código: <strong>{values.preview}</strong>
+          </p>
+        )}
       </div>
-      <div>
-        <label className="text-label">Estante * (E01–E09)</label>
-        <select
-          className="input-field"
-          value={values.estante}
-          onChange={(e) => setters.setEstante(e.target.value)}
-          required
-        >
-          {ESTANTES.map((est) => (
-            <option key={est.codigo} value={est.codigo}>
-              {est.codigo} — {est.nombre}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="text-label">Contenedor (opcional)</label>
-        <input
-          className="input-field"
-          placeholder="Ej: C05, B12, H01 o SC"
-          value={values.contenedor}
-          onChange={(e) => setters.setContenedor(e.target.value)}
-        />
-        <p className="mt-1 text-xs text-subtle">
-          {CONTENEDOR_HELP}. Vacío = suelto en estante; SC = sin contenedor (código explícito).
-        </p>
-      </div>
-      {values.preview && (
-        <p className="font-mono text-sm text-accent">
-          Código: <strong>{values.preview}</strong>
-        </p>
-      )}
-    </div>
-  );
+    );
+  };
 
   return (
     <FocusedPage maxWidth="max-w-5xl">
@@ -657,55 +733,6 @@ export default function AdminStock() {
               )}
               {editItemId && (
                 <>
-                  <div>
-                    <label className="text-label">Nombre *</label>
-                    <input
-                      className="input-field"
-                      value={editNombre}
-                      onChange={(e) => setEditNombre(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2">
-                    <div>
-                      <label className="text-label">Marca</label>
-                      <input
-                        className="input-field"
-                        value={editMarca}
-                        onChange={(e) => setEditMarca(e.target.value)}
-                      />
-                    </div>
-                    <div>
-                      <label className="text-label">Modelo</label>
-                      <input
-                        className="input-field"
-                        value={editModelo}
-                        onChange={(e) => setEditModelo(e.target.value)}
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="text-label">Tipo</label>
-                    <select
-                      className="input-field"
-                      value={editTipo}
-                      onChange={(e) => setEditTipo(e.target.value)}
-                    >
-                      {tipos.map((t) => (
-                        <option key={t} value={t}>
-                          {t}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <div>
-                    <label className="text-label">Detalle</label>
-                    <input
-                      className="input-field"
-                      value={editDetalle}
-                      onChange={(e) => setEditDetalle(e.target.value)}
-                    />
-                  </div>
                   {ubicacionFields(
                     {
                       almacen: editAlmacen,
@@ -720,7 +747,8 @@ export default function AdminStock() {
                       setEstante: setEditEstante,
                       setContenedor: setEditContenedor,
                     },
-                    editArmariosCatalogo
+                    editArmariosCatalogo,
+                    { compact: true }
                   )}
                   <div>
                     <label className="text-label">Cantidad en stock *</label>
@@ -733,6 +761,60 @@ export default function AdminStock() {
                       required
                     />
                     <p className="mt-1 text-xs text-subtle">0 elimina el stock en esa ubicación.</p>
+                  </div>
+                  <div className="border-t border-border pt-3 space-y-3">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Datos del ítem</p>
+                    <div>
+                      <label className="text-label">Nombre *</label>
+                      <input
+                        className="input-field"
+                        value={editNombre}
+                        onChange={(e) => setEditNombre(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div className="grid grid-cols-2 gap-2">
+                      <div>
+                        <label className="text-label text-xs text-subtle">Marca</label>
+                        <input
+                          className="input-field py-2 text-sm"
+                          value={editMarca}
+                          onChange={(e) => setEditMarca(e.target.value)}
+                        />
+                      </div>
+                      <div>
+                        <label className="text-label text-xs text-subtle">Modelo</label>
+                        <input
+                          className="input-field py-2 text-sm"
+                          value={editModelo}
+                          onChange={(e) => setEditModelo(e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="grid gap-3 sm:grid-cols-2">
+                      <div>
+                        <label className="text-label text-xs text-subtle">Tipo</label>
+                        <select
+                          className="input-field py-2 text-sm"
+                          value={editTipo}
+                          onChange={(e) => setEditTipo(e.target.value)}
+                        >
+                          {tipos.map((t) => (
+                            <option key={t} value={t}>
+                              {t}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                      <div>
+                        <label className="text-label text-xs text-subtle">Detalle</label>
+                        <input
+                          className="input-field py-2 text-sm"
+                          value={editDetalle}
+                          onChange={(e) => setEditDetalle(e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </>
               )}
