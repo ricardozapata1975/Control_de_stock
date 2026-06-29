@@ -182,7 +182,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div>
+    <div className="w-full min-w-0">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="page-title">Inventario</h2>
         <button
