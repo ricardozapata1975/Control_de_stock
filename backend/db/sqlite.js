@@ -31,6 +31,15 @@ function runSchema() {
   migrateUserColumns();
   migrateContenedorColumns();
   migrateItemTiposTable();
+  migrateMovimientosColumns();
+}
+
+function migrateMovimientosColumns() {
+  const db = getDb();
+  const cols = db.prepare(`PRAGMA table_info(movimientos)`).all().map((c) => c.name);
+  if (!cols.includes('estado')) db.exec(`ALTER TABLE movimientos ADD COLUMN estado TEXT`);
+  if (!cols.includes('motivo')) db.exec(`ALTER TABLE movimientos ADD COLUMN motivo TEXT`);
+  if (!cols.includes('remito_id')) db.exec(`ALTER TABLE movimientos ADD COLUMN remito_id TEXT`);
 }
 
 function migrateItemTiposTable() {
@@ -135,8 +144,8 @@ export function saveInventoryData(data) {
     }
 
     const insMov = db.prepare(
-      `INSERT OR REPLACE INTO movimientos (id, item_id, contenedor_id, tipo, cantidad, usuario, fecha, sync_status, offline_id, egreso_movimiento_id, created_at)
-       VALUES (@id, @item_id, @contenedor_id, @tipo, @cantidad, @usuario, @fecha, @sync_status, @offline_id, @egreso_movimiento_id, @created_at)`
+      `INSERT OR REPLACE INTO movimientos (id, item_id, contenedor_id, tipo, cantidad, usuario, fecha, sync_status, offline_id, egreso_movimiento_id, estado, motivo, remito_id, created_at)
+       VALUES (@id, @item_id, @contenedor_id, @tipo, @cantidad, @usuario, @fecha, @sync_status, @offline_id, @egreso_movimiento_id, @estado, @motivo, @remito_id, @created_at)`
     );
     for (const row of data.movimientos || []) {
       insMov.run({
@@ -150,6 +159,9 @@ export function saveInventoryData(data) {
         sync_status: row.sync_status || 'synced',
         offline_id: row.offline_id || null,
         egreso_movimiento_id: row.egreso_movimiento_id || null,
+        estado: row.estado || null,
+        motivo: row.motivo || null,
+        remito_id: row.remito_id || null,
         created_at: row.created_at || new Date().toISOString(),
       });
     }

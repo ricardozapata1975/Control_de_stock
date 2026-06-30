@@ -33,6 +33,20 @@ async function enrichMovimientosRows(supabase, rows) {
   }));
 }
 
+export function computeEstadoMovimiento(row, ingresoRow, itemTipo) {
+  if (row.remito_id || row.estado === 'vendido') return 'vendido';
+  if (ingresoRow) return 'completado';
+  if (row.estado === 'consumido' || String(itemTipo || '').toLowerCase() === 'consumible') {
+    return 'consumido';
+  }
+  return 'pendiente';
+}
+
+function toEstadoHistorial(estado) {
+  if (estado === 'pendiente') return 'pendiente_devolucion';
+  return estado;
+}
+
 export async function listMovimientos(filters = {}) {
   if (demo.isDemoMode()) return demo.demoListMovimientos(filters);
 
@@ -66,7 +80,7 @@ export async function listMovimientos(filters = {}) {
       .select('egreso_movimiento_id, fecha, usuario')
       .eq('tipo', 'ingreso')
       .in('egreso_movimiento_id', egresoIds);
-    if (errIng) throw Object.assign(new Error(errIng.message), { status: 500 });
+    if (errIng) throw Object.assign(new Error(errIng.error?.message || errIng.message), { status: 500 });
     ingresoByEgreso = Object.fromEntries(
       (ingresos || []).map((i) => [i.egreso_movimiento_id, i])
     );
@@ -93,18 +107,10 @@ export async function listPendientes() {
   return rows.map((m) => mapMovimiento(m, null));
 }
 
-function computeEstadoHistorial(row, ingresoRow) {
-  const estado = row.estado || 'prestamo';
-  if (estado === 'vendido') return 'vendido';
-  if (estado === 'consumido') return 'consumido';
-  if (ingresoRow) return 'completado';
-  return 'pendiente_devolucion';
-}
-
 function mapMovimiento(row, ingresoRow = null) {
   const item = row.items || {};
   const cont = row.contenedores || {};
-  const estadoHistorial = computeEstadoHistorial(row, ingresoRow);
+  const estado = computeEstadoMovimiento(row, ingresoRow, item.tipo);
   return {
     id: row.id,
     itemId: row.item_id,
@@ -117,15 +123,16 @@ function mapMovimiento(row, ingresoRow = null) {
     fechaEgreso: row.fecha?.slice?.(0, 10),
     fechaIngreso: ingresoRow?.fecha?.slice?.(0, 10) || null,
     nombreHerramienta: item.nombre,
+    itemTipo: item.tipo,
     ubicacion: cont.ubicacion,
     estante: cont.estante,
     contenedor: cont.contenedor,
     contenedorCodigo: cont.codigo,
-    pendiente: estadoHistorial === 'pendiente_devolucion',
+    pendiente: estado === 'pendiente',
     estado: row.estado || null,
-    motivo: row.motivo || null,
-    remitoId: row.remito_id || null,
-    estadoHistorial,
+    motivo: row.motivo,
+    remitoId: row.remito_id,
+    estadoHistorial: toEstadoHistorial(estado),
   };
 }
 

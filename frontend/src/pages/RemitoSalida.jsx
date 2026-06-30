@@ -489,6 +489,7 @@ export default function RemitoSalida() {
                   value={form.destinatario}
                   onChange={patchForm}
                   onSelect={handleClienteSelect}
+                  disabled={confirmado}
                 />
               </div>
               <div>

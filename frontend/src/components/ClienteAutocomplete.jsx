@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 
-export default function ClienteAutocomplete({ value, onChange, onSelect }) {
+export default function ClienteAutocomplete({ value, onChange, onSelect, disabled = false }) {
   const [query, setQuery] = useState(value || '');
   const [suggestions, setSuggestions] = useState([]);
   const [open, setOpen] = useState(false);
@@ -62,9 +62,10 @@ export default function ClienteAutocomplete({ value, onChange, onSelect }) {
         className="input-field text-base"
         value={query}
         onChange={handleInput}
-        onFocus={() => suggestions.length && setOpen(true)}
+        onFocus={() => !disabled && suggestions.length && setOpen(true)}
         placeholder="Buscar cliente..."
         autoComplete="off"
+        disabled={disabled}
       />
       {loading && (
         <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs text-muted">...</span>

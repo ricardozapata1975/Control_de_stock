@@ -318,10 +318,11 @@ export async function demoListMovimientos(filters = {}) {
   return movs.map((m) => demoMapMovimiento(db, m, ingresoByEgreso.get(m.id)));
 }
 
-function computeEstadoHistorial(m, ingreso) {
-  const estado = m.estado || 'prestamo';
-  if (estado === 'vendido') return 'vendido';
-  if (estado === 'consumido') return 'consumido';
+function computeEstadoHistorial(m, ingreso, itemTipo) {
+  if (m.remito_id || m.estado === 'vendido') return 'vendido';
+  if (m.estado === 'consumido' || String(itemTipo || '').toLowerCase() === 'consumible') {
+    return 'consumido';
+  }
   if (ingreso) return 'completado';
   return 'pendiente_devolucion';
 }
@@ -329,7 +330,7 @@ function computeEstadoHistorial(m, ingreso) {
 function demoMapMovimiento(db, m, ingreso = null) {
   const item = db.items.find((i) => i.id === m.item_id);
   const cont = db.contenedores.find((c) => c.id === m.contenedor_id);
-  const estadoHistorial = computeEstadoHistorial(m, ingreso);
+  const estadoHistorial = computeEstadoHistorial(m, ingreso, item?.tipo);
   return {
     id: m.id,
     itemId: m.item_id,
@@ -342,6 +343,7 @@ function demoMapMovimiento(db, m, ingreso = null) {
     fechaEgreso: m.fecha?.slice(0, 10),
     fechaIngreso: ingreso?.fecha?.slice(0, 10) || null,
     nombreHerramienta: item?.nombre,
+    itemTipo: item?.tipo,
     ...mapUbicacionFields(cont),
     contenedorCodigo: cont?.codigo,
     pendiente: estadoHistorial === 'pendiente_devolucion',
