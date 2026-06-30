@@ -10,6 +10,7 @@ import Historial from './pages/Historial';
 import EscanearQR from './pages/EscanearQR';
 import Contenedor from './pages/Contenedor';
 import ImprimirQR from './pages/ImprimirQR';
+import RemitoSalida from './pages/RemitoSalida';
 import Item from './pages/Item';
 import AdminStock from './pages/AdminStock';
 import ImportarCSV from './pages/ImportarCSV';
@@ -55,6 +56,7 @@ export default function App() {
               <Route path="historial" element={<Historial />} />
               <Route path="escanear" element={<EscanearQR />} />
               <Route path="imprimir-qr" element={<ImprimirQR />} />
+              <Route path="remito" element={<RemitoSalida />} />
               <Route path="contenedor/:codigo" element={<Contenedor />} />
               <Route path="item/:itemId" element={<Item />} />
               <Route

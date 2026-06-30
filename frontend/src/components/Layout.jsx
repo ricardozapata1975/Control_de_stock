@@ -8,6 +8,7 @@ const links = [
   { to: '/', label: 'Inventario', end: true },
   { to: '/escanear', label: 'QR' },
   { to: '/egreso', label: 'Egreso' },
+  { to: '/remito', label: 'Remito' },
   { to: '/ingreso', label: 'Ingreso' },
   { to: '/historial', label: 'Historial' },
   { to: '/imprimir-qr', label: 'Etiquetas' },
