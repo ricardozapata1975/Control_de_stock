@@ -93,9 +93,18 @@ export async function listPendientes() {
   return rows.map((m) => mapMovimiento(m, null));
 }
 
+function computeEstadoHistorial(row, ingresoRow) {
+  const estado = row.estado || 'prestamo';
+  if (estado === 'vendido') return 'vendido';
+  if (estado === 'consumido') return 'consumido';
+  if (ingresoRow) return 'completado';
+  return 'pendiente_devolucion';
+}
+
 function mapMovimiento(row, ingresoRow = null) {
   const item = row.items || {};
   const cont = row.contenedores || {};
+  const estadoHistorial = computeEstadoHistorial(row, ingresoRow);
   return {
     id: row.id,
     itemId: row.item_id,
@@ -112,7 +121,11 @@ function mapMovimiento(row, ingresoRow = null) {
     estante: cont.estante,
     contenedor: cont.contenedor,
     contenedorCodigo: cont.codigo,
-    pendiente: !ingresoRow,
+    pendiente: estadoHistorial === 'pendiente_devolucion',
+    estado: row.estado || null,
+    motivo: row.motivo || null,
+    remitoId: row.remito_id || null,
+    estadoHistorial,
   };
 }
 

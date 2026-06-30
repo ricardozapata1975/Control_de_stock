@@ -309,15 +309,27 @@ export async function demoListMovimientos(filters = {}) {
     movs = movs.filter((m) => m.usuario.toLowerCase().includes(u));
   }
   if (filters.pendiente === true || filters.pendiente === 'true') {
-    movs = movs.filter((m) => !ingresoByEgreso.has(m.id));
+    movs = movs.filter((m) => {
+      const estado = m.estado || 'prestamo';
+      return estado === 'prestamo' && !ingresoByEgreso.has(m.id);
+    });
   }
 
   return movs.map((m) => demoMapMovimiento(db, m, ingresoByEgreso.get(m.id)));
 }
 
+function computeEstadoHistorial(m, ingreso) {
+  const estado = m.estado || 'prestamo';
+  if (estado === 'vendido') return 'vendido';
+  if (estado === 'consumido') return 'consumido';
+  if (ingreso) return 'completado';
+  return 'pendiente_devolucion';
+}
+
 function demoMapMovimiento(db, m, ingreso = null) {
   const item = db.items.find((i) => i.id === m.item_id);
   const cont = db.contenedores.find((c) => c.id === m.contenedor_id);
+  const estadoHistorial = computeEstadoHistorial(m, ingreso);
   return {
     id: m.id,
     itemId: m.item_id,
@@ -332,7 +344,11 @@ function demoMapMovimiento(db, m, ingreso = null) {
     nombreHerramienta: item?.nombre,
     ...mapUbicacionFields(cont),
     contenedorCodigo: cont?.codigo,
-    pendiente: !ingreso,
+    pendiente: estadoHistorial === 'pendiente_devolucion',
+    estado: m.estado || null,
+    motivo: m.motivo || null,
+    remitoId: m.remito_id || null,
+    estadoHistorial,
   };
 }
 
@@ -355,6 +371,11 @@ export async function demoRegistrarEgreso({ itemId, contenedorId, cantidad, usua
   }
 
   stock.cantidad -= qty;
+  const item = db.items.find((i) => i.id === itemId);
+  const tipoItem = String(item?.tipo || '').toLowerCase();
+  const estado = tipoItem === 'consumible' ? 'consumido' : 'prestamo';
+  const motivo = estado === 'consumido' ? 'Consumible' : null;
+
   const mov = {
     id: `mov-${Date.now()}`,
     item_id: itemId,
@@ -364,6 +385,9 @@ export async function demoRegistrarEgreso({ itemId, contenedorId, cantidad, usua
     usuario: usuario.trim(),
     fecha: new Date().toISOString(),
     offline_id: offlineId || null,
+    estado,
+    motivo,
+    remito_id: null,
   };
   db.movimientos.push(mov);
   await save(db);
@@ -698,4 +722,258 @@ export async function demoBajaItem(itemId, adminName) {
   item.activo = false;
   await save(db);
   return { ok: true, itemId, registradoPor: adminName };
+}
+
+const DEMO_EMPRESAS = [
+  {
+    id: 'demo-systelec',
+    nombre: 'SYSTELEC S.A.',
+    razonSocial: 'SYSTELEC S.A.',
+    cuit: '30-68479873-8',
+    ingBrutos: '901-68479873-8',
+    domicilio: '26 de Julio 5450',
+    localidad: 'Villa Ballester (1653) — San Martín, Buenos Aires',
+    telefono: '(011) 4768-7677',
+    fax: '(011) 4768-7677',
+    email: 'contacto@systelec.com.ar',
+    web: 'www.systelec.com.ar',
+    fechaInicioActividades: '1996-08-02',
+    codigoDocumento: '91',
+    activo: true,
+  },
+  {
+    id: 'demo-pxcontrol',
+    nombre: 'PX Control',
+    razonSocial: 'PX Control S.A.',
+    cuit: '30-00000000-0',
+    ingBrutos: '000-00000000-0',
+    domicilio: '26 de Julio 5450',
+    localidad: 'Villa Ballester, Buenos Aires',
+    telefono: '(011) 0000-0000',
+    fax: '',
+    email: 'info@pxcontrol.com.ar',
+    web: 'www.pxcontrol.com.ar',
+    fechaInicioActividades: '2020-01-01',
+    codigoDocumento: '91',
+    activo: true,
+  },
+  {
+    id: 'demo-talemec',
+    nombre: 'Talemec',
+    razonSocial: 'Talemec S.A.',
+    cuit: '30-00000001-1',
+    ingBrutos: '000-00000001-1',
+    domicilio: 'Domicilio a completar',
+    localidad: 'Buenos Aires',
+    telefono: '(011) 0000-0001',
+    fax: '',
+    email: 'info@talemec.com.ar',
+    web: 'www.talemec.com.ar',
+    fechaInicioActividades: '2020-01-01',
+    codigoDocumento: '91',
+    activo: true,
+  },
+];
+
+const demoClientes = [];
+const demoRemitos = new Map();
+
+export async function demoListEmpresasEmisoras() {
+  return DEMO_EMPRESAS;
+}
+
+export async function demoGetEmpresaEmisoraById(id) {
+  return DEMO_EMPRESAS.find((e) => e.id === id) || null;
+}
+
+export async function demoGetNextRemitoNumero(empresaEmisoraId) {
+  let max = 0;
+  for (const r of demoRemitos.values()) {
+    if (r.empresa_emisora_id === empresaEmisoraId && r.numero > max) {
+      max = r.numero;
+    }
+  }
+  return max + 1;
+}
+
+export async function demoSearchClientes(q = '') {
+  const term = String(q || '').trim().toLowerCase();
+  if (!term) return demoClientes.slice(0, 20);
+  return demoClientes.filter((c) => c.nombre.toLowerCase().includes(term)).slice(0, 20);
+}
+
+export async function demoGetClienteById(id) {
+  return demoClientes.find((c) => c.id === id) || null;
+}
+
+export async function demoCreateCliente(payload) {
+  const nombre = String(payload?.nombre || '').trim();
+  if (!nombre) throw Object.assign(new Error('Nombre del cliente requerido'), { status: 400 });
+  const cliente = {
+    id: `demo-cli-${Date.now()}`,
+    nombre,
+    razonSocial: payload.razonSocial || payload.razon_social || nombre,
+    iva: payload.iva || '',
+    domicilio: payload.domicilio || '',
+    localidad: payload.localidad || '',
+    vRef: payload.vRef || payload.v_ref || '',
+    cuit: payload.cuit || '',
+  };
+  demoClientes.push(cliente);
+  return cliente;
+}
+
+export async function demoCrearRemito(payload, createdBy) {
+  const {
+    numero,
+    fecha,
+    empresaEmisoraId,
+    cliente,
+    cantBultos,
+    transportista,
+    transportistaCuit,
+    transportistaDomicilio,
+    aclaracion,
+    dni,
+    items,
+  } = payload;
+
+  if (!empresaEmisoraId) {
+    throw Object.assign(new Error('Empresa emisora requerida'), { status: 400 });
+  }
+  if (!items?.length) {
+    throw Object.assign(new Error('El remito debe tener al menos un ítem'), { status: 400 });
+  }
+
+  const db = await load();
+  let clienteId = cliente?.id;
+
+  if (clienteId) {
+    const existing = demoClientes.find((c) => c.id === clienteId);
+    if (!existing) throw Object.assign(new Error('Cliente no encontrado'), { status: 404 });
+    Object.assign(existing, {
+      nombre: cliente.nombre || existing.nombre,
+      iva: cliente.iva ?? existing.iva,
+      domicilio: cliente.domicilio ?? existing.domicilio,
+      localidad: cliente.localidad ?? existing.localidad,
+      vRef: cliente.v_ref ?? cliente.vRef ?? existing.vRef,
+      cuit: cliente.cuit ?? existing.cuit,
+    });
+  } else {
+    if (!cliente?.nombre?.trim()) {
+      throw Object.assign(new Error('Nombre del cliente requerido'), { status: 400 });
+    }
+    clienteId = `demo-cli-${Date.now()}`;
+    demoClientes.push({
+      id: clienteId,
+      nombre: cliente.nombre.trim(),
+      razonSocial: cliente.razon_social || cliente.nombre.trim(),
+      iva: cliente.iva || '',
+      domicilio: cliente.domicilio || '',
+      localidad: cliente.localidad || '',
+      vRef: cliente.v_ref || cliente.vRef || '',
+      cuit: cliente.cuit || '',
+    });
+  }
+
+  const remitoId = `demo-remito-${Date.now()}`;
+  const remitoItems = [];
+
+  for (const it of items) {
+    const qty = Number(it.cantidad);
+    const stock = db.stock.find(
+      (s) =>
+        s.id === it.stockId &&
+        s.item_id === it.itemId &&
+        s.contenedor_id === it.contenedorId
+    );
+    if (!stock) {
+      throw Object.assign(new Error('Stock no encontrado'), { status: 404 });
+    }
+    if (stock.cantidad < qty) {
+      throw Object.assign(
+        new Error(`Stock insuficiente. Disponible: ${stock.cantidad}`),
+        { status: 409 }
+      );
+    }
+
+    stock.cantidad -= qty;
+    const movId = `mov-remito-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
+    db.movimientos.push({
+      id: movId,
+      item_id: it.itemId,
+      contenedor_id: it.contenedorId,
+      tipo: 'egreso',
+      cantidad: qty,
+      usuario: createdBy || 'Sistema',
+      fecha: new Date().toISOString(),
+      offline_id: null,
+      estado: 'vendido',
+      motivo: 'Vendido a cliente',
+      remito_id: remitoId,
+    });
+
+    remitoItems.push({
+      id: `ri-${movId}`,
+      stock_id: it.stockId,
+      item_id: it.itemId,
+      contenedor_id: it.contenedorId,
+      cantidad: qty,
+      descripcion: it.descripcion || '',
+      nombre: db.items.find((i) => i.id === it.itemId)?.nombre,
+    });
+  }
+
+  await save(db);
+
+  const remitoRecord = {
+    id: remitoId,
+    numero: Number(numero),
+    fecha,
+    empresa_emisora_id: empresaEmisoraId,
+    cliente_id: clienteId,
+    cant_bultos: cantBultos,
+    transportista,
+    transportista_cuit: transportistaCuit,
+    transportista_domicilio: transportistaDomicilio,
+    aclaracion,
+    dni,
+    created_by: createdBy,
+    created_at: new Date().toISOString(),
+    items: remitoItems,
+  };
+  demoRemitos.set(remitoId, remitoRecord);
+
+  return {
+    ok: true,
+    remito_id: remitoId,
+    numero: Number(numero),
+    cliente_id: clienteId,
+    demo: true,
+  };
+}
+
+export async function demoGetRemitoById(id) {
+  const remito = demoRemitos.get(id);
+  if (!remito) throw Object.assign(new Error('Remito no encontrado'), { status: 404 });
+
+  const empresa = DEMO_EMPRESAS.find((e) => e.id === remito.empresa_emisora_id) || null;
+  const cliente = demoClientes.find((c) => c.id === remito.cliente_id) || null;
+
+  return {
+    id: remito.id,
+    numero: remito.numero,
+    fecha: remito.fecha,
+    empresa,
+    cliente,
+    cantBultos: remito.cant_bultos,
+    transportista: remito.transportista,
+    transportistaCuit: remito.transportista_cuit,
+    transportistaDomicilio: remito.transportista_domicilio,
+    aclaracion: remito.aclaracion,
+    dni: remito.dni,
+    createdBy: remito.created_by,
+    createdAt: remito.created_at,
+    items: remito.items,
+  };
 }

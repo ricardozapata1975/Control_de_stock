@@ -162,6 +162,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ csv, modoDuplicados }),
     }),
+  clientes: (q = '') => {
+    const qs = q ? `?q=${encodeURIComponent(q)}` : '';
+    return request(`/api/clientes${qs}`);
+  },
+  empresasEmisoras: () => request('/api/empresas-emisoras'),
+  proximoNumeroRemito: (empresaId) =>
+    request(`/api/empresas-emisoras/proximo-numero?empresaId=${encodeURIComponent(empresaId)}`),
+  crearRemito: (body) =>
+    request('/api/remitos', { method: 'POST', body: JSON.stringify(body) }),
+  getRemito: (id) => request(`/api/remitos/${encodeURIComponent(id)}`),
   downloadPlantilla: async () => {
     const token = getToken();
     const res = await fetch(`${API_URL}/api/admin/import/plantilla.csv`, {

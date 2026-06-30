@@ -1,20 +1,16 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
+import ClienteAutocomplete from '../components/ClienteAutocomplete';
 import RemitoDocument from '../components/RemitoDocument';
 import SearchFilters from '../components/SearchFilters';
 import { formatUbicacionLabel } from '../utils/contenedor';
-import {
-  getEmpresaNombre,
-  getNextRemitoNumber,
-  setEmpresaNombre,
-  setRemitoNumber,
-  todayIsoDate,
-} from '../utils/remitoStorage';
+import { todayIsoDate } from '../utils/remitoStorage';
 
 const EMPTY_FORM = {
   numero: '',
   fecha: todayIsoDate(),
   destinatario: '',
+  clienteId: null,
   iva: '',
   domicilio: '',
   localidad: '',
@@ -31,13 +27,14 @@ const EMPTY_FORM = {
 function defaultCantidad(item) {
   const stock = Number(item.cantidad) || 0;
   if (stock <= 0) return 1;
-  return stock;
+  return 1;
 }
 
 function cartEntryFromItem(item) {
   return {
     stockId: item.stockId || item.id,
     itemId: item.itemId,
+    contenedorId: item.contenedorId,
     nombre: item.nombre,
     tipo: item.tipo,
     detalle: item.detalle,
@@ -56,6 +53,13 @@ function itemLinea(item) {
   return marca ? `${base} (${marca})` : base;
 }
 
+function itemDescripcionRemito(linea) {
+  const tipo = linea.tipo?.trim();
+  const base = tipo ? `${linea.nombre} — ${tipo}` : linea.nombre;
+  const marca = [linea.marca, linea.modelo].filter(Boolean).join(' ');
+  return marca ? `${base} (${marca})` : base;
+}
+
 export default function RemitoSalida() {
   const [inventario, setInventario] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -64,12 +68,18 @@ export default function RemitoSalida() {
   const [tipos, setTipos] = useState([]);
   const [cart, setCart] = useState(() => new Map());
   const [showPreview, setShowPreview] = useState(false);
-  const [form, setForm] = useState(() => ({
-    ...EMPTY_FORM,
-    numero: String(getNextRemitoNumber()),
-    fecha: todayIsoDate(),
-  }));
-  const [empresaNombre, setEmpresaNombreState] = useState(getEmpresaNombre);
+  const [form, setForm] = useState(EMPTY_FORM);
+  const [empresas, setEmpresas] = useState([]);
+  const [empresaId, setEmpresaId] = useState('');
+  const [confirmado, setConfirmado] = useState(false);
+  const [remitoId, setRemitoId] = useState(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [error, setError] = useState('');
+
+  const empresaSeleccionada = useMemo(
+    () => empresas.find((e) => e.id === empresaId) || null,
+    [empresas, empresaId]
+  );
 
   useEffect(() => {
     setLoading(true);
@@ -80,19 +90,33 @@ export default function RemitoSalida() {
   }, [filters.q, filters.almacen, filters.armario, filters.tipo]);
 
   useEffect(() => {
-    Promise.all([api.catalogoUbicacion(), api.tipos()])
-      .then(([cat, tiposData]) => {
+    Promise.all([api.catalogoUbicacion(), api.tipos(), api.empresasEmisoras()])
+      .then(([cat, tiposData, empresasData]) => {
         setCatalogo({
           almacenes: cat.almacenes || [],
           armariosPorAlmacen: cat.armariosPorAlmacen || {},
         });
         setTipos(tiposData.tipos || []);
+        const list = empresasData.empresas || [];
+        setEmpresas(list);
+        if (list.length && !empresaId) {
+          setEmpresaId(list[0].id);
+        }
       })
       .catch(() => {});
   }, []);
 
-  const filteredItems = inventario;
+  useEffect(() => {
+    if (!empresaId || confirmado) return;
+    api
+      .proximoNumeroRemito(empresaId)
+      .then((data) => {
+        setForm((f) => ({ ...f, numero: String(data.numero || 1) }));
+      })
+      .catch(() => {});
+  }, [empresaId, confirmado]);
 
+  const filteredItems = inventario;
   const cartList = useMemo(() => [...cart.values()], [cart]);
   const cartCount = cartList.length;
 
@@ -106,6 +130,8 @@ export default function RemitoSalida() {
       else next.set(stockId, cartEntryFromItem(item));
       return next;
     });
+    setConfirmado(false);
+    setRemitoId(null);
   };
 
   const updateCartCantidad = (stockId, value) => {
@@ -114,10 +140,14 @@ export default function RemitoSalida() {
     setCart((prev) => {
       const entry = prev.get(stockId);
       if (!entry) return prev;
+      const max = entry.cantidadDisponible;
+      const cantidad = max > 0 ? Math.min(n, max) : n;
       const next = new Map(prev);
-      next.set(stockId, { ...entry, cantidad: n });
+      next.set(stockId, { ...entry, cantidad });
       return next;
     });
+    setConfirmado(false);
+    setRemitoId(null);
   };
 
   const removeFromCart = (stockId) => {
@@ -126,9 +156,15 @@ export default function RemitoSalida() {
       next.delete(stockId);
       return next;
     });
+    setConfirmado(false);
+    setRemitoId(null);
   };
 
-  const clearCart = () => setCart(new Map());
+  const clearCart = () => {
+    setCart(new Map());
+    setConfirmado(false);
+    setRemitoId(null);
+  };
 
   const selectVisible = () => {
     setCart((prev) => {
@@ -139,30 +175,131 @@ export default function RemitoSalida() {
       });
       return next;
     });
+    setConfirmado(false);
+    setRemitoId(null);
   };
 
   const openPreview = () => {
     setForm((f) => ({
       ...f,
-      numero: f.numero || String(getNextRemitoNumber()),
       fecha: f.fecha || todayIsoDate(),
     }));
+    setError('');
     setShowPreview(true);
   };
 
-  const handlePrint = () => {
-    const num = parseInt(form.numero, 10);
-    if (Number.isFinite(num) && num > 0) {
-      setRemitoNumber(num + 1);
+  const patchForm = (patch) => {
+    setForm((f) => ({ ...f, ...patch }));
+    setConfirmado(false);
+    setRemitoId(null);
+  };
+
+  const handleClienteSelect = (cliente) => {
+    patchForm({
+      clienteId: cliente.id,
+      destinatario: cliente.nombre,
+      iva: cliente.iva || '',
+      domicilio: cliente.domicilio || '',
+      localidad: cliente.localidad || '',
+      vRef: cliente.vRef || '',
+      cuit: cliente.cuit || '',
+    });
+  };
+
+  const handleConfirmar = async () => {
+    setError('');
+    if (!cartCount) {
+      setError('Agregá al menos un ítem al remito.');
+      return;
     }
-    setEmpresaNombre(empresaNombre);
-    window.print();
-    if (Number.isFinite(num) && num > 0) {
-      setForm((f) => ({ ...f, numero: String(num + 1) }));
+    if (!form.destinatario?.trim()) {
+      setError('Completá el destinatario (Señor/es).');
+      return;
+    }
+    if (!empresaId) {
+      setError('Seleccioná una empresa emisora.');
+      return;
+    }
+
+    for (const linea of cartList) {
+      if (linea.cantidad > linea.cantidadDisponible) {
+        setError(
+          `Stock insuficiente para "${linea.nombre}". Disponible: ${linea.cantidadDisponible}`
+        );
+        return;
+      }
+    }
+
+    setSubmitting(true);
+    try {
+      const payload = {
+        numero: parseInt(form.numero, 10),
+        fecha: form.fecha,
+        empresaEmisoraId: empresaId,
+        cliente: {
+          id: form.clienteId || undefined,
+          nombre: form.destinatario.trim(),
+          iva: form.iva,
+          domicilio: form.domicilio,
+          localidad: form.localidad,
+          v_ref: form.vRef,
+          cuit: form.cuit,
+        },
+        cantBultos: form.bultos,
+        transportista: form.transportista,
+        transportistaCuit: form.cuitTransportista,
+        transportistaDomicilio: form.domicilioTransportista,
+        aclaracion: form.aclaracion,
+        dni: form.dni,
+        items: cartList.map((l) => ({
+          stockId: l.stockId,
+          itemId: l.itemId,
+          contenedorId: l.contenedorId,
+          cantidad: l.cantidad,
+          descripcion: itemDescripcionRemito(l),
+        })),
+      };
+
+      const result = await api.crearRemito(payload);
+      setConfirmado(true);
+      setRemitoId(result.remito_id || result.remitoId);
+    } catch (err) {
+      setError(err.message || 'Error al confirmar el remito');
+    } finally {
+      setSubmitting(false);
     }
   };
 
-  const patchForm = (patch) => setForm((f) => ({ ...f, ...patch }));
+  const handlePrint = () => {
+    window.print();
+  };
+
+  const handleNuevoRemito = async () => {
+    setShowPreview(false);
+    setConfirmado(false);
+    setRemitoId(null);
+    clearCart();
+    setForm({ ...EMPTY_FORM, fecha: todayIsoDate() });
+    if (empresaId) {
+      try {
+        const data = await api.proximoNumeroRemito(empresaId);
+        setForm((f) => ({ ...f, numero: String(data.numero || 1), fecha: todayIsoDate() }));
+      } catch {
+        /* ignore */
+      }
+    }
+    setLoading(true);
+    api
+      .inventario(filters)
+      .then((data) => setInventario(data.items || []))
+      .finally(() => setLoading(false));
+  };
+
+  const handleEmpresaChange = (id) => {
+    setEmpresaId(id);
+    setConfirmado(false);
+    setRemitoId(null);
+  };
 
   return (
     <div className="pb-28">
@@ -170,7 +307,7 @@ export default function RemitoSalida() {
         <div>
           <h2 className="page-title">Remito de salida</h2>
           <p className="text-muted">
-            Seleccioná ítems del inventario. La selección se mantiene al cambiar filtros.
+            Seleccioná ítems, confirmá el remito para descontar stock y luego imprimí.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -247,7 +384,7 @@ export default function RemitoSalida() {
               <p className="font-bold text-content">
                 {cartCount} {cartCount === 1 ? 'ítem' : 'ítems'} en el remito
               </p>
-              <p className="text-sm text-muted">Podés seguir buscando y agregando más ítems.</p>
+              <p className="text-sm text-muted">Confirmá para descontar stock antes de imprimir.</p>
             </div>
             <div className="flex gap-2">
               <button type="button" className="btn-secondary text-sm" onClick={() => setShowPreview(true)}>
@@ -266,19 +403,43 @@ export default function RemitoSalida() {
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-surface-elevated px-4 py-3">
             <h3 className="section-title">Vista previa del remito</h3>
             <div className="flex flex-wrap gap-2">
-              <button type="button" className="btn-secondary text-sm" onClick={() => setShowPreview(false)}>
-                Cerrar
-              </button>
-              <button
-                type="button"
-                className="btn-primary text-sm"
-                disabled={!cartCount}
-                onClick={handlePrint}
-              >
-                Imprimir
-              </button>
+              {confirmado ? (
+                <button type="button" className="btn-secondary text-sm" onClick={handleNuevoRemito}>
+                  Nuevo remito
+                </button>
+              ) : (
+                <button type="button" className="btn-secondary text-sm" onClick={() => setShowPreview(false)}>
+                  Cerrar
+                </button>
+              )}
+              {!confirmado && (
+                <button
+                  type="button"
+                  className="btn-primary text-sm"
+                  disabled={!cartCount || submitting}
+                  onClick={handleConfirmar}
+                >
+                  {submitting ? 'Confirmando...' : 'Confirmar remito'}
+                </button>
+              )}
+              {confirmado && (
+                <button type="button" className="btn-primary text-sm" onClick={handlePrint}>
+                  Imprimir
+                </button>
+              )}
             </div>
           </div>
+
+          {error && (
+            <div className="shrink-0 border-b border-red-300 bg-red-50 px-4 py-2 text-sm text-red-800 dark:bg-red-950 dark:text-red-200">
+              {error}
+            </div>
+          )}
+          {confirmado && (
+            <div className="shrink-0 border-b border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
+              Remito N° {form.numero} confirmado. Stock descontado.{remitoId ? ` ID: ${remitoId.slice(0, 8)}…` : ''}
+            </div>
+          )}
 
           <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row">
             <div className="card shrink-0 space-y-3 lg:w-96 lg:overflow-y-auto">
@@ -286,11 +447,18 @@ export default function RemitoSalida() {
 
               <div>
                 <label className="text-label">Empresa emisora</label>
-                <input
+                <select
                   className="input-field text-base"
-                  value={empresaNombre}
-                  onChange={(e) => setEmpresaNombreState(e.target.value)}
-                />
+                  value={empresaId}
+                  disabled={confirmado}
+                  onChange={(e) => handleEmpresaChange(e.target.value)}
+                >
+                  {empresas.map((e) => (
+                    <option key={e.id} value={e.id}>
+                      {e.nombre}
+                    </option>
+                  ))}
+                </select>
               </div>
 
               <div className="grid gap-3 sm:grid-cols-2">
@@ -299,6 +467,7 @@ export default function RemitoSalida() {
                   <input
                     className="input-field text-base"
                     value={form.numero}
+                    disabled={confirmado}
                     onChange={(e) => patchForm({ numero: e.target.value })}
                   />
                 </div>
@@ -308,6 +477,7 @@ export default function RemitoSalida() {
                     type="date"
                     className="input-field text-base"
                     value={form.fecha}
+                    disabled={confirmado}
                     onChange={(e) => patchForm({ fecha: e.target.value })}
                   />
                 </div>
@@ -315,10 +485,10 @@ export default function RemitoSalida() {
 
               <div>
                 <label className="text-label">Señor(es)</label>
-                <input
-                  className="input-field text-base"
+                <ClienteAutocomplete
                   value={form.destinatario}
-                  onChange={(e) => patchForm({ destinatario: e.target.value })}
+                  onChange={patchForm}
+                  onSelect={handleClienteSelect}
                 />
               </div>
               <div>
@@ -326,6 +496,7 @@ export default function RemitoSalida() {
                 <input
                   className="input-field text-base"
                   value={form.iva}
+                  disabled={confirmado}
                   onChange={(e) => patchForm({ iva: e.target.value })}
                 />
               </div>
@@ -334,6 +505,7 @@ export default function RemitoSalida() {
                 <input
                   className="input-field text-base"
                   value={form.domicilio}
+                  disabled={confirmado}
                   onChange={(e) => patchForm({ domicilio: e.target.value })}
                 />
               </div>
@@ -343,6 +515,7 @@ export default function RemitoSalida() {
                   <input
                     className="input-field text-base"
                     value={form.localidad}
+                    disabled={confirmado}
                     onChange={(e) => patchForm({ localidad: e.target.value })}
                   />
                 </div>
@@ -351,6 +524,7 @@ export default function RemitoSalida() {
                   <input
                     className="input-field text-base"
                     value={form.vRef}
+                    disabled={confirmado}
                     onChange={(e) => patchForm({ vRef: e.target.value })}
                   />
                 </div>
@@ -360,6 +534,7 @@ export default function RemitoSalida() {
                 <input
                   className="input-field text-base"
                   value={form.cuit}
+                  disabled={confirmado}
                   onChange={(e) => patchForm({ cuit: e.target.value })}
                 />
               </div>
@@ -371,6 +546,7 @@ export default function RemitoSalida() {
                 <input
                   className="input-field text-base"
                   value={form.bultos}
+                  disabled={confirmado}
                   onChange={(e) => patchForm({ bultos: e.target.value })}
                 />
               </div>
@@ -379,6 +555,7 @@ export default function RemitoSalida() {
                 <input
                   className="input-field text-base"
                   value={form.transportista}
+                  disabled={confirmado}
                   onChange={(e) => patchForm({ transportista: e.target.value })}
                 />
               </div>
@@ -387,6 +564,7 @@ export default function RemitoSalida() {
                 <input
                   className="input-field text-base"
                   value={form.cuitTransportista}
+                  disabled={confirmado}
                   onChange={(e) => patchForm({ cuitTransportista: e.target.value })}
                 />
               </div>
@@ -395,6 +573,7 @@ export default function RemitoSalida() {
                 <input
                   className="input-field text-base"
                   value={form.domicilioTransportista}
+                  disabled={confirmado}
                   onChange={(e) => patchForm({ domicilioTransportista: e.target.value })}
                 />
               </div>
@@ -406,6 +585,7 @@ export default function RemitoSalida() {
                 <input
                   className="input-field text-base"
                   value={form.aclaracion}
+                  disabled={confirmado}
                   onChange={(e) => patchForm({ aclaracion: e.target.value })}
                 />
               </div>
@@ -414,6 +594,7 @@ export default function RemitoSalida() {
                 <input
                   className="input-field text-base"
                   value={form.dni}
+                  disabled={confirmado}
                   onChange={(e) => patchForm({ dni: e.target.value })}
                 />
               </div>
@@ -429,34 +610,39 @@ export default function RemitoSalida() {
                     <input
                       type="number"
                       min={1}
+                      max={linea.cantidadDisponible || undefined}
                       className="w-16 rounded border border-border bg-surface-input px-2 py-1 text-center"
                       value={linea.cantidad}
+                      disabled={confirmado}
                       onChange={(e) => updateCartCantidad(linea.stockId, e.target.value)}
                     />
                     <span className="min-w-0 flex-1 truncate" title={linea.nombre}>
                       {linea.nombre}
+                      <span className="block text-xs text-muted">Máx: {linea.cantidadDisponible}</span>
                     </span>
-                    <button
-                      type="button"
-                      className="text-xs font-semibold text-red-600 hover:underline dark:text-red-400"
-                      onClick={() => removeFromCart(linea.stockId)}
-                    >
-                      Quitar
-                    </button>
+                    {!confirmado && (
+                      <button
+                        type="button"
+                        className="text-xs font-semibold text-red-600 hover:underline dark:text-red-400"
+                        onClick={() => removeFromCart(linea.stockId)}
+                      >
+                        Quitar
+                      </button>
+                    )}
                   </li>
                 ))}
               </ul>
             </div>
 
             <div className="min-h-0 flex-1 overflow-y-auto rounded-xl bg-white p-4 shadow-inner">
-              <RemitoDocument form={form} lineas={cartList} empresaNombre={empresaNombre} />
+              <RemitoDocument form={form} lineas={cartList} empresa={empresaSeleccionada} />
             </div>
           </div>
         </div>
       )}
 
       <div className="hidden print:block">
-        <RemitoDocument form={form} lineas={cartList} empresaNombre={empresaNombre} />
+        <RemitoDocument form={form} lineas={cartList} empresa={empresaSeleccionada} />
       </div>
 
       <style>{`
