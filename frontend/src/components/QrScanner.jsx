@@ -172,28 +172,34 @@ export default function QrScanner({ onScan, onClose }) {
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-      <div className="card max-h-[90vh] w-full max-w-md overflow-y-auto">
+      <div className="card max-h-[90vh] w-full max-w-md overflow-y-auto border-2 border-slate-300 dark:border-border">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="section-title">Escanear QR</h3>
-          <button type="button" onClick={onClose} className="text-2xl leading-none text-slate-100 hover:text-white">
+          <h3 className="section-title text-slate-900 dark:text-content">Escanear QR</h3>
+          <button
+            type="button"
+            onClick={onClose}
+            className="shrink-0 rounded-lg p-1 text-2xl leading-none text-slate-700 transition hover:bg-surface-hover hover:text-slate-900 dark:text-slate-100 dark:hover:text-white"
+            aria-label="Cerrar"
+          >
             ×
           </button>
         </div>
 
         {needsHttpsHint() && (
           <p className="alert-warning mb-3 text-sm">
-            En el celular abrí la app con <strong className="text-amber-200">https://</strong> (no http). Tras{' '}
-            <code className="text-amber-200">npm run dev</code> usá la URL segura que muestra Vite.
+            En el celular abrí la app con <strong className="text-amber-900 dark:text-amber-200">https://</strong>{' '}
+            (no http). Tras <code className="text-amber-900 dark:text-amber-200">npm run dev</code> usá la URL
+            segura que muestra Vite.
           </p>
         )}
 
-        {error && <p className="mb-2 text-sm text-amber-200">{error}</p>}
+        {error && <p className="mb-2 text-sm text-amber-800 dark:text-amber-200">{error}</p>}
         {starting && !error && <p className="mb-2 text-sm text-muted">Iniciando cámara…</p>}
 
         <div id={SCANNER_ID} className="min-h-[200px] overflow-hidden rounded-lg bg-slate-950" />
 
         <div className="mt-4">
-          <label className="text-label">Código manual</label>
+          <label className="text-label text-slate-900 dark:text-content">Código manual</label>
           <div className="flex gap-2">
             <input
               className="input-field"
