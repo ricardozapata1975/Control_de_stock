@@ -858,15 +858,17 @@ export default function RemitoSalida() {
         @media print {
           @page {
             size: A4;
-            margin: 18mm 12mm 12mm 12mm;
+            margin: 18mm 15mm 15mm 15mm;
           }
           header, nav, aside, .print\\:hidden { display: none !important; }
           main { max-width: 100% !important; padding: 0 !important; }
           body { background: white !important; color: black !important; }
           .remito-doc {
             box-shadow: none !important;
-            max-width: 100% !important;
-            padding-top: 5mm !important;
+            max-width: 210mm !important;
+            margin-left: auto !important;
+            margin-right: auto !important;
+            padding-top: 0 !important;
           }
         }
       `}</style>
