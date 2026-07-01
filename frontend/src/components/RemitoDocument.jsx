@@ -17,7 +17,8 @@ export default function RemitoDocument({ form, lineas, empresa }) {
   const inicioAct = formatInicioActividades(empresa?.fechaInicioActividades);
 
   return (
-    <div className="remito-doc mx-auto w-full max-w-[210mm] bg-white px-4 pb-4 pt-8 font-serif text-[11px] leading-tight text-black print:px-4 print:pb-4 print:pt-0">
+    <div className="remito-doc mx-auto w-full max-w-[210mm] bg-white px-4 pb-4 font-serif text-[11px] leading-tight text-black print:px-4 print:pb-4">
+      <div className="remito-top-spacer" aria-hidden="true" />
       {/* Encabezado emisor */}
       <div className="mb-2 flex border-2 border-black">
         <div className="flex-1 border-r border-black p-2">

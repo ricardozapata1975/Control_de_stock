@@ -843,7 +843,7 @@ export default function RemitoSalida() {
               </ul>
             </div>
 
-            <div className="remito-preview-panel min-h-0 flex-1 overflow-y-auto rounded-xl bg-white px-4 pb-4 pt-8 shadow-inner">
+            <div className="remito-preview-panel min-h-0 flex-1 overflow-y-auto rounded-xl bg-white px-4 pb-4 pt-4 shadow-inner">
               <RemitoDocument form={form} lineas={cartList} empresa={empresaSeleccionada} />
             </div>
           </div>
@@ -855,20 +855,51 @@ export default function RemitoSalida() {
       </div>
 
       <style>{`
+        .remito-top-spacer {
+          display: block;
+          width: 100%;
+          height: 20mm;
+          min-height: 20mm;
+          flex-shrink: 0;
+          box-sizing: border-box;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
+
+        .remito-doc {
+          padding-top: 15mm;
+          box-sizing: border-box;
+        }
+
         @media print {
           @page {
             size: A4;
-            margin: 18mm 15mm 15mm 15mm;
+            margin: 0;
           }
           header, nav, aside, .print\\:hidden { display: none !important; }
           main { max-width: 100% !important; padding: 0 !important; }
-          body { background: white !important; color: black !important; }
+          body {
+            margin: 0 !important;
+            background: white !important;
+            color: black !important;
+          }
           .remito-doc {
             box-shadow: none !important;
             max-width: 210mm !important;
             margin-left: auto !important;
             margin-right: auto !important;
-            padding-top: 0 !important;
+            padding-top: 20mm !important;
+            padding-left: 15mm !important;
+            padding-right: 15mm !important;
+            padding-bottom: 15mm !important;
+          }
+          .remito-top-spacer {
+            display: block !important;
+            visibility: visible !important;
+            height: 15mm !important;
+            min-height: 15mm !important;
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
           }
         }
       `}</style>
