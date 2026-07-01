@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import FilterableSelect from '../components/FilterableSelect';
 import FocusedPage from '../components/FocusedPage';
 import { api } from '../api/client';
 import { ALMACEN_DEFAULT, ALMACEN_TIPOS, ARMARIO_TIPOS, ESTANTES, buildCodigoPreview, getArmariosForAlmacen, pickDefaultArmario } from '../utils/ubicacion';
@@ -304,6 +305,26 @@ export default function AdminStock() {
   };
 
   const itemsActivos = items.filter((i) => i.activo);
+
+  const itemOptions = useMemo(
+    () =>
+      itemsActivos.map((i) => ({
+        value: i.id,
+        label: `${i.nombre} — stock total ${i.totalStock} u.`,
+        searchText: `${i.nombre} ${i.marca || ''} ${i.modelo || ''} ${i.tipo || ''}`,
+      })),
+    [itemsActivos]
+  );
+
+  const editItemOptions = useMemo(
+    () =>
+      itemsActivos.map((i) => ({
+        value: i.id,
+        label: `${i.nombre} — ${i.totalStock} u.`,
+        searchText: `${i.nombre} ${i.marca || ''} ${i.modelo || ''} ${i.tipo || ''}`,
+      })),
+    [itemsActivos]
+  );
 
   const submitNuevoAlmacen = async (e) => {
     e.preventDefault();
@@ -656,19 +677,17 @@ export default function AdminStock() {
             <>
               <div>
                 <label className="text-label">Ítem existente</label>
-                <select
-                  className="input-field"
+                <p className="mb-2 text-xs text-subtle">
+                  Escribí letras para acotar la lista.
+                </p>
+                <FilterableSelect
+                  options={itemOptions}
                   value={itemId}
-                  onChange={(e) => setItemId(e.target.value)}
-                  required
-                >
-                  <option value="">Seleccionar...</option>
-                  {itemsActivos.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.nombre} — stock total {i.totalStock} u.
-                    </option>
-                  ))}
-                </select>
+                  onChange={setItemId}
+                  placeholder="Buscar por nombre..."
+                  emptyMessage="Ningún ítem coincide"
+                  disabled={!itemOptions.length}
+                />
               </div>
               {ubicacionesItem.length > 1 && (
                 <div>
@@ -700,19 +719,17 @@ export default function AdminStock() {
             <>
               <div>
                 <label className="text-label">Ítem a editar *</label>
-                <select
-                  className="input-field"
+                <p className="mb-2 text-xs text-subtle">
+                  Escribí letras para acotar la lista.
+                </p>
+                <FilterableSelect
+                  options={editItemOptions}
                   value={editItemId}
-                  onChange={(e) => setEditItemId(e.target.value)}
-                  required
-                >
-                  <option value="">Seleccionar...</option>
-                  {itemsActivos.map((i) => (
-                    <option key={i.id} value={i.id}>
-                      {i.nombre} — {i.totalStock} u.
-                    </option>
-                  ))}
-                </select>
+                  onChange={setEditItemId}
+                  placeholder="Buscar por nombre..."
+                  emptyMessage="Ningún ítem coincide"
+                  disabled={!editItemOptions.length}
+                />
               </div>
               {editUbicaciones.length > 1 && (
                 <div>
@@ -910,6 +927,7 @@ export default function AdminStock() {
             className="btn-primary w-full"
             disabled={
               loading ||
+              (modo === 'existente' && !itemId) ||
               (modo === 'editar' && (!editItemId || !editStockId))
             }
           >
