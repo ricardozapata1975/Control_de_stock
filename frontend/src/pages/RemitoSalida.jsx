@@ -843,7 +843,7 @@ export default function RemitoSalida() {
               </ul>
             </div>
 
-            <div className="remito-preview-panel min-h-0 flex-1 overflow-y-auto rounded-xl bg-white px-4 pb-4 pt-4 shadow-inner">
+            <div className="remito-preview-panel flex min-h-0 flex-1 justify-center overflow-y-auto rounded-xl bg-slate-200 px-4 pb-4 pt-6 shadow-inner dark:bg-slate-800">
               <RemitoDocument form={form} lineas={cartList} empresa={empresaSeleccionada} />
             </div>
           </div>
@@ -855,22 +855,22 @@ export default function RemitoSalida() {
       </div>
 
       <style>{`
-        .remito-top-spacer {
-          display: block;
-          width: 100%;
-          height: 20mm;
-          min-height: 20mm;
-          flex-shrink: 0;
-          box-sizing: border-box;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
-        }
-
         .remito-doc {
           padding-top: 15mm;
           box-sizing: border-box;
         }
-
+        .remito-top-spacer {
+          display: block;
+          width: 100%;
+          height: 20mm;
+          flex-shrink: 0;
+          margin: 0;
+          padding: 0;
+          border: 0;
+          background: transparent;
+          -webkit-print-color-adjust: exact;
+          print-color-adjust: exact;
+        }
         @media print {
           @page {
             size: A4;
@@ -886,18 +886,21 @@ export default function RemitoSalida() {
           .remito-doc {
             box-shadow: none !important;
             max-width: 210mm !important;
+            width: 100% !important;
             margin-left: auto !important;
             margin-right: auto !important;
             padding-top: 20mm !important;
             padding-left: 15mm !important;
             padding-right: 15mm !important;
             padding-bottom: 15mm !important;
+            box-sizing: border-box !important;
           }
           .remito-top-spacer {
             display: block !important;
-            visibility: visible !important;
             height: 15mm !important;
             min-height: 15mm !important;
+            visibility: visible !important;
+            overflow: visible !important;
             -webkit-print-color-adjust: exact !important;
             print-color-adjust: exact !important;
           }
