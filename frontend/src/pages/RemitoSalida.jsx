@@ -2,8 +2,11 @@ import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
 import ClienteAutocomplete from '../components/ClienteAutocomplete';
 import RemitoDocument from '../components/RemitoDocument';
+import RemitoRecibir from '../components/RemitoRecibir';
 import SearchFilters from '../components/SearchFilters';
+import UbicacionSelector from '../components/UbicacionSelector';
 import { formatUbicacionLabel } from '../utils/contenedor';
+import { ALMACEN_DEFAULT, getAlmacenNombre } from '../utils/ubicacion';
 import { todayIsoDate } from '../utils/remitoStorage';
 
 const EMPTY_FORM = {
@@ -35,6 +38,7 @@ function cartEntryFromItem(item) {
     stockId: item.stockId || item.id,
     itemId: item.itemId,
     contenedorId: item.contenedorId,
+    almacen: item.almacen || ALMACEN_DEFAULT,
     nombre: item.nombre,
     tipo: item.tipo,
     detalle: item.detalle,
@@ -61,6 +65,8 @@ function itemDescripcionRemito(linea) {
 }
 
 export default function RemitoSalida() {
+  const [vista, setVista] = useState('emitir');
+  const [tipoRemito, setTipoRemito] = useState('venta');
   const [inventario, setInventario] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ q: '', almacen: '', armario: '', tipo: '' });
@@ -75,6 +81,11 @@ export default function RemitoSalida() {
   const [remitoId, setRemitoId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [almacenOrigen, setAlmacenOrigen] = useState(ALMACEN_DEFAULT);
+  const [almacenDestino, setAlmacenDestino] = useState('');
+  const [destArmario, setDestArmario] = useState('A01');
+  const [destEstante, setDestEstante] = useState('E01');
+  const [destContenedor, setDestContenedor] = useState('');
 
   const empresaSeleccionada = useMemo(
     () => empresas.find((e) => e.id === empresaId) || null,
@@ -119,6 +130,30 @@ export default function RemitoSalida() {
   const filteredItems = inventario;
   const cartList = useMemo(() => [...cart.values()], [cart]);
   const cartCount = cartList.length;
+
+  const almacenesOrigenCart = useMemo(
+    () => [...new Set(cartList.map((l) => l.almacen).filter(Boolean))],
+    [cartList]
+  );
+
+  useEffect(() => {
+    if (!cartCount) return;
+    if (almacenesOrigenCart.length === 1) {
+      setAlmacenOrigen(almacenesOrigenCart[0]);
+    }
+  }, [cartCount, almacenesOrigenCart]);
+
+  const almacenesDestino = useMemo(
+    () => (catalogo.almacenes || []).filter((a) => a.codigo !== almacenOrigen),
+    [catalogo.almacenes, almacenOrigen]
+  );
+
+  useEffect(() => {
+    if (tipoRemito !== 'transferencia') return;
+    if (!almacenDestino && almacenesDestino.length) {
+      setAlmacenDestino(almacenesDestino[0].codigo);
+    }
+  }, [tipoRemito, almacenDestino, almacenesDestino]);
 
   const isInCart = useCallback((stockId) => cart.has(stockId), [cart]);
 
@@ -194,6 +229,17 @@ export default function RemitoSalida() {
     setRemitoId(null);
   };
 
+  useEffect(() => {
+    if (tipoRemito !== 'transferencia' || !almacenDestino) return;
+    const nombreAlm = getAlmacenNombre(almacenDestino);
+    setForm((f) => ({
+      ...f,
+      destinatario: nombreAlm || almacenDestino,
+      domicilio: `Almacén ${almacenDestino}`,
+      iva: 'Transferencia interna',
+    }));
+  }, [tipoRemito, almacenDestino]);
+
   const handleClienteSelect = (cliente) => {
     patchForm({
       clienteId: cliente.id,
@@ -221,6 +267,25 @@ export default function RemitoSalida() {
       return;
     }
 
+    if (tipoRemito === 'transferencia') {
+      if (!almacenOrigen?.trim() || !almacenDestino?.trim()) {
+        setError('Completá almacén origen y destino.');
+        return;
+      }
+      if (almacenOrigen === almacenDestino) {
+        setError('El almacén destino debe ser distinto del origen.');
+        return;
+      }
+      if (!destArmario || !destEstante) {
+        setError('Completá armario y estante destino.');
+        return;
+      }
+      if (almacenesOrigenCart.length > 1) {
+        setError('Todos los ítems deben ser del mismo almacén origen.');
+        return;
+      }
+    }
+
     for (const linea of cartList) {
       if (linea.cantidad > linea.cantidadDisponible) {
         setError(
@@ -233,6 +298,7 @@ export default function RemitoSalida() {
     setSubmitting(true);
     try {
       const payload = {
+        tipo: tipoRemito,
         numero: parseInt(form.numero, 10),
         fecha: form.fecha,
         empresaEmisoraId: empresaId,
@@ -258,6 +324,18 @@ export default function RemitoSalida() {
           cantidad: l.cantidad,
           descripcion: itemDescripcionRemito(l),
         })),
+        ...(tipoRemito === 'transferencia'
+          ? {
+              almacenOrigen,
+              almacenDestino,
+              ubicacionDestino: {
+                almacen: almacenDestino,
+                armario: destArmario,
+                estante: destEstante,
+                contenedor: destContenedor || null,
+              },
+            }
+          : {}),
       };
 
       const result = await api.crearRemito(payload);
@@ -303,6 +381,31 @@ export default function RemitoSalida() {
 
   return (
     <div className="pb-28">
+      <div className="mb-4 flex flex-wrap gap-2 print:hidden">
+        <button
+          type="button"
+          className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+            vista === 'emitir' ? 'bg-accent text-white' : 'bg-surface-muted text-content-muted'
+          }`}
+          onClick={() => setVista('emitir')}
+        >
+          Emitir remito
+        </button>
+        <button
+          type="button"
+          className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+            vista === 'recibir' ? 'bg-accent text-white' : 'bg-surface-muted text-content-muted'
+          }`}
+          onClick={() => setVista('recibir')}
+        >
+          Recibir transferencias
+        </button>
+      </div>
+
+      {vista === 'recibir' && <RemitoRecibir />}
+
+      {vista === 'emitir' && (
+      <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3 print:hidden">
         <div>
           <h2 className="page-title">Remito de salida</h2>
@@ -328,6 +431,40 @@ export default function RemitoSalida() {
             Vaciar carrito
           </button>
         </div>
+      </div>
+
+      <div className="card mb-4 print:hidden">
+        <label className="text-label">Tipo de remito</label>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {[
+            { id: 'venta', label: 'Venta' },
+            { id: 'transferencia', label: 'Transferencia' },
+          ].map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+                tipoRemito === opt.id
+                  ? 'bg-accent text-white'
+                  : 'border border-border bg-surface-muted text-content'
+              }`}
+              disabled={confirmado}
+              onClick={() => {
+                setTipoRemito(opt.id);
+                setConfirmado(false);
+                setRemitoId(null);
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {tipoRemito === 'transferencia' && (
+          <p className="mt-2 text-xs text-muted">
+            Transferencia interna: el stock sale del almacén origen y queda en tránsito hasta la
+            recepción en destino.
+          </p>
+        )}
       </div>
 
       <div className="print:hidden">
@@ -437,7 +574,11 @@ export default function RemitoSalida() {
           )}
           {confirmado && (
             <div className="shrink-0 border-b border-emerald-300 bg-emerald-50 px-4 py-2 text-sm text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200">
-              Remito N° {form.numero} confirmado. Stock descontado.{remitoId ? ` ID: ${remitoId.slice(0, 8)}…` : ''}
+              Remito N° {form.numero} confirmado.
+              {tipoRemito === 'transferencia'
+                ? ' Stock en tránsito — pendiente de recepción en destino.'
+                : ' Stock descontado.'}
+              {remitoId ? ` ID: ${remitoId.slice(0, 8)}…` : ''}
             </div>
           )}
 
@@ -483,6 +624,71 @@ export default function RemitoSalida() {
                 </div>
               </div>
 
+              {tipoRemito === 'transferencia' ? (
+                <>
+                  <hr className="border-border" />
+                  <h4 className="font-bold text-content">Transferencia entre almacenes</h4>
+                  <div>
+                    <label className="text-label">Almacén origen</label>
+                    <select
+                      className="input-field text-base"
+                      value={almacenOrigen}
+                      disabled={confirmado}
+                      onChange={(e) => setAlmacenOrigen(e.target.value)}
+                    >
+                      {(catalogo.almacenes || []).map((a) => (
+                        <option key={a.codigo} value={a.codigo}>
+                          {a.codigo} — {a.nombre || a.codigo}
+                        </option>
+                      ))}
+                    </select>
+                    {almacenesOrigenCart.length > 1 && (
+                      <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
+                        Hay ítems de distintos almacenes en el carrito.
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="text-label">Almacén destino</label>
+                    <select
+                      className="input-field text-base"
+                      value={almacenDestino}
+                      disabled={confirmado}
+                      onChange={(e) => setAlmacenDestino(e.target.value)}
+                    >
+                      {almacenesDestino.map((a) => (
+                        <option key={a.codigo} value={a.codigo}>
+                          {a.codigo} — {a.nombre || a.codigo}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <UbicacionSelector
+                    catalogo={catalogo}
+                    almacen={almacenDestino || ALMACEN_DEFAULT}
+                    armario={destArmario}
+                    estante={destEstante}
+                    contenedor={destContenedor}
+                    almacenDisabled
+                    compact
+                    labelPrefix="destino"
+                    onAlmacenChange={setAlmacenDestino}
+                    onArmarioChange={setDestArmario}
+                    onEstanteChange={setDestEstante}
+                    onContenedorChange={setDestContenedor}
+                  />
+                  <div>
+                    <label className="text-label">Destinatario (Señor/es)</label>
+                    <input
+                      className="input-field text-base"
+                      value={form.destinatario}
+                      disabled={confirmado}
+                      onChange={(e) => patchForm({ destinatario: e.target.value })}
+                    />
+                  </div>
+                </>
+              ) : (
+              <>
               <div>
                 <label className="text-label">Señor(es)</label>
                 <ClienteAutocomplete
@@ -539,6 +745,8 @@ export default function RemitoSalida() {
                   onChange={(e) => patchForm({ cuit: e.target.value })}
                 />
               </div>
+              </>
+              )}
 
               <hr className="border-border" />
               <h4 className="font-bold text-content">Transporte</h4>
@@ -654,6 +862,8 @@ export default function RemitoSalida() {
           .remito-doc { box-shadow: none !important; }
         }
       `}</style>
+      </>
+      )}
     </div>
   );
 }

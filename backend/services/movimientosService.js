@@ -34,6 +34,8 @@ async function enrichMovimientosRows(supabase, rows) {
 }
 
 export function computeEstadoMovimiento(row, ingresoRow, itemTipo) {
+  if (row.estado === 'en_transito') return 'en_transito';
+  if (row.estado === 'transferido') return 'transferido';
   if (row.remito_id || row.estado === 'vendido') return 'vendido';
   if (ingresoRow) return 'completado';
   if (row.estado === 'consumido' || String(itemTipo || '').toLowerCase() === 'consumible') {

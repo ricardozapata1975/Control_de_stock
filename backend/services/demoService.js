@@ -319,6 +319,8 @@ export async function demoListMovimientos(filters = {}) {
 }
 
 function computeEstadoHistorial(m, ingreso, itemTipo) {
+  if (m.estado === 'en_transito') return 'en_transito';
+  if (m.estado === 'transferido') return 'transferido';
   if (m.remito_id || m.estado === 'vendido') return 'vendido';
   if (m.estado === 'consumido' || String(itemTipo || '').toLowerCase() === 'consumible') {
     return 'consumido';
@@ -838,6 +840,10 @@ export async function demoCrearRemito(payload, createdBy) {
     aclaracion,
     dni,
     items,
+    tipo = 'venta',
+    almacenOrigen,
+    almacenDestino,
+    ubicacionDestino,
   } = payload;
 
   if (!empresaEmisoraId) {
@@ -845,6 +851,16 @@ export async function demoCrearRemito(payload, createdBy) {
   }
   if (!items?.length) {
     throw Object.assign(new Error('El remito debe tener al menos un ítem'), { status: 400 });
+  }
+
+  const remitoTipo = String(tipo || 'venta').toLowerCase();
+  if (remitoTipo === 'transferencia') {
+    if (!almacenOrigen?.trim() || !almacenDestino?.trim()) {
+      throw Object.assign(new Error('Almacén origen y destino requeridos'), { status: 400 });
+    }
+    if (almacenOrigen.trim().toUpperCase() === almacenDestino.trim().toUpperCase()) {
+      throw Object.assign(new Error('El almacén destino debe ser distinto del origen'), { status: 400 });
+    }
   }
 
   const db = await load();
@@ -863,7 +879,7 @@ export async function demoCrearRemito(payload, createdBy) {
     });
   } else {
     if (!cliente?.nombre?.trim()) {
-      throw Object.assign(new Error('Nombre del cliente requerido'), { status: 400 });
+      throw Object.assign(new Error('Nombre del destinatario requerido'), { status: 400 });
     }
     clienteId = `demo-cli-${Date.now()}`;
     demoClientes.push({
@@ -880,6 +896,10 @@ export async function demoCrearRemito(payload, createdBy) {
 
   const remitoId = `demo-remito-${Date.now()}`;
   const remitoItems = [];
+  const isTransferencia = remitoTipo === 'transferencia';
+  const estadoMov = isTransferencia ? 'en_transito' : 'vendido';
+  const motivoMov = isTransferencia ? 'Transferencia entre almacenes' : 'Vendido a cliente';
+  const estadoRemito = isTransferencia ? 'en_transito' : 'confirmado';
 
   for (const it of items) {
     const qty = Number(it.cantidad);
@@ -910,8 +930,8 @@ export async function demoCrearRemito(payload, createdBy) {
       usuario: createdBy || 'Sistema',
       fecha: new Date().toISOString(),
       offline_id: null,
-      estado: 'vendido',
-      motivo: 'Vendido a cliente',
+      estado: estadoMov,
+      motivo: motivoMov,
       remito_id: remitoId,
     });
 
@@ -942,6 +962,13 @@ export async function demoCrearRemito(payload, createdBy) {
     dni,
     created_by: createdBy,
     created_at: new Date().toISOString(),
+    tipo: remitoTipo,
+    almacen_origen: isTransferencia ? almacenOrigen.trim() : null,
+    almacen_destino: isTransferencia ? almacenDestino.trim() : null,
+    ubicacion_destino: isTransferencia ? ubicacionDestino || null : null,
+    estado: estadoRemito,
+    recibido_por: null,
+    recibido_at: null,
     items: remitoItems,
   };
   demoRemitos.set(remitoId, remitoRecord);
@@ -951,6 +978,8 @@ export async function demoCrearRemito(payload, createdBy) {
     remito_id: remitoId,
     numero: Number(numero),
     cliente_id: clienteId,
+    tipo: remitoTipo,
+    estado: estadoRemito,
     demo: true,
   };
 }
@@ -966,6 +995,13 @@ export async function demoGetRemitoById(id) {
     id: remito.id,
     numero: remito.numero,
     fecha: remito.fecha,
+    tipo: remito.tipo || 'venta',
+    estado: remito.estado || 'confirmado',
+    almacenOrigen: remito.almacen_origen || null,
+    almacenDestino: remito.almacen_destino || null,
+    ubicacionDestino: remito.ubicacion_destino || null,
+    recibidoPor: remito.recibido_por || null,
+    recibidoAt: remito.recibido_at || null,
     empresa,
     cliente,
     cantBultos: remito.cant_bultos,
@@ -977,5 +1013,122 @@ export async function demoGetRemitoById(id) {
     createdBy: remito.created_by,
     createdAt: remito.created_at,
     items: remito.items,
+  };
+}
+
+export async function demoListTransferenciasPendientes(almacenDestino) {
+  const term = String(almacenDestino || '').trim().toUpperCase();
+  const list = [];
+  for (const r of demoRemitos.values()) {
+    if (r.tipo !== 'transferencia' || r.estado !== 'en_transito') continue;
+    if (term && String(r.almacen_destino || '').toUpperCase() !== term) continue;
+    const empresa = DEMO_EMPRESAS.find((e) => e.id === r.empresa_emisora_id);
+    const cliente = demoClientes.find((c) => c.id === r.cliente_id);
+    list.push({
+      id: r.id,
+      numero: r.numero,
+      fecha: r.fecha,
+      almacenOrigen: r.almacen_origen,
+      almacenDestino: r.almacen_destino,
+      ubicacionDestino: r.ubicacion_destino || null,
+      createdBy: r.created_by,
+      createdAt: r.created_at,
+      empresa: empresa ? { id: empresa.id, nombre: empresa.nombre } : null,
+      destinatario: cliente?.nombre || r.almacen_destino,
+      items: r.items || [],
+      itemsCount: (r.items || []).length,
+    });
+  }
+  return list.sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+}
+
+export async function demoRecibirTransferencia(remitoId, payload, recibidoPor) {
+  const remito = demoRemitos.get(remitoId);
+  if (!remito) throw Object.assign(new Error('Remito no encontrado'), { status: 404 });
+  if (remito.tipo !== 'transferencia') {
+    throw Object.assign(new Error('El remito no es una transferencia'), { status: 400 });
+  }
+  if (remito.estado !== 'en_transito') {
+    throw Object.assign(new Error('La transferencia no está pendiente de recepción'), { status: 409 });
+  }
+
+  const ubicacion = payload?.ubicacionDestino || remito.ubicacion_destino;
+  if (!ubicacion?.armario || !ubicacion?.estante) {
+    throw Object.assign(new Error('Ubicación destino requerida (armario y estante)'), { status: 400 });
+  }
+
+  const contDest = await demoResolveUbicacion({
+    almacen: remito.almacen_destino,
+    armario: ubicacion.armario,
+    estante: ubicacion.estante,
+    contenedor: ubicacion.contenedor || null,
+  });
+
+  const db = await load();
+  let itemsRecibidos = 0;
+
+  for (const ri of remito.items || []) {
+    const movEgreso = db.movimientos.find(
+      (m) =>
+        m.remito_id === remitoId &&
+        m.item_id === ri.item_id &&
+        m.contenedor_id === ri.contenedor_id &&
+        m.tipo === 'egreso' &&
+        m.estado === 'en_transito'
+    );
+    if (!movEgreso) {
+      throw Object.assign(new Error('Movimiento en tránsito no encontrado'), { status: 404 });
+    }
+
+    let stockDest = db.stock.find(
+      (s) => s.item_id === ri.item_id && s.contenedor_id === contDest.id
+    );
+    if (stockDest) {
+      stockDest.cantidad += ri.cantidad;
+    } else {
+      stockDest = {
+        id: `stock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+        item_id: ri.item_id,
+        contenedor_id: contDest.id,
+        cantidad: ri.cantidad,
+      };
+      db.stock.push(stockDest);
+    }
+
+    movEgreso.estado = 'transferido';
+    movEgreso.motivo = `Transferencia recibida en ${remito.almacen_destino}`;
+
+    db.movimientos.push({
+      id: `mov-ing-trans-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      item_id: ri.item_id,
+      contenedor_id: contDest.id,
+      tipo: 'ingreso',
+      cantidad: ri.cantidad,
+      usuario: recibidoPor || 'Sistema',
+      fecha: new Date().toISOString(),
+      offline_id: null,
+      estado: 'transferido',
+      motivo: 'Ingreso por transferencia',
+      remito_id: remitoId,
+      egreso_movimiento_id: movEgreso.id,
+    });
+
+    itemsRecibidos += 1;
+  }
+
+  await save(db);
+
+  remito.estado = 'recibido';
+  remito.recibido_por = recibidoPor || 'Sistema';
+  remito.recibido_at = new Date().toISOString();
+  remito.ubicacion_destino = ubicacion;
+
+  return {
+    ok: true,
+    remito_id: remitoId,
+    items_recibidos: itemsRecibidos,
+    contenedor_destino_id: contDest.id,
+    estado: 'recibido',
+    demo: true,
   };
 }

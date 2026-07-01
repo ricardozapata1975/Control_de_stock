@@ -172,6 +172,15 @@ export const api = {
   crearRemito: (body) =>
     request('/api/remitos', { method: 'POST', body: JSON.stringify(body) }),
   getRemito: (id) => request(`/api/remitos/${encodeURIComponent(id)}`),
+  transferenciasPendientes: (almacenDestino) => {
+    const qs = almacenDestino ? `?almacenDestino=${encodeURIComponent(almacenDestino)}` : '';
+    return request(`/api/remitos/transferencias/pendientes${qs}`);
+  },
+  recibirTransferencia: (id, body) =>
+    request(`/api/remitos/${encodeURIComponent(id)}/recibir`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   downloadPlantilla: async () => {
     const token = getToken();
     const res = await fetch(`${API_URL}/api/admin/import/plantilla.csv`, {

@@ -35,7 +35,12 @@ import {
 } from './controllers/dbAdminController.js';
 import { getEmpresasEmisoras, getProximoNumero } from './controllers/empresasEmisorasController.js';
 import { getClientes, postClientes } from './controllers/clientesController.js';
-import { getRemito, postRemito } from './controllers/remitosController.js';
+import {
+  getRemito,
+  getTransferenciasPendientes,
+  postRecibirTransferencia,
+  postRemito,
+} from './controllers/remitosController.js';
 import { loadCatalogo } from './services/catalogoService.js';
 import { applyCatalogo } from './services/ubicacionUtils.js';
 import path from 'path';
@@ -151,6 +156,8 @@ app.post('/api/clientes', requireAuth, postClientes);
 app.get('/api/empresas-emisoras', requireAuth, getEmpresasEmisoras);
 app.get('/api/empresas-emisoras/proximo-numero', requireAuth, getProximoNumero);
 app.post('/api/remitos', requireAuth, postRemito);
+app.get('/api/remitos/transferencias/pendientes', requireAuth, getTransferenciasPendientes);
+app.post('/api/remitos/:id/recibir', requireAuth, postRecibirTransferencia);
 app.get('/api/remitos/:id', requireAuth, getRemito);
 
 app.post('/api/sync', postSync);

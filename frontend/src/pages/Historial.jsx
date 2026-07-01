@@ -23,9 +23,19 @@ const ESTADO_CONFIG = {
     className: 'bg-violet-800 text-violet-100 cursor-pointer hover:bg-violet-700',
     clickable: true,
   },
+  en_transito: {
+    label: 'En tránsito',
+    className: 'bg-orange-800 text-orange-100 cursor-pointer hover:bg-orange-700',
+    clickable: true,
+  },
+  transferido: {
+    label: 'Transferido',
+    className: 'bg-teal-800 text-teal-100 cursor-pointer hover:bg-teal-700',
+    clickable: true,
+  },
 };
 
-function EstadoBadge({ movimiento, onVendidoClick }) {
+function EstadoBadge({ movimiento, onRemitoClick }) {
   const cfg = ESTADO_CONFIG[movimiento.estadoHistorial] || ESTADO_CONFIG.pendiente_devolucion;
 
   if (cfg.clickable && movimiento.remitoId) {
@@ -33,7 +43,7 @@ function EstadoBadge({ movimiento, onVendidoClick }) {
       <button
         type="button"
         className={`rounded-full px-2 py-1 text-xs font-semibold ${cfg.className}`}
-        onClick={() => onVendidoClick(movimiento.remitoId)}
+        onClick={() => onRemitoClick(movimiento.remitoId)}
       >
         {cfg.label}
       </button>
@@ -45,6 +55,11 @@ function EstadoBadge({ movimiento, onVendidoClick }) {
       {cfg.label}
     </span>
   );
+}
+
+function formatUbicacionDestino(ubi) {
+  if (!ubi) return '—';
+  return [ubi.almacen, ubi.armario, ubi.estante, ubi.contenedor].filter(Boolean).join(' / ');
 }
 
 function RemitoDetalleModal({ remitoId, onClose }) {
@@ -63,11 +78,15 @@ function RemitoDetalleModal({ remitoId, onClose }) {
       .finally(() => setLoading(false));
   }, [remitoId]);
 
+  const esTransferencia = remito?.tipo === 'transferencia';
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4">
       <div className="card max-h-[85vh] w-full max-w-lg overflow-y-auto">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="section-title">Detalle del remito</h3>
+          <h3 className="section-title">
+            {esTransferencia ? 'Detalle de transferencia' : 'Detalle del remito'}
+          </h3>
           <button type="button" className="btn-secondary text-sm" onClick={onClose}>
             Cerrar
           </button>
@@ -80,16 +99,50 @@ function RemitoDetalleModal({ remitoId, onClose }) {
           <div className="space-y-3 text-sm">
             <div className="grid gap-1 sm:grid-cols-2">
               <p>
-                <span className="font-semibold text-content">N° remito:</span>{' '}
-                {remito.numero}
+                <span className="font-semibold text-content">N° remito:</span> {remito.numero}
               </p>
               <p>
                 <span className="font-semibold text-content">Fecha:</span>{' '}
                 {formatFechaDmy(remito.fecha)}
               </p>
+              {esTransferencia && (
+                <>
+                  <p>
+                    <span className="font-semibold text-content">Tipo:</span> Transferencia
+                  </p>
+                  <p>
+                    <span className="font-semibold text-content">Estado:</span>{' '}
+                    {remito.estado === 'en_transito'
+                      ? 'En tránsito'
+                      : remito.estado === 'recibido'
+                        ? 'Recibido'
+                        : remito.estado}
+                  </p>
+                </>
+              )}
             </div>
 
-            {remito.cliente && (
+            {esTransferencia && (
+              <div className="rounded-lg border border-border p-3">
+                <p className="font-semibold text-content">Ruta</p>
+                <p>
+                  {remito.almacenOrigen} → {remito.almacenDestino}
+                </p>
+                {remito.ubicacionDestino && (
+                  <p className="text-muted">
+                    Ubicación destino: {formatUbicacionDestino(remito.ubicacionDestino)}
+                  </p>
+                )}
+                {remito.recibidoPor && (
+                  <p className="mt-1 text-muted">
+                    Recibido por {remito.recibidoPor}
+                    {remito.recibidoAt ? ` el ${formatFechaDmy(remito.recibidoAt.slice(0, 10))}` : ''}
+                  </p>
+                )}
+              </div>
+            )}
+
+            {remito.cliente && !esTransferencia && (
               <div className="rounded-lg border border-border p-3">
                 <p className="font-semibold text-content">Cliente</p>
                 <p>{remito.cliente.nombre}</p>
@@ -99,17 +152,20 @@ function RemitoDetalleModal({ remitoId, onClose }) {
               </div>
             )}
 
-            {remito.empresa && (
-              <p className="text-muted">
-                Emisor: {remito.empresa.nombre}
-              </p>
+            {esTransferencia && remito.cliente && (
+              <p className="text-muted">Destinatario: {remito.cliente.nombre}</p>
             )}
+
+            {remito.empresa && <p className="text-muted">Emisor: {remito.empresa.nombre}</p>}
 
             <div>
               <p className="mb-2 font-semibold text-content">Ítems</p>
               <ul className="divide-y divide-border rounded-lg border border-border">
                 {(remito.items || []).map((item) => (
-                  <li key={item.id || `${item.itemId}-${item.cantidad}`} className="flex justify-between px-3 py-2">
+                  <li
+                    key={item.id || `${item.itemId}-${item.cantidad}`}
+                    className="flex justify-between px-3 py-2"
+                  >
                     <span>{item.descripcion || item.nombre || 'Ítem'}</span>
                     <span className="font-semibold">× {item.cantidad}</span>
                   </li>
@@ -188,7 +244,7 @@ export default function Historial() {
                 <td className="px-3 py-3 table-cell-muted">{formatFechaDmy(m.fechaEgreso)}</td>
                 <td className="px-3 py-3 table-cell-muted">{formatFechaDmy(m.fechaIngreso)}</td>
                 <td className="px-3 py-3">
-                  <EstadoBadge movimiento={m} onVendidoClick={setRemitoModalId} />
+                  <EstadoBadge movimiento={m} onRemitoClick={setRemitoModalId} />
                 </td>
               </tr>
             ))}
