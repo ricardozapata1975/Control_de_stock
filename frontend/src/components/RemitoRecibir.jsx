@@ -99,8 +99,10 @@ export default function RemitoRecibir() {
     setLoading(true);
     setSuccess('');
     try {
-      const data = await api.transferenciasPendientes(filtroAlmacen || undefined);
-      setRemitos(data.remitos || []);
+      const data = await api.transferenciasPendientes(
+        filtroAlmacen ? { almacenDestino: filtroAlmacen } : {}
+      );
+      setRemitos(data.transferencias || []);
     } catch {
       setRemitos([]);
     } finally {

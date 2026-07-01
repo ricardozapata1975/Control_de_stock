@@ -172,9 +172,15 @@ export const api = {
   crearRemito: (body) =>
     request('/api/remitos', { method: 'POST', body: JSON.stringify(body) }),
   getRemito: (id) => request(`/api/remitos/${encodeURIComponent(id)}`),
-  transferenciasPendientes: (almacenDestino) => {
-    const qs = almacenDestino ? `?almacenDestino=${encodeURIComponent(almacenDestino)}` : '';
-    return request(`/api/remitos/transferencias/pendientes${qs}`);
+  transferenciasPendientes: (params = {}) => {
+    const clean =
+      typeof params === 'string'
+        ? { almacenDestino: params }
+        : Object.fromEntries(
+            Object.entries(params).filter(([, v]) => v != null && String(v).trim() !== '')
+          );
+    const qs = new URLSearchParams(clean).toString();
+    return request(`/api/remitos/transferencias/pendientes${qs ? `?${qs}` : ''}`);
   },
   recibirTransferencia: (id, body) =>
     request(`/api/remitos/${encodeURIComponent(id)}/recibir`, {
