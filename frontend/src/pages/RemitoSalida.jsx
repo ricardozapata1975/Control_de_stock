@@ -6,7 +6,7 @@ import RemitoRecibir from '../components/RemitoRecibir';
 import SearchFilters from '../components/SearchFilters';
 import UbicacionSelector from '../components/UbicacionSelector';
 import { formatUbicacionLabel } from '../utils/contenedor';
-import { ALMACEN_DEFAULT, getAlmacenNombre } from '../utils/ubicacion';
+import { ALMACEN_DEFAULT, buildCedeLabel, getAlmacenNombreFromCatalog } from '../utils/ubicacion';
 import { todayIsoDate } from '../utils/remitoStorage';
 
 const EMPTY_FORM = {
@@ -25,6 +25,8 @@ const EMPTY_FORM = {
   domicilioTransportista: '',
   aclaracion: '',
   dni: '',
+  cedeOrigen: '',
+  cedeDestino: '',
 };
 
 function defaultCantidad(item) {
@@ -39,6 +41,9 @@ function cartEntryFromItem(item) {
     itemId: item.itemId,
     contenedorId: item.contenedorId,
     almacen: item.almacen || ALMACEN_DEFAULT,
+    armario: item.armario,
+    estante: item.estante,
+    contenedor: item.contenedor,
     nombre: item.nombre,
     tipo: item.tipo,
     detalle: item.detalle,
@@ -231,14 +236,34 @@ export default function RemitoSalida() {
 
   useEffect(() => {
     if (tipoRemito !== 'transferencia' || !almacenDestino) return;
-    const nombreAlm = getAlmacenNombre(almacenDestino);
+    const nombreAlm = getAlmacenNombreFromCatalog(catalogo, almacenDestino);
+    const cedeDestino = buildCedeLabel(catalogo, {
+      almacen: almacenDestino,
+      armario: destArmario,
+      estante: destEstante,
+      contenedor: destContenedor,
+    });
     setForm((f) => ({
       ...f,
       destinatario: nombreAlm || almacenDestino,
       domicilio: `Almacén ${almacenDestino}`,
       iva: 'Transferencia interna',
+      cedeDestino,
     }));
-  }, [tipoRemito, almacenDestino]);
+  }, [tipoRemito, almacenDestino, destArmario, destEstante, destContenedor, catalogo]);
+
+  useEffect(() => {
+    if (tipoRemito !== 'transferencia' || !cartCount) return;
+    const primera = cartList[0];
+    if (!primera) return;
+    const cedeOrigen = buildCedeLabel(catalogo, {
+      almacen: primera.almacen || almacenOrigen,
+      armario: primera.armario,
+      estante: primera.estante,
+      contenedor: primera.contenedor,
+    }) || primera.ubicacion || getAlmacenNombreFromCatalog(catalogo, almacenOrigen);
+    setForm((f) => ({ ...f, cedeOrigen }));
+  }, [tipoRemito, cartCount, cartList, almacenOrigen, catalogo]);
 
   const handleClienteSelect = (cliente) => {
     patchForm({
@@ -333,6 +358,7 @@ export default function RemitoSalida() {
                 armario: destArmario,
                 estante: destEstante,
                 contenedor: destContenedor || null,
+                cede: form.cedeDestino || null,
               },
             }
           : {}),
@@ -678,6 +704,29 @@ export default function RemitoSalida() {
                     onContenedorChange={setDestContenedor}
                   />
                   <div>
+                    <label className="text-label">Cede origen</label>
+                    <input
+                      className="input-field text-base"
+                      value={form.cedeOrigen}
+                      disabled={confirmado}
+                      placeholder="Ej. Oficina Ballester — Armario Herramientas — E01"
+                      onChange={(e) => patchForm({ cedeOrigen: e.target.value })}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-label">Cede destino</label>
+                    <input
+                      className="input-field text-base"
+                      value={form.cedeDestino}
+                      disabled={confirmado}
+                      placeholder="Ej. Oficina Santa Fe — contenedor obrador C05"
+                      onChange={(e) => patchForm({ cedeDestino: e.target.value })}
+                    />
+                    <p className="mt-1 text-xs text-muted">
+                      Sede o ubicación física (oficina, depósito, contenedor, etc.). Se completa al elegir almacén y ubicación.
+                    </p>
+                  </div>
+                  <div>
                     <label className="text-label">Destinatario (Señor/es)</label>
                     <input
                       className="input-field text-base"
@@ -844,32 +893,30 @@ export default function RemitoSalida() {
             </div>
 
             <div className="remito-preview-panel flex min-h-0 flex-1 justify-center overflow-y-auto rounded-xl bg-slate-200 px-4 pb-4 pt-6 shadow-inner dark:bg-slate-800">
-              <RemitoDocument form={form} lineas={cartList} empresa={empresaSeleccionada} />
+              <RemitoDocument
+                form={form}
+                lineas={cartList}
+                empresa={empresaSeleccionada}
+                esTransferencia={tipoRemito === 'transferencia'}
+              />
             </div>
           </div>
         </div>
       )}
 
       <div className="hidden print:block">
-        <RemitoDocument form={form} lineas={cartList} empresa={empresaSeleccionada} />
+        <RemitoDocument
+          form={form}
+          lineas={cartList}
+          empresa={empresaSeleccionada}
+          esTransferencia={tipoRemito === 'transferencia'}
+        />
       </div>
 
       <style>{`
         .remito-doc {
-          padding-top: 15mm;
+          padding-top: 10mm;
           box-sizing: border-box;
-        }
-        .remito-top-spacer {
-          display: block;
-          width: 100%;
-          height: 20mm;
-          flex-shrink: 0;
-          margin: 0;
-          padding: 0;
-          border: 0;
-          background: transparent;
-          -webkit-print-color-adjust: exact;
-          print-color-adjust: exact;
         }
         @media print {
           @page {
@@ -889,20 +936,11 @@ export default function RemitoSalida() {
             width: 100% !important;
             margin-left: auto !important;
             margin-right: auto !important;
-            padding-top: 20mm !important;
+            padding-top: 10mm !important;
             padding-left: 15mm !important;
             padding-right: 15mm !important;
             padding-bottom: 15mm !important;
             box-sizing: border-box !important;
-          }
-          .remito-top-spacer {
-            display: block !important;
-            height: 15mm !important;
-            min-height: 15mm !important;
-            visibility: visible !important;
-            overflow: visible !important;
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
           }
         }
       `}</style>

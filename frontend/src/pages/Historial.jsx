@@ -59,6 +59,7 @@ function EstadoBadge({ movimiento, onRemitoClick }) {
 
 function formatUbicacionDestino(ubi) {
   if (!ubi) return '—';
+  if (ubi.cede) return ubi.cede;
   return [ubi.almacen, ubi.armario, ubi.estante, ubi.contenedor].filter(Boolean).join(' / ');
 }
 

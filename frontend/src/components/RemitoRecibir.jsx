@@ -177,6 +177,7 @@ export default function RemitoRecibir() {
               </p>
               <p className="text-sm text-muted">
                 {r.almacenOrigen} → {r.almacenDestino}
+                {r.ubicacionDestino?.cede ? ` · ${r.ubicacionDestino.cede}` : ''}
                 {' · '}
                 {(r.items || []).length} ítem(s)
                 {r.createdBy ? ` · Emitido por ${r.createdBy}` : ''}

@@ -22,6 +22,29 @@ export function getAlmacenNombre(almacen) {
   return info?.nombre || almacen || '';
 }
 
+export function getAlmacenNombreFromCatalog(catalogo, almacen) {
+  const code = String(almacen || ALMACEN_DEFAULT).toUpperCase();
+  const found = catalogo?.almacenes?.find((a) => String(a.codigo).toUpperCase() === code);
+  if (found?.nombre) return found.nombre;
+  return getAlmacenNombre(almacen);
+}
+
+/** Etiqueta legible de sede/ubicación: Oficina Ballester — Armario X — E01 — C05 */
+export function buildCedeLabel(catalogo, { almacen, armario, estante, contenedor } = {}) {
+  const parts = [];
+  const almNombre = getAlmacenNombreFromCatalog(catalogo, almacen);
+  if (almNombre) parts.push(almNombre);
+  const armNombre = getArmarioNombre(armario, almacen, catalogo?.armariosPorAlmacen);
+  if (armNombre) parts.push(armNombre);
+  else if (armario) parts.push(String(armario).toUpperCase());
+  if (estante) parts.push(String(estante).toUpperCase());
+  if (contenedor) {
+    const c = String(contenedor).toUpperCase();
+    parts.push(/^C\d|^B\d|^H\d|^SC$/i.test(c) ? `contenedor ${c}` : c);
+  }
+  return parts.join(' — ');
+}
+
 export function getArmarioNombre(armario, almacen, armariosPorAlmacen) {
   const ac = String(armario || '').toUpperCase();
   if (!ac) return '';

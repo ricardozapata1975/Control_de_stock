@@ -12,13 +12,12 @@ function formatInicioActividades(fecha) {
   return formatRemitoFecha(String(fecha).slice(0, 10));
 }
 
-export default function RemitoDocument({ form, lineas, empresa }) {
+export default function RemitoDocument({ form, lineas, empresa, esTransferencia = false }) {
   const fechaLabel = formatRemitoFecha(form.fecha);
   const inicioAct = formatInicioActividades(empresa?.fechaInicioActividades);
 
   return (
     <div className="remito-doc mx-auto w-full max-w-[210mm] bg-white px-4 pb-4 font-serif text-[11px] leading-tight text-black print:px-4 print:pb-4">
-      <div className="remito-top-spacer" aria-hidden="true" />
       {/* Encabezado emisor */}
       <div className="mb-2 flex border-2 border-black">
         <div className="flex-1 border-r border-black p-2">
@@ -120,6 +119,26 @@ export default function RemitoDocument({ form, lineas, empresa }) {
               {form.localidad || ''}
             </span>
           </p>
+          {esTransferencia && (form.cedeOrigen || form.cedeDestino) && (
+            <>
+              {form.cedeOrigen && (
+                <p className="sm:col-span-2">
+                  <span className="font-bold">Cede origen:</span>{' '}
+                  <span className="inline-block min-w-[200px] border-b border-black/40">
+                    {form.cedeOrigen}
+                  </span>
+                </p>
+              )}
+              {form.cedeDestino && (
+                <p className="sm:col-span-2">
+                  <span className="font-bold">Cede destino:</span>{' '}
+                  <span className="inline-block min-w-[200px] border-b border-black/40">
+                    {form.cedeDestino}
+                  </span>
+                </p>
+              )}
+            </>
+          )}
           <p>
             <span className="font-bold">V. Ref.:</span>{' '}
             <span className="inline-block min-w-[80px] border-b border-black/40">
