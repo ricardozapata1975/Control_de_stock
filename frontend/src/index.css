@@ -88,6 +88,12 @@
     background-color: rgb(var(--bg-input));
     min-width: 9rem;
   }
+  .select-field-compact {
+    @apply w-full rounded border border-border px-1 py-0.5 text-[10px] font-semibold focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent/40;
+    color: rgb(var(--text-primary));
+    background-color: rgb(var(--bg-input));
+    min-width: 0;
+  }
   .select-field option {
     color: rgb(var(--text-primary));
     background-color: rgb(var(--bg-elevated));

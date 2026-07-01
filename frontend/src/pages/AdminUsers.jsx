@@ -3,6 +3,7 @@ import FocusedPage from '../components/FocusedPage';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 import UserFilters from '../components/UserFilters';
+import { UserRowCard, UserRowTable } from '../components/admin/UserRow';
 import { normalizeRole } from '../utils/role';
 
 const DEFAULT_FILTERS = { q: '', domain: '', status: 'all' };
@@ -11,6 +12,22 @@ const ROLE_LABELS = {
   admin: 'Administrador',
   operario: 'Operario',
 };
+
+const rowProps = (ctx, u) => ({
+  user: u,
+  canInvite: canReceiveInvite(u),
+  selected: ctx.selectedIds.has(u.id),
+  bulkSending: ctx.bulkSending,
+  currentUserId: ctx.currentUser?.id,
+  sendingWelcomeId: ctx.sendingWelcomeId,
+  deletingUserId: ctx.deletingUserId,
+  onToggleSelect: ctx.toggleSelect,
+  onSendWelcome: ctx.sendWelcome,
+  onToggleActive: ctx.toggleActive,
+  onResetPassword: ctx.resetPassword,
+  onDelete: ctx.deleteUser,
+  onUpdateRole: ctx.updateRole,
+});
 
 function canReceiveInvite(user) {
   return Boolean(user.email && user.isActive && !user.hasPassword);
@@ -36,15 +53,6 @@ function matchesUserFilters(user, filters) {
   }
 
   return true;
-}
-
-function RoleBadge({ role }) {
-  const normalized = normalizeRole(role);
-  return (
-    <span className={normalized === 'admin' ? 'badge-role-admin' : 'badge-role-operario'}>
-      {ROLE_LABELS[normalized]}
-    </span>
-  );
 }
 
 export default function AdminUsers() {
@@ -493,70 +501,103 @@ export default function AdminUsers() {
         </p>
       )}
 
-      <div className="card overflow-x-auto p-0">
+      <div className="card overflow-hidden p-0">
         {inviteableUsers.length > 0 && (
-          <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-4 py-3">
-            <span className="text-sm font-medium text-content-muted">
+          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-border px-3 py-2">
+            <span className="text-xs font-medium text-content-muted">
               {selectedCount} seleccionado{selectedCount === 1 ? '' : 's'}
             </span>
-            <div className="flex flex-wrap items-center gap-3">
+            <div className="flex flex-wrap items-center gap-2">
               <button
                 type="button"
-                className="min-h-[44px] rounded-lg border border-accent/50 bg-accent/10 px-3 py-2 text-sm font-semibold text-accent transition hover:bg-accent/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-accent/50 bg-accent/10 px-2.5 py-1.5 text-xs font-semibold text-accent transition hover:bg-accent/20 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={inviteSelected}
                 disabled={bulkSending || loading || selectedCount === 0}
+                title="Enviar invitación a seleccionados"
               >
-                {bulkSending ? 'Enviando invitaciones...' : 'Enviar invitación a seleccionados'}
+                {bulkSending ? 'Enviando…' : 'Invitar seleccionados'}
               </button>
               <button
                 type="button"
-                className="min-h-[44px] rounded-lg border border-border px-3 py-2 text-sm font-semibold text-content-muted transition hover:bg-surface-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+                className="rounded-lg border border-border px-2.5 py-1.5 text-xs font-semibold text-content-muted transition hover:bg-surface-hover active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
                 onClick={inviteAllPending}
                 disabled={bulkSending || loading}
+                title="Invitar a todos sin contraseña"
               >
-                Invitar a todos sin contraseña
+                Invitar todos
               </button>
             </div>
           </div>
         )}
-        <table className="w-full text-left text-sm">
+
+        <div className="space-y-2 p-2 md:hidden">
+          {loading ? (
+            <p className="py-6 text-center text-sm text-muted">Cargando...</p>
+          ) : filteredUsers.length === 0 ? (
+            <p className="py-6 text-center text-sm text-muted">
+              {users.length === 0
+                ? 'No hay usuarios registrados.'
+                : 'Ningún usuario coincide con los filtros.'}
+            </p>
+          ) : (
+            filteredUsers.map((u) => (
+              <UserRowCard
+                key={u.id}
+                {...rowProps(
+                  {
+                    selectedIds,
+                    bulkSending,
+                    currentUser,
+                    sendingWelcomeId,
+                    deletingUserId,
+                    toggleSelect,
+                    sendWelcome,
+                    toggleActive,
+                    resetPassword,
+                    deleteUser,
+                    updateRole,
+                  },
+                  u
+                )}
+              />
+            ))
+          )}
+        </div>
+
+        <table className="hidden w-full table-fixed text-left md:table">
           <thead className="table-head">
             <tr>
-              <th className="w-12 px-2 py-3">
+              <th className="w-8 px-1.5 py-2">
                 {inviteableUsers.length > 0 && (
-                  <label className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center">
-                    <input
-                      ref={selectAllRef}
-                      type="checkbox"
-                      checked={allInviteableSelected}
-                      onChange={toggleSelectAll}
-                      disabled={bulkSending || loading}
-                      className="h-5 w-5 accent-accent disabled:cursor-not-allowed disabled:opacity-50"
-                      aria-label="Seleccionar todos los usuarios invitables"
-                    />
-                  </label>
+                  <input
+                    ref={selectAllRef}
+                    type="checkbox"
+                    checked={allInviteableSelected}
+                    onChange={toggleSelectAll}
+                    disabled={bulkSending || loading}
+                    className="h-4 w-4 accent-accent disabled:cursor-not-allowed disabled:opacity-50"
+                    aria-label="Seleccionar todos los usuarios invitables"
+                  />
                 )}
               </th>
-              <th className="px-4 py-3">Usuario</th>
-              <th className="px-4 py-3">Nombre</th>
-              <th className="px-4 py-3">Correo</th>
-              <th className="px-4 py-3">Rol</th>
-              <th className="px-4 py-3">Estado</th>
-              <th className="px-4 py-3">Contraseña</th>
-              <th className="px-4 py-3">Último ingreso</th>
-              <th className="px-4 py-3">Acciones</th>
+              <th className="w-[18%] px-2 py-2">Usuario</th>
+              <th className="w-[20%] px-2 py-2">Correo</th>
+              <th className="w-[11%] px-1.5 py-2">Rol</th>
+              <th className="w-[9%] px-1.5 py-2">Estado</th>
+              <th className="hidden w-[10%] px-1.5 py-2 sm:table-cell">Clave</th>
+              <th className="px-1.5 py-2">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-center text-muted">
+                <td colSpan={7} className="px-3 py-6 text-center text-sm text-muted">
                   Cargando...
                 </td>
               </tr>
             ) : filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={9} className="px-4 py-6 text-center text-muted">
+                <td colSpan={7} className="px-3 py-6 text-center text-sm text-muted">
                   {users.length === 0
                     ? 'No hay usuarios registrados.'
                     : 'Ningún usuario coincide con los filtros.'}
@@ -564,104 +605,25 @@ export default function AdminUsers() {
               </tr>
             ) : (
               filteredUsers.map((u) => (
-                <tr key={u.id} className="table-row">
-                  <td className="px-2 py-3">
-                    {canReceiveInvite(u) ? (
-                      <label className="flex min-h-[44px] min-w-[44px] cursor-pointer items-center justify-center">
-                        <input
-                          type="checkbox"
-                          checked={selectedIds.has(u.id)}
-                          onChange={() => toggleSelect(u.id)}
-                          disabled={bulkSending}
-                          className="h-5 w-5 accent-accent disabled:cursor-not-allowed disabled:opacity-50"
-                          aria-label={`Seleccionar ${u.username} para invitación`}
-                        />
-                      </label>
-                    ) : (
-                      <span
-                        className="flex min-h-[44px] min-w-[44px] items-center justify-center"
-                        aria-hidden="true"
-                      />
-                    )}
-                  </td>
-                  <td className="px-4 py-3 font-mono text-accent">{u.username}</td>
-                  <td className="px-4 py-3">{u.name || u.displayName}</td>
-                  <td className="px-4 py-3 text-subtle">{u.email || '—'}</td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap items-center gap-2">
-                      <RoleBadge role={u.role} />
-                      <select
-                        className="select-field"
-                        value={normalizeRole(u.role)}
-                        onChange={(e) => updateRole(u, e.target.value, e.target)}
-                        aria-label={`Cambiar rol de ${u.username}`}
-                      >
-                        <option value="operario">Operario</option>
-                        <option value="admin">Administrador</option>
-                      </select>
-                    </div>
-                  </td>
-                  <td className="px-4 py-3">
-                    <span
-                      className={`rounded px-2 py-0.5 text-xs font-bold ${
-                        u.isActive ? 'bg-emerald-800 text-emerald-100' : 'bg-red-900 text-red-100'
-                      }`}
-                    >
-                      {u.isActive ? 'Activo' : 'Inactivo'}
-                    </span>
-                  </td>
-                  <td className="px-4 py-3 text-subtle">
-                    {!u.hasPassword
-                      ? 'Pendiente (primer ingreso)'
-                      : u.mustChangePassword
-                        ? 'Debe cambiar'
-                        : 'Definida'}
-                  </td>
-                  <td className="px-4 py-3 text-subtle">
-                    {u.lastLoginAt ? new Date(u.lastLoginAt).toLocaleString('es-AR') : '—'}
-                  </td>
-                  <td className="px-4 py-3">
-                    <div className="flex flex-wrap gap-2">
-                      {u.email && (
-                        <button
-                          type="button"
-                          className="min-h-[36px] rounded-lg border border-sky-700 px-2 py-1 text-xs font-semibold text-sky-200 hover:bg-sky-950 disabled:opacity-50"
-                          onClick={() => sendWelcome(u)}
-                          disabled={sendingWelcomeId === u.id || bulkSending}
-                        >
-                          {sendingWelcomeId === u.id ? 'Enviando...' : 'Enviar invitación'}
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        className="rounded-lg border border-slate-500 px-2 py-1 text-xs font-semibold hover:bg-slate-800"
-                        onClick={() => toggleActive(u)}
-                      >
-                        {u.isActive ? 'Desactivar' : 'Activar'}
-                      </button>
-                      <button
-                        type="button"
-                        className="rounded-lg border border-amber-700 px-2 py-1 text-xs font-semibold text-amber-200 hover:bg-amber-950"
-                        onClick={() => resetPassword(u)}
-                      >
-                        Resetear clave
-                      </button>
-                      <button
-                        type="button"
-                        className="min-h-[36px] rounded-lg border border-red-700 px-2 py-1 text-xs font-semibold text-red-200 hover:bg-red-950 disabled:opacity-50"
-                        onClick={() => deleteUser(u)}
-                        disabled={deletingUserId === u.id || u.id === currentUser?.id}
-                        title={
-                          u.id === currentUser?.id
-                            ? 'No podés eliminar tu propia cuenta'
-                            : 'Eliminar cuenta'
-                        }
-                      >
-                        {deletingUserId === u.id ? 'Eliminando...' : 'Eliminar'}
-                      </button>
-                    </div>
-                  </td>
-                </tr>
+                <UserRowTable
+                  key={u.id}
+                  {...rowProps(
+                    {
+                      selectedIds,
+                      bulkSending,
+                      currentUser,
+                      sendingWelcomeId,
+                      deletingUserId,
+                      toggleSelect,
+                      sendWelcome,
+                      toggleActive,
+                      resetPassword,
+                      deleteUser,
+                      updateRole,
+                    },
+                    u
+                  )}
+                />
               ))
             )}
           </tbody>
