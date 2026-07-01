@@ -79,6 +79,7 @@ export default function RemitoSalida() {
   const [tipos, setTipos] = useState([]);
   const [cart, setCart] = useState(() => new Map());
   const [showPreview, setShowPreview] = useState(false);
+  const [mobilePreviewTab, setMobilePreviewTab] = useState('remito');
   const [form, setForm] = useState(EMPTY_FORM);
   const [empresas, setEmpresas] = useState([]);
   const [empresaId, setEmpresaId] = useState('');
@@ -219,13 +220,18 @@ export default function RemitoSalida() {
     setRemitoId(null);
   };
 
+  const openPreviewModal = (tab = 'remito') => {
+    setMobilePreviewTab(tab);
+    setShowPreview(true);
+  };
+
   const openPreview = () => {
     setForm((f) => ({
       ...f,
       fecha: f.fecha || todayIsoDate(),
     }));
     setError('');
-    setShowPreview(true);
+    openPreviewModal('remito');
   };
 
   const patchForm = (patch) => {
@@ -550,7 +556,7 @@ export default function RemitoSalida() {
               <p className="text-sm text-muted">Confirmá para descontar stock antes de imprimir.</p>
             </div>
             <div className="flex gap-2">
-              <button type="button" className="btn-secondary text-sm" onClick={() => setShowPreview(true)}>
+              <button type="button" className="btn-secondary text-sm" onClick={() => openPreviewModal('datos')}>
                 Ver carrito
               </button>
               <button type="button" className="btn-primary text-sm" onClick={openPreview}>
@@ -608,8 +614,37 @@ export default function RemitoSalida() {
             </div>
           )}
 
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto scroll-pt-4 p-4 pt-[10mm] lg:flex-row">
-            <div className="card shrink-0 space-y-3 lg:w-96 lg:overflow-y-auto">
+          <div className="flex shrink-0 gap-2 border-b border-border bg-surface-elevated px-4 py-2 lg:hidden">
+            <button
+              type="button"
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${
+                mobilePreviewTab === 'datos'
+                  ? 'bg-accent text-white'
+                  : 'bg-surface-muted text-content-muted'
+              }`}
+              onClick={() => setMobilePreviewTab('datos')}
+            >
+              Datos del remito
+            </button>
+            <button
+              type="button"
+              className={`flex-1 rounded-lg px-3 py-2 text-sm font-semibold ${
+                mobilePreviewTab === 'remito'
+                  ? 'bg-accent text-white'
+                  : 'bg-surface-muted text-content-muted'
+              }`}
+              onClick={() => setMobilePreviewTab('remito')}
+            >
+              Vista previa
+            </button>
+          </div>
+
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-hidden p-4 lg:flex-row lg:overflow-y-auto lg:pt-[10mm]">
+            <div
+              className={`card min-h-0 space-y-3 overflow-y-auto lg:block lg:w-96 lg:shrink-0 ${
+                mobilePreviewTab === 'remito' ? 'hidden lg:block' : 'flex-1'
+              }`}
+            >
               <h4 className="font-bold text-content">Datos del remito</h4>
 
               <div>
@@ -892,7 +927,11 @@ export default function RemitoSalida() {
               </ul>
             </div>
 
-            <div className="remito-preview-panel flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain rounded-xl bg-slate-200 px-4 pb-6 pt-[10mm] shadow-inner dark:bg-slate-800">
+            <div
+              className={`remito-preview-panel flex min-h-0 flex-col items-center overflow-y-auto overscroll-contain rounded-xl bg-slate-200 px-4 pb-6 pt-[10mm] shadow-inner dark:bg-slate-800 lg:flex-1 ${
+                mobilePreviewTab === 'datos' ? 'hidden lg:flex' : 'flex-1'
+              }`}
+            >
               <div className="remito-preview-sheet w-full max-w-[210mm] shrink-0">
                 <RemitoDocument
                   form={form}
