@@ -562,7 +562,7 @@ export default function RemitoSalida() {
       )}
 
       {showPreview && (
-        <div className="fixed inset-0 z-50 flex flex-col bg-black/70 print:hidden">
+        <div className="fixed inset-0 z-50 flex flex-col bg-zinc-950 print:hidden">
           <div className="flex shrink-0 items-center justify-between gap-2 border-b border-border bg-surface-elevated px-4 py-3">
             <h3 className="section-title">Vista previa del remito</h3>
             <div className="flex flex-wrap gap-2">
@@ -608,7 +608,7 @@ export default function RemitoSalida() {
             </div>
           )}
 
-          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto p-4 lg:flex-row">
+          <div className="flex min-h-0 flex-1 flex-col gap-4 overflow-y-auto scroll-pt-4 p-4 pt-[10mm] lg:flex-row">
             <div className="card shrink-0 space-y-3 lg:w-96 lg:overflow-y-auto">
               <h4 className="font-bold text-content">Datos del remito</h4>
 
@@ -892,13 +892,15 @@ export default function RemitoSalida() {
               </ul>
             </div>
 
-            <div className="remito-preview-panel flex min-h-0 flex-1 justify-center overflow-y-auto rounded-xl bg-slate-200 px-4 pb-4 pt-6 shadow-inner dark:bg-slate-800">
-              <RemitoDocument
-                form={form}
-                lineas={cartList}
-                empresa={empresaSeleccionada}
-                esTransferencia={tipoRemito === 'transferencia'}
-              />
+            <div className="remito-preview-panel flex min-h-0 flex-1 flex-col items-center overflow-y-auto overscroll-contain rounded-xl bg-slate-200 px-4 pb-6 pt-[10mm] shadow-inner dark:bg-slate-800">
+              <div className="remito-preview-sheet w-full max-w-[210mm] shrink-0">
+                <RemitoDocument
+                  form={form}
+                  lineas={cartList}
+                  empresa={empresaSeleccionada}
+                  esTransferencia={tipoRemito === 'transferencia'}
+                />
+              </div>
             </div>
           </div>
         </div>
@@ -914,9 +916,10 @@ export default function RemitoSalida() {
       </div>
 
       <style>{`
-        .remito-doc {
-          padding-top: 10mm;
-          box-sizing: border-box;
+        @media screen {
+          .remito-preview-panel .remito-doc {
+            padding-top: 0;
+          }
         }
         @media print {
           @page {
