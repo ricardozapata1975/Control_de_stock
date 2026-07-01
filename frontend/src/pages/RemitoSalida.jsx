@@ -843,7 +843,7 @@ export default function RemitoSalida() {
               </ul>
             </div>
 
-            <div className="min-h-0 flex-1 overflow-y-auto rounded-xl bg-white p-4 shadow-inner">
+            <div className="remito-preview-panel min-h-0 flex-1 overflow-y-auto rounded-xl bg-white px-4 pb-4 pt-8 shadow-inner">
               <RemitoDocument form={form} lineas={cartList} empresa={empresaSeleccionada} />
             </div>
           </div>
@@ -856,10 +856,18 @@ export default function RemitoSalida() {
 
       <style>{`
         @media print {
+          @page {
+            size: A4;
+            margin: 18mm 12mm 12mm 12mm;
+          }
           header, nav, aside, .print\\:hidden { display: none !important; }
           main { max-width: 100% !important; padding: 0 !important; }
           body { background: white !important; color: black !important; }
-          .remito-doc { box-shadow: none !important; }
+          .remito-doc {
+            box-shadow: none !important;
+            max-width: 100% !important;
+            padding-top: 5mm !important;
+          }
         }
       `}</style>
       </>
