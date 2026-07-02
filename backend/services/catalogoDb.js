@@ -1,5 +1,5 @@
 import { getSupabase } from '../db/supabase.js';
-import { canonicalAlmacenCode, migrateCatalogoStructure } from './ubicacionUtils.js';
+import { canonicalAlmacenCode, migrateCatalogoStructure, SEDE_DEFAULT } from './ubicacionUtils.js';
 
 const CONFIG_KEYS = [
   'nextAlmacenNum',
@@ -19,15 +19,21 @@ export function normalizeAlmacenCode(code) {
   return canonicalAlmacenCode(code);
 }
 
-function buildCatalogoFromRows(almacenesRows, armariosRows, configRows) {
+function buildCatalogoFromRows(sedesRows, almacenesRows, armariosRows, configRows) {
   const config = {};
   for (const row of configRows || []) {
     config[row.key] = row.value;
   }
 
+  const sedes = {};
+  for (const s of sedesRows || []) {
+    sedes[s.codigo] = { nombre: s.nombre };
+  }
+
   const almacenes = {};
   for (const a of almacenesRows || []) {
     almacenes[a.codigo] = {
+      sede: a.sede_codigo || 'SED001',
       tipo: a.tipo,
       nombre: a.nombre,
       nextArmarioNum: a.next_armario_num ?? 0,
@@ -44,6 +50,7 @@ function buildCatalogoFromRows(almacenesRows, armariosRows, configRows) {
   }
 
   return migrateCatalogoStructure({
+    sedes,
     almacenes,
     nextAlmacenNum: config.nextAlmacenNum ?? 2,
     estanteMin: config.estanteMin ?? 1,
@@ -57,9 +64,15 @@ function catalogoToDbPayload(catalogo) {
   const migrated = migrateCatalogoStructure(catalogo);
   const almacenesRows = Object.entries(migrated.almacenes || {}).map(([codigo, info]) => ({
     codigo,
+    sede_codigo: info.sede || 'SED001',
     tipo: info.tipo || 'Almacén',
     nombre: info.nombre || codigo,
     next_armario_num: info.nextArmarioNum ?? 0,
+  }));
+
+  const sedesRows = Object.entries(migrated.sedes || {}).map(([codigo, info]) => ({
+    codigo,
+    nombre: info.nombre || codigo,
   }));
 
   const armariosRows = [];
@@ -79,7 +92,7 @@ function catalogoToDbPayload(catalogo) {
     return value != null ? { key, value: JSON.parse(value) } : null;
   }).filter(Boolean);
 
-  return { almacenesRows, armariosRows, configRows, migrated };
+  return { sedesRows, almacenesRows, armariosRows, configRows, migrated };
 }
 
 async function isCatalogoDbAvailable() {
@@ -100,17 +113,21 @@ export async function loadCatalogoFromDb() {
   if (!available) return null;
 
   const supabase = getSupabase();
-  const [almRes, armRes, cfgRes] = await Promise.all([
+  const [sedRes, almRes, armRes, cfgRes] = await Promise.all([
+    supabase.from('catalogo_sedes').select('*').order('codigo'),
     supabase.from('catalogo_almacenes').select('*').order('codigo'),
     supabase.from('catalogo_armarios').select('*').order('almacen_codigo').order('codigo'),
     supabase.from('catalogo_config').select('*'),
   ]);
 
+  if (sedRes.error && sedRes.error.code !== '42P01') {
+    throw Object.assign(new Error(sedRes.error.message), { status: 500 });
+  }
   if (almRes.error) throw Object.assign(new Error(almRes.error.message), { status: 500 });
   if (armRes.error) throw Object.assign(new Error(armRes.error.message), { status: 500 });
   if (cfgRes.error) throw Object.assign(new Error(cfgRes.error.message), { status: 500 });
 
-  return buildCatalogoFromRows(almRes.data, armRes.data, cfgRes.data);
+  return buildCatalogoFromRows(sedRes.data, almRes.data, armRes.data, cfgRes.data);
 }
 
 export async function saveCatalogoToDb(catalogo) {
@@ -123,8 +140,9 @@ export async function saveCatalogoToDb(catalogo) {
   }
 
   const supabase = getSupabase();
-  const { almacenesRows, armariosRows, configRows, migrated } = catalogoToDbPayload(catalogo);
+  const { sedesRows, almacenesRows, armariosRows, configRows, migrated } = catalogoToDbPayload(catalogo);
 
+  const desiredSedes = new Set(sedesRows.map((r) => r.codigo));
   const desiredAlmacenes = new Set(almacenesRows.map((r) => r.codigo));
   const desiredArmarios = new Set(armariosRows.map((r) => `${r.almacen_codigo}:${r.codigo}`));
 
@@ -150,6 +168,11 @@ export async function saveCatalogoToDb(catalogo) {
     }
   }
 
+  if (sedesRows.length) {
+    const { error } = await supabase.from('catalogo_sedes').upsert(sedesRows, { onConflict: 'codigo' });
+    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+  }
+
   if (almacenesRows.length) {
     const { error } = await supabase.from('catalogo_almacenes').upsert(almacenesRows, { onConflict: 'codigo' });
     if (error) throw Object.assign(new Error(error.message), { status: 500 });
@@ -170,10 +193,11 @@ export async function saveCatalogoToDb(catalogo) {
   return migrated;
 }
 
-export async function insertAlmacenToDb({ codigo, tipo, nombre, nextArmarioNum = 0 }) {
+export async function insertAlmacenToDb({ codigo, tipo, nombre, sedeCodigo = 'SED001', nextArmarioNum = 0 }) {
   const supabase = getSupabase();
   const { error } = await supabase.from('catalogo_almacenes').insert({
     codigo,
+    sede_codigo: sedeCodigo,
     tipo,
     nombre,
     next_armario_num: nextArmarioNum,
@@ -227,6 +251,7 @@ export async function syncMissingFromContenedores(catalogo) {
 
     if (!c.almacenes[alm]) {
       c.almacenes[alm] = {
+        sede: SEDE_DEFAULT,
         tipo: 'Almacén',
         nombre: `Almacén ${alm} (recuperado)`,
         armarios: {},

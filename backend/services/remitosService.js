@@ -17,6 +17,7 @@ function mapRemitoItem(row) {
 function mapUbicacionDestino(raw) {
   if (!raw || typeof raw !== 'object') return null;
   return {
+    sede: raw.sede || null,
     almacen: raw.almacen || null,
     armario: raw.armario || null,
     estante: raw.estante || null,

@@ -1,5 +1,7 @@
 export const ALMACEN_DEFAULT = 'ALM01';
+export const SEDE_DEFAULT = 'SED001';
 export const ALMACEN_TIPOS = ['Almacén', 'Depósito', 'Oficina'];
+export const SEDE_TIPOS = ['Oficina', 'Depósito', 'Planta', 'Cliente'];
 export const ARMARIO_TIPOS = ['Armario', 'Estantería', 'Gabinete'];
 
 export const ALMACENES = {
@@ -22,6 +24,25 @@ export function getAlmacenNombre(almacen) {
   return info?.nombre || almacen || '';
 }
 
+export function getSedesFromCatalog(catalogo) {
+  if (catalogo?.sedes?.length) return catalogo.sedes;
+  return [{ codigo: SEDE_DEFAULT, nombre: 'Sede principal' }];
+}
+
+export function getSedeNombreFromCatalog(catalogo, sede) {
+  const code = String(sede || SEDE_DEFAULT).toUpperCase();
+  const found = getSedesFromCatalog(catalogo).find((s) => String(s.codigo).toUpperCase() === code);
+  return found?.nombre || sede || '';
+}
+
+export function getAlmacenesForSede(catalogo, sede) {
+  const code = String(sede || SEDE_DEFAULT).toUpperCase();
+  const all = catalogo?.almacenes?.length
+    ? catalogo.almacenes
+    : [{ codigo: ALMACEN_DEFAULT, nombre: 'Oficina principal', sede: SEDE_DEFAULT }];
+  return all.filter((a) => String(a.sede || SEDE_DEFAULT).toUpperCase() === code);
+}
+
 export function getAlmacenNombreFromCatalog(catalogo, almacen) {
   const code = String(almacen || ALMACEN_DEFAULT).toUpperCase();
   const found = catalogo?.almacenes?.find((a) => String(a.codigo).toUpperCase() === code);
@@ -29,9 +50,11 @@ export function getAlmacenNombreFromCatalog(catalogo, almacen) {
   return getAlmacenNombre(almacen);
 }
 
-/** Etiqueta legible de sede/ubicación: Oficina Ballester — Armario X — E01 — C05 */
-export function buildCedeLabel(catalogo, { almacen, armario, estante, contenedor } = {}) {
+/** Etiqueta legible de sede/ubicación */
+export function buildCedeLabel(catalogo, { sede, almacen, armario, estante, contenedor } = {}) {
   const parts = [];
+  const sedeNombre = getSedeNombreFromCatalog(catalogo, sede);
+  if (sedeNombre) parts.push(sedeNombre);
   const almNombre = getAlmacenNombreFromCatalog(catalogo, almacen);
   if (almNombre) parts.push(almNombre);
   const armNombre = getArmarioNombre(armario, almacen, catalogo?.armariosPorAlmacen);
@@ -73,6 +96,7 @@ export function formatUbicacionLabel(item) {
   if (!item) return '—';
   if (item.ubicacionLabel) return item.ubicacionLabel;
   const parts = [
+    item.sedeNombre || getSedeNombreFromCatalog({ sedes: [] }, item.sede),
     item.almacenNombre || getAlmacenNombre(item.almacen),
     item.armarioNombre || getArmarioNombre(item.armario, item.almacen) || item.ubicacion,
     item.estante,
@@ -102,7 +126,21 @@ export function buildUbicacionCodigo(almacen, armario, estante, contenedor) {
   return `${alm}-${arm}-${est}`;
 }
 
-export function buildCodigoPreview(almacen, armarioOrEstante, estanteOrContenedor, contenedorMaybe) {
+export function buildCodigoCompletoPreview(sede, almacen, armario, estante, contenedor) {
+  const s = String(sede || SEDE_DEFAULT).toUpperCase();
+  const alm = String(almacen || ALMACEN_DEFAULT).toUpperCase();
+  if (!armario || !estante) return '';
+  const a = String(armario).toUpperCase();
+  const eRaw = String(estante).toUpperCase();
+  const eNum = eRaw.match(/E?(\d{1,2})/);
+  if (!eNum) return '';
+  const e = `E${String(eNum[1]).padStart(2, '0')}`;
+  const c = normalizeContenedorPreview(contenedor);
+  const tail = c ? `${a}-${e}-${c}` : `${a}-${e}`;
+  return `${s}-${alm}-${tail}`;
+}
+
+export function buildCodigoPreview(almacen, armarioOrEstante, estanteOrContenedor, contenedorMaybe, sedeMaybe) {
   let alm;
   let armario;
   let estante;
@@ -121,6 +159,9 @@ export function buildCodigoPreview(almacen, armarioOrEstante, estanteOrContenedo
   }
 
   if (!armario || !estante) return '';
+  if (sedeMaybe) {
+    return buildCodigoCompletoPreview(sedeMaybe, alm, armario, estante, contenedor);
+  }
   const a = String(armario).toUpperCase();
   const eRaw = String(estante).toUpperCase();
   const eNum = eRaw.match(/E?(\d{1,2})/);

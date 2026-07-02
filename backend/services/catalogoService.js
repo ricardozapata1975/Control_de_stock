@@ -16,8 +16,12 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATALOGO_PATH = path.join(__dirname, '../data/catalogo.json');
 
 const DEFAULT = {
+  sedes: {
+    SED001: { nombre: 'Sede principal' },
+  },
   almacenes: {
     ALM01: {
+      sede: 'SED001',
       tipo: 'Oficina',
       nombre: 'Oficina principal',
       nextArmarioNum: 3,
@@ -120,7 +124,7 @@ export async function getAlmacenesMap() {
   return c.almacenes || DEFAULT.almacenes;
 }
 
-export async function addAlmacen({ tipo, nombre }) {
+export async function addAlmacen({ tipo, nombre, sede }) {
   const tipoNorm = String(tipo || '').trim();
   const nombreNorm = String(nombre || '').trim();
   if (!ALMACEN_TIPOS.includes(tipoNorm)) {
@@ -141,7 +145,10 @@ export async function addAlmacen({ tipo, nombre }) {
     throw Object.assign(new Error(`Código ${codigo} ya existe`), { status: 409 });
   }
 
+  const sedeCode = sede ? String(sede).trim().toUpperCase() : 'SED001';
+
   c.almacenes[codigo] = {
+    sede: sedeCode,
     tipo: tipoNorm,
     nombre: nombreNorm,
     armarios: {},
@@ -150,7 +157,13 @@ export async function addAlmacen({ tipo, nombre }) {
   c.nextAlmacenNum = num + 1;
 
   if (useSupabaseCatalogo()) {
-    await insertAlmacenToDb({ codigo, tipo: tipoNorm, nombre: nombreNorm, nextArmarioNum: 0 });
+    await insertAlmacenToDb({
+      codigo,
+      tipo: tipoNorm,
+      nombre: nombreNorm,
+      sedeCodigo: sedeCode,
+      nextArmarioNum: 0,
+    });
     await updateNextAlmacenNumInDb(c.nextAlmacenNum);
     invalidateCatalogoCache();
     const fresh = await loadCatalogo();

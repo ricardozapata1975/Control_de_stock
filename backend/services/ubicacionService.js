@@ -3,16 +3,20 @@ import * as demo from './demoService.js';
 import { config } from '../config.js';
 import {
   ALMACEN_DEFAULT,
+  buildCodigoCompleto,
   getArmarioNombre,
   getContenedorHelpText,
   listAlmacenes,
   listArmarios,
   listArmariosPorAlmacen,
+  listSedes,
+  getSedeForAlmacen,
   mapUbicacionFields,
   normalizeAlmacen,
   normalizeArmario,
   normalizeContenedor,
   normalizeEstante,
+  normalizeSede,
   parseCodigo,
   buildCodigo,
   codigoLookupVariants,
@@ -30,6 +34,7 @@ export function getCatalogoUbicacion(almacenFilter) {
   });
   const armariosPorAlmacen = listArmariosPorAlmacen();
   return {
+    sedes: listSedes(),
     almacenes: listAlmacenes(),
     armarios: almacenFilter ? listArmarios(almacenFilter) : [],
     armariosPorAlmacen,
@@ -54,23 +59,29 @@ async function findContenedorByParsed(supabase, parsed) {
   return null;
 }
 
-export async function resolveUbicacion({ almacen, armario, estante, contenedor, codigo }) {
+export async function resolveUbicacion({ sede, almacen, armario, estante, contenedor, codigo }) {
   if (isDemoMode()) {
-    return demo.demoResolveUbicacion({ almacen, armario, estante, contenedor, codigo });
+    return demo.demoResolveUbicacion({ sede, almacen, armario, estante, contenedor, codigo });
   }
 
   const supabase = getSupabase();
   let parsed = codigo ? parseCodigo(codigo) : null;
   if (!parsed && armario && estante) {
     const alm = almacen ? normalizeAlmacen(almacen) : ALMACEN_DEFAULT;
+    const sed = normalizeSede(sede || getSedeForAlmacen(alm));
     parsed = {
+      sede: sed,
       almacen: alm,
       armario: normalizeArmario(armario, alm),
       estante: normalizeEstante(estante),
       contenedor: normalizeContenedor(contenedor),
-      codigo: almacen
-        ? buildCodigo(alm, armario, estante, contenedor)
-        : buildCodigo(armario, estante, contenedor),
+      codigo: buildCodigoCompleto({
+        sede: sed,
+        almacen: alm,
+        armario,
+        estante,
+        contenedor,
+      }),
     };
   }
   if (!parsed) {
@@ -81,8 +92,18 @@ export async function resolveUbicacion({ almacen, armario, estante, contenedor, 
   if (existing) return existing;
 
   const alm = parsed.almacen || ALMACEN_DEFAULT;
+  const sed = parsed.sede || normalizeSede(sede || getSedeForAlmacen(alm));
   const row = {
-    codigo: parsed.codigo,
+    codigo: parsed.codigo?.includes('-')
+      ? parsed.codigo
+      : buildCodigoCompleto({
+          sede: sed,
+          almacen: alm,
+          armario: parsed.armario,
+          estante: parsed.estante,
+          contenedor: parsed.contenedor,
+        }),
+    sede: sed,
     almacen: alm,
     armario: parsed.armario,
     estante: parsed.estante,

@@ -6,12 +6,22 @@ const ARMARIOS_DEFAULT = {
 
 const ALMACENES_DEFAULT = {
   ALM01: {
+    sede: 'SED001',
     tipo: 'Oficina',
     nombre: 'Oficina principal',
     nextArmarioNum: 3,
     armarios: { ...ARMARIOS_DEFAULT },
   },
 };
+
+const SEDES_DEFAULT = {
+  SED001: { nombre: 'Sede principal' },
+};
+
+export const SEDE_DEFAULT = 'SED001';
+export const SEDE_TIPOS = ['Oficina', 'Depósito', 'Planta', 'Cliente'];
+
+let sedesMap = structuredClone(SEDES_DEFAULT);
 
 export const ALMACEN_DEFAULT = 'ALM01';
 export const ALMACEN_TIPOS = ['Almacén', 'Depósito', 'Oficina'];
@@ -43,6 +53,62 @@ export function canonicalAlmacenCode(almacen) {
   return `ALM${String(num).padStart(2, '0')}`;
 }
 
+/** SED1, SED001 → SED001 */
+export function canonicalSedeCode(sede) {
+  const s = String(sede || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '');
+  const m = s.match(/^SED(\d+)$/i);
+  if (!m) return null;
+  const num = parseInt(m[1], 10);
+  if (Number.isNaN(num) || num < 1 || num > 999) return null;
+  return `SED${String(num).padStart(3, '0')}`;
+}
+
+function isSedeToken(token) {
+  return Boolean(canonicalSedeCode(token));
+}
+
+export function getSedesMapSync() {
+  return sedesMap;
+}
+
+export function listSedes() {
+  return Object.entries(sedesMap).map(([codigo, info]) => ({
+    codigo,
+    nombre: info?.nombre || codigo,
+  }));
+}
+
+export function getSedeInfo(sede) {
+  const code = canonicalSedeCode(sede || SEDE_DEFAULT) || SEDE_DEFAULT;
+  return sedesMap[code] || { nombre: code };
+}
+
+export function getSedeNombre(sede) {
+  return getSedeInfo(sede).nombre || sede || '';
+}
+
+export function getSedeForAlmacen(almacen) {
+  const code = canonicalAlmacenCode(almacen || ALMACEN_DEFAULT);
+  if (!code) return SEDE_DEFAULT;
+  return almacenesMap[code]?.sede || SEDE_DEFAULT;
+}
+
+export function normalizeSede(sede) {
+  const code = canonicalSedeCode(sede || SEDE_DEFAULT);
+  if (!code) {
+    throw Object.assign(new Error('Sede inválida. Usá SED001, SED002…'), { status: 400 });
+  }
+  if (!sedesMap[code] && code !== SEDE_DEFAULT) {
+    throw Object.assign(new Error(`Sede no registrada: ${code}. Configurala en el catálogo.`), {
+      status: 400,
+    });
+  }
+  return code;
+}
+
 let almacenesMap = structuredClone(ALMACENES_DEFAULT);
 let catalogRules = {
   estanteMin: 1,
@@ -68,7 +134,16 @@ function nextArmarioNumFromMap(armarios = {}) {
 /** Migra armarios globales legacy bajo ALM01 y normaliza estructura anidada. */
 export function migrateCatalogoStructure(catalogo) {
   const c = { ...catalogo };
+  if (!c.sedes) c.sedes = structuredClone(SEDES_DEFAULT);
   if (!c.almacenes) c.almacenes = structuredClone(ALMACENES_DEFAULT);
+
+  for (const [code, info] of Object.entries(c.sedes)) {
+    const canonical = canonicalSedeCode(code);
+    if (canonical && canonical !== code) {
+      c.sedes[canonical] = info;
+      delete c.sedes[code];
+    }
+  }
 
   if (c.armarios && Object.keys(c.armarios).length) {
     const alm01 = c.almacenes.ALM01 || {
@@ -91,6 +166,7 @@ export function migrateCatalogoStructure(catalogo) {
 
   for (const code of Object.keys(c.almacenes)) {
     const info = c.almacenes[code];
+    if (!info.sede) info.sede = SEDE_DEFAULT;
     if (!info.armarios) info.armarios = {};
     for (const [ac, val] of Object.entries(info.armarios)) {
       info.armarios[ac] = normalizeArmarioEntry(val);
@@ -113,6 +189,7 @@ export function getContenedorReglas() {
 
 export function applyCatalogo(catalogo) {
   const migrated = migrateCatalogoStructure(catalogo || {});
+  if (migrated.sedes) sedesMap = migrated.sedes;
   if (migrated.almacenes) almacenesMap = migrated.almacenes;
   if (migrated) {
     catalogRules = {
@@ -150,12 +227,19 @@ export function getAlmacenesMapSync() {
   return almacenesMap;
 }
 
-export function listAlmacenes() {
-  return Object.entries(almacenesMap).map(([codigo, info]) => ({
-    codigo,
-    tipo: info?.tipo || '',
-    nombre: info?.nombre || codigo,
-  }));
+export function listAlmacenes(sedeFilter) {
+  const sedeCode = sedeFilter ? canonicalSedeCode(sedeFilter) : null;
+  return Object.entries(almacenesMap)
+    .filter(([, info]) => {
+      if (!sedeCode) return true;
+      return (info?.sede || SEDE_DEFAULT) === sedeCode;
+    })
+    .map(([codigo, info]) => ({
+      codigo,
+      tipo: info?.tipo || '',
+      nombre: info?.nombre || codigo,
+      sede: info?.sede || SEDE_DEFAULT,
+    }));
 }
 
 export function getAlmacenInfo(almacen) {
@@ -357,6 +441,19 @@ export function buildCodigo(a1, a2, a3, a4) {
   return suffix;
 }
 
+/** Código completo con sede: SED001-ALM01-A01-E01-C01 */
+export function buildCodigoCompleto({ sede, almacen, armario, estante, contenedor } = {}) {
+  const s = normalizeSede(sede || getSedeForAlmacen(almacen));
+  const a = normalizeAlmacen(almacen || ALMACEN_DEFAULT);
+  if (!armario || !estante) {
+    throw Object.assign(new Error('Armario y estante son obligatorios para el código completo'), {
+      status: 400,
+    });
+  }
+  const suffix = buildCodigoSuffix(armario, estante, contenedor, a);
+  return `${s}-${a}-${suffix}`;
+}
+
 function parseWithAlmacen(s) {
   const fullBox = s.match(
     new RegExp(`^(ALM\\d{2})-(A\\d{2})-(E\\d{2})-(${CONTENEDOR_SUFIJO_RE})$`)
@@ -476,21 +573,57 @@ function normalizeAlmacenInCodigo(codigo) {
   return String(codigo || '')
     .trim()
     .toUpperCase()
-    .replace(/^(ALM\d+)(?=-|$)/i, (token) => canonicalAlmacenCode(token) || token);
+    .replace(/^(SED\d+)(?=-|$)/gi, (token) => canonicalSedeCode(token) || token)
+    .replace(/^(ALM\d+)(?=-|$)/gi, (token) => canonicalAlmacenCode(token) || token);
 }
 
-export function parseCodigo(codigo) {
+function parseSedeWrapper(s) {
+  const sedeOnly = s.match(/^(SED\d{3})$/i);
+  if (sedeOnly) {
+    const sede = canonicalSedeCode(sedeOnly[1]);
+    if (!sede) return null;
+    return {
+      sede,
+      almacen: null,
+      armario: null,
+      estante: null,
+      contenedor: null,
+      codigo: sede,
+    };
+  }
+
+  const wrapped = s.match(/^(SED\d{3})-(.+)$/i);
+  if (!wrapped) return null;
+
+  const sede = canonicalSedeCode(wrapped[1]);
+  if (!sede) return null;
+  const inner = parseCodigoBody(wrapped[2]);
+  if (!inner) return null;
+  return { ...inner, sede, codigo: s };
+}
+
+function attachDefaultSede(parsed) {
+  if (!parsed) return parsed;
+  if (!parsed.sede) {
+    parsed.sede = getSedeForAlmacen(parsed.almacen) || SEDE_DEFAULT;
+  }
+  return parsed;
+}
+
+function parseCodigoBody(codigo) {
   const s = normalizeAlmacenInCodigo(codigo);
   if (!s) return null;
 
   if (isAlmacenToken(s)) {
-    return parseWithAlmacen(s) || {
-      almacen: s,
-      armario: null,
-      estante: null,
-      contenedor: null,
-      codigo: s,
-    };
+    return (
+      parseWithAlmacen(s) || {
+        almacen: s,
+        armario: null,
+        estante: null,
+        contenedor: null,
+        codigo: s,
+      }
+    );
   }
 
   if (s.startsWith('ALM')) {
@@ -499,6 +632,16 @@ export function parseCodigo(codigo) {
   }
 
   return parseLegacy(s);
+}
+
+export function parseCodigo(codigo) {
+  const s = normalizeAlmacenInCodigo(codigo);
+  if (!s) return null;
+
+  const withSede = parseSedeWrapper(s);
+  if (withSede) return withSede;
+
+  return attachDefaultSede(parseCodigoBody(s));
 }
 
 /** Almacén esperado al resolver una ubicación parseada. */
@@ -510,7 +653,10 @@ export function expectedAlmacen(parsed) {
 export function contenedorMatchesParsed(cont, parsed) {
   if (!cont || !parsed) return false;
   const rowAlm = cont.almacen || ALMACEN_DEFAULT;
-  return rowAlm === expectedAlmacen(parsed);
+  if (rowAlm !== expectedAlmacen(parsed)) return false;
+  const rowSede = cont.sede || getSedeForAlmacen(rowAlm);
+  const parsedSede = parsed.sede || getSedeForAlmacen(parsed.almacen);
+  return rowSede === parsedSede;
 }
 
 /**
@@ -523,6 +669,7 @@ export function codigoLookupVariants(parsed) {
   if (parsed.codigo) variants.add(parsed.codigo);
 
   const alm = parsed.almacen || ALMACEN_DEFAULT;
+  const sede = parsed.sede || getSedeForAlmacen(alm);
   const { armario, estante, contenedor } = parsed;
 
   if (armario && estante) {
@@ -531,6 +678,11 @@ export function codigoLookupVariants(parsed) {
       variants.add(legacy);
     } else {
       variants.add(`${alm}-${legacy}`);
+    }
+    try {
+      variants.add(buildCodigoCompleto({ sede, almacen: alm, armario, estante, contenedor }));
+    } catch {
+      /* sin armario/estante válidos */
     }
   } else if (armario) {
     if (alm === ALMACEN_DEFAULT) {
@@ -551,14 +703,24 @@ export function buildDbId(codigo) {
 export function mapUbicacionFields(cont) {
   if (!cont) return {};
   const parsed = parseCodigo(cont.codigo);
+  const sede = cont.sede || parsed?.sede || getSedeForAlmacen(cont.almacen) || SEDE_DEFAULT;
   const almacen = cont.almacen || parsed?.almacen || ALMACEN_DEFAULT;
   const armario = cont.armario || parsed?.armario;
   const estante = cont.estante || parsed?.estante;
   const caja = cont.contenedor ?? parsed?.contenedor ?? null;
+  const sedeNombre = getSedeNombre(sede);
   const almacenInfo = getAlmacenInfo(almacen);
   const armarioNombre = getArmarioNombre(armario, almacen);
-  const label = [almacenInfo.nombre, armarioNombre, estante, caja].filter(Boolean).join(' / ');
+  const label = [sedeNombre, almacenInfo.nombre, armarioNombre, estante, caja]
+    .filter(Boolean)
+    .join(' / ');
+  const codigoCompleto =
+    armario && estante
+      ? buildCodigoCompleto({ sede, almacen, armario, estante, contenedor: caja })
+      : cont.codigo;
   return {
+    sede,
+    sedeNombre,
     almacen,
     almacenNombre: almacenInfo.nombre,
     almacenTipo: almacenInfo.tipo,
@@ -568,6 +730,7 @@ export function mapUbicacionFields(cont) {
     contenedor: caja,
     ubicacion: armarioNombre,
     ubicacionLabel: label,
+    codigoCompleto,
   };
 }
 

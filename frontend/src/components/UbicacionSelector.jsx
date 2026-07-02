@@ -1,23 +1,43 @@
 import { useEffect } from 'react';
-import { ESTANTES, getArmariosForAlmacen, buildCodigoPreview } from '../utils/ubicacion';
+import {
+  ESTANTES,
+  SEDE_DEFAULT,
+  buildCodigoCompletoPreview,
+  getAlmacenesForSede,
+  getArmariosForAlmacen,
+  getSedesFromCatalog,
+} from '../utils/ubicacion';
 
 export default function UbicacionSelector({
   catalogo,
+  sede,
   almacen,
   armario,
   estante,
   contenedor,
+  onSedeChange,
   onAlmacenChange,
   onArmarioChange,
   onEstanteChange,
   onContenedorChange,
   almacenDisabled = false,
+  sedeDisabled = false,
+  showSede = true,
   compact = false,
   labelPrefix = '',
 }) {
-  const almacenes = catalogo.almacenes?.length ? catalogo.almacenes : [{ codigo: 'ALM01', nombre: 'Oficina principal' }];
+  const sedes = getSedesFromCatalog(catalogo);
+  const sedeActual = sede || SEDE_DEFAULT;
+  const almacenes = getAlmacenesForSede(catalogo, sedeActual);
   const armariosList = getArmariosForAlmacen(catalogo, almacen);
-  const preview = buildCodigoPreview(almacen, armario, estante, contenedor);
+  const preview = buildCodigoCompletoPreview(sedeActual, almacen, armario, estante, contenedor);
+
+  useEffect(() => {
+    if (!almacenes.length) return;
+    if (!almacen || !almacenes.some((a) => a.codigo === almacen)) {
+      onAlmacenChange(almacenes[0].codigo);
+    }
+  }, [sedeActual, almacenes, almacen, onAlmacenChange]);
 
   useEffect(() => {
     if (!armariosList.length) return;
@@ -31,15 +51,32 @@ export default function UbicacionSelector({
   return (
     <div className={compact ? 'space-y-2' : 'space-y-3'}>
       {preview && (
-        <p className="font-mono text-sm font-bold text-accent">{preview}</p>
+        <p className="break-all font-mono text-sm font-bold text-accent">{preview}</p>
       )}
-      <div className={`grid gap-2 ${compact ? 'grid-cols-2 sm:grid-cols-4' : 'sm:grid-cols-2'}`}>
+      <div className={`grid gap-2 ${compact ? 'grid-cols-2 sm:grid-cols-5' : 'sm:grid-cols-2'}`}>
+        {showSede && (
+          <div className={compact ? '' : 'sm:col-span-2'}>
+            <label className="text-label">{lbl('Sede')}</label>
+            <select
+              className="input-field text-base"
+              value={sedeActual}
+              disabled={sedeDisabled}
+              onChange={(e) => onSedeChange?.(e.target.value)}
+            >
+              {sedes.map((s) => (
+                <option key={s.codigo} value={s.codigo}>
+                  {s.codigo} — {s.nombre || s.codigo}
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
         <div>
           <label className="text-label">{lbl('Almacén')}</label>
           <select
             className="input-field text-base"
             value={almacen}
-            disabled={almacenDisabled}
+            disabled={almacenDisabled || !almacenes.length}
             onChange={(e) => onAlmacenChange(e.target.value)}
           >
             {almacenes.map((a) => (

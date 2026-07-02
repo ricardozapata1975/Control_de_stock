@@ -7,21 +7,29 @@ import {
   ALMACEN_DEFAULT,
   applyCatalogo,
   buildCodigo,
+  buildCodigoCompleto,
   canonicalAlmacenCode,
   codigoLookupVariants,
   contenedorMatchesParsed,
   normalizeAlmacen,
   parseCodigo,
+  SEDE_DEFAULT,
 } from '../services/ubicacionUtils.js';
 
 applyCatalogo({
+  sedes: {
+    SED001: { nombre: 'Oficina Ballester' },
+    SED002: { nombre: 'Oficina Santa Fe' },
+  },
   almacenes: {
     ALM01: {
+      sede: 'SED001',
       tipo: 'Oficina',
       nombre: 'Oficina principal',
       armarios: { A00: { nombre: 'Armario Papelería', tipo: 'armario' } },
     },
     ALM02: {
+      sede: 'SED002',
       tipo: 'Depósito',
       nombre: 'Jaula primer piso',
       armarios: { A00: { nombre: 'Estantería jaula', tipo: 'estantería' } },
@@ -84,6 +92,24 @@ assert(
 // ALM002 → ALM02 (cero extra al escribir manualmente)
 assert(canonicalAlmacenCode('ALM002') === 'ALM02', 'ALM002 debe normalizarse a ALM02');
 assert(normalizeAlmacen('ALM002') === 'ALM02', 'normalizeAlmacen acepta ALM002');
+
+// Código completo con sede
+const fullSede = buildCodigoCompleto({
+  sede: 'SED001',
+  almacen: 'ALM01',
+  armario: 'A00',
+  estante: 'E01',
+  contenedor: 'C01',
+});
+assert(fullSede === 'SED001-ALM01-A00-E01-C01', 'buildCodigoCompleto con sede');
+
+const parsedSede = parseCodigo('SED001-ALM01-A00-E01-C01');
+assert(parsedSede?.sede === 'SED001', 'parseCodigo extrae sede');
+assert(parsedSede?.almacen === 'ALM01', 'parseCodigo extrae almacén con sede');
+
+const variantsSede = codigoLookupVariants(parsedSede);
+assert(variantsSede.includes('SED001-ALM01-A00-E01-C01'), 'variantes incluyen código con sede');
+assert(variantsSede.includes('A00-E01-C01'), 'variantes incluyen legacy ALM01');
 
 console.log(`\nResultado: ${passed} ok, ${failed} fallos`);
 if (failed > 0) process.exit(1);

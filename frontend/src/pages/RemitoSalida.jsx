@@ -6,7 +6,7 @@ import RemitoRecibir from '../components/RemitoRecibir';
 import SearchFilters from '../components/SearchFilters';
 import UbicacionSelector from '../components/UbicacionSelector';
 import { formatUbicacionLabel } from '../utils/contenedor';
-import { ALMACEN_DEFAULT, buildCedeLabel, getAlmacenNombreFromCatalog } from '../utils/ubicacion';
+import { ALMACEN_DEFAULT, buildCedeLabel, getAlmacenNombreFromCatalog, SEDE_DEFAULT } from '../utils/ubicacion';
 import { todayIsoDate } from '../utils/remitoStorage';
 
 const EMPTY_FORM = {
@@ -41,6 +41,7 @@ function cartEntryFromItem(item) {
     itemId: item.itemId,
     contenedorId: item.contenedorId,
     almacen: item.almacen || ALMACEN_DEFAULT,
+    sede: item.sede || SEDE_DEFAULT,
     armario: item.armario,
     estante: item.estante,
     contenedor: item.contenedor,
@@ -88,7 +89,9 @@ export default function RemitoSalida() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [almacenOrigen, setAlmacenOrigen] = useState(ALMACEN_DEFAULT);
+  const [sedeOrigen, setSedeOrigen] = useState(SEDE_DEFAULT);
   const [almacenDestino, setAlmacenDestino] = useState('');
+  const [sedeDestino, setSedeDestino] = useState(SEDE_DEFAULT);
   const [destArmario, setDestArmario] = useState('A01');
   const [destEstante, setDestEstante] = useState('E01');
   const [destContenedor, setDestContenedor] = useState('');
@@ -244,6 +247,7 @@ export default function RemitoSalida() {
     if (tipoRemito !== 'transferencia' || !almacenDestino) return;
     const nombreAlm = getAlmacenNombreFromCatalog(catalogo, almacenDestino);
     const cedeDestino = buildCedeLabel(catalogo, {
+      sede: sedeDestino,
       almacen: almacenDestino,
       armario: destArmario,
       estante: destEstante,
@@ -256,20 +260,22 @@ export default function RemitoSalida() {
       iva: 'Transferencia interna',
       cedeDestino,
     }));
-  }, [tipoRemito, almacenDestino, destArmario, destEstante, destContenedor, catalogo]);
+  }, [tipoRemito, almacenDestino, sedeDestino, destArmario, destEstante, destContenedor, catalogo]);
 
   useEffect(() => {
     if (tipoRemito !== 'transferencia' || !cartCount) return;
     const primera = cartList[0];
     if (!primera) return;
     const cedeOrigen = buildCedeLabel(catalogo, {
+      sede: primera.sede || sedeOrigen,
       almacen: primera.almacen || almacenOrigen,
       armario: primera.armario,
       estante: primera.estante,
       contenedor: primera.contenedor,
     }) || primera.ubicacion || getAlmacenNombreFromCatalog(catalogo, almacenOrigen);
     setForm((f) => ({ ...f, cedeOrigen }));
-  }, [tipoRemito, cartCount, cartList, almacenOrigen, catalogo]);
+    if (primera.sede) setSedeOrigen(primera.sede);
+  }, [tipoRemito, cartCount, cartList, almacenOrigen, sedeOrigen, catalogo]);
 
   const handleClienteSelect = (cliente) => {
     patchForm({
@@ -360,6 +366,7 @@ export default function RemitoSalida() {
               almacenOrigen,
               almacenDestino,
               ubicacionDestino: {
+                sede: sedeDestino,
                 almacen: almacenDestino,
                 armario: destArmario,
                 estante: destEstante,
@@ -726,6 +733,7 @@ export default function RemitoSalida() {
                   </div>
                   <UbicacionSelector
                     catalogo={catalogo}
+                    sede={sedeDestino}
                     almacen={almacenDestino || ALMACEN_DEFAULT}
                     armario={destArmario}
                     estante={destEstante}
@@ -733,6 +741,7 @@ export default function RemitoSalida() {
                     almacenDisabled
                     compact
                     labelPrefix="destino"
+                    onSedeChange={setSedeDestino}
                     onAlmacenChange={setAlmacenDestino}
                     onArmarioChange={setDestArmario}
                     onEstanteChange={setDestEstante}

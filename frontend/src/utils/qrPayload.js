@@ -1,5 +1,6 @@
 /** Tipos de etiqueta QR */
 export const QR_TYPES = {
+  SEDE: 'sede',
   ALMACEN: 'almacen',
   ARMARIO: 'armario',
   ESTANTE: 'estante',
@@ -27,7 +28,7 @@ export function parseQrScan(text) {
   if (!s) return null;
 
   const deepLink = s.match(
-    /inventario:\/\/(almacen|armario|estante|contenedor|item)\/([^?\s#]+)/i
+    /inventario:\/\/(sede|almacen|armario|estante|contenedor|item)\/([^?\s#]+)/i
   );
   if (deepLink) {
     const type = deepLink[1].toLowerCase();
@@ -50,6 +51,25 @@ export function parseQrScan(text) {
 
   const codigo = extractCodigoUbicacion(s);
   if (!codigo) return null;
+
+  if (/^SED\d{3}$/i.test(codigo)) {
+    return { type: QR_TYPES.SEDE, codigo };
+  }
+  if (/^SED\d{3}-ALM\d{2}-[A-Z]\d{2}-E\d{2}$/i.test(codigo)) {
+    return { type: QR_TYPES.ESTANTE, codigo };
+  }
+  if (
+    /^SED\d{3}-ALM\d{2}-[A-Z]\d{2}-E\d{2}-(?:C|B|H)\d{2}$/i.test(codigo) ||
+    /^SED\d{3}-ALM\d{2}-[A-Z]\d{2}-E\d{2}-SC$/i.test(codigo)
+  ) {
+    return { type: QR_TYPES.CONTENEDOR, codigo };
+  }
+  if (/^SED\d{3}-ALM\d{2}$/i.test(codigo)) {
+    return { type: QR_TYPES.ALMACEN, codigo };
+  }
+  if (/^SED\d{3}-ALM\d{2}-[A-Z]\d{2}$/i.test(codigo)) {
+    return { type: QR_TYPES.ARMARIO, codigo };
+  }
 
   if (/^ALM\d{2}$/i.test(codigo)) {
     return { type: QR_TYPES.ALMACEN, codigo };
@@ -83,14 +103,25 @@ export function extractCodigoUbicacion(text) {
   const s = String(text || '').trim();
   const sufijo = '(?:C\\d{2}|B\\d{2}|H\\d{2}|SC)';
   const almPrefix = 'ALM\\d{2}';
+  const sedePrefix = 'SED\\d{3}';
 
   const urlMatch = s.match(
     new RegExp(
-      `(?:almacen|contenedor|estante|armario)/((?:${almPrefix}-)?[A-Z]\\d{2}(?:-E\\d{2})?(?:-${sufijo})?)`,
+      `(?:sede|almacen|contenedor|estante|armario)/((?:${sedePrefix}-)?(?:${almPrefix}-)?[A-Z]\\d{2}(?:-E\\d{2})?(?:-${sufijo})?)`,
       'i'
     )
   );
   if (urlMatch) return urlMatch[1].toUpperCase();
+
+  const sedeFull = s.match(
+    new RegExp(`\\b(${sedePrefix}-${almPrefix}-[A-Z]\\d{2}-E\\d{2}-${sufijo})\\b`, 'i')
+  );
+  if (sedeFull) return sedeFull[1].toUpperCase();
+
+  const sedeShelf = s.match(
+    new RegExp(`\\b(${sedePrefix}-${almPrefix}-[A-Z]\\d{2}-E\\d{2})\\b`, 'i')
+  );
+  if (sedeShelf) return sedeShelf[1].toUpperCase();
 
   const almOnly = s.match(/\b(ALM\d{2})\b/i);
   if (almOnly && !s.includes('-')) return almOnly[1].toUpperCase();
