@@ -1,5 +1,7 @@
 -- Sedes (ubicaciones físicas / oficinas) — nivel superior al almacén
 -- Ejecutar en SQL Editor de Supabase después de patch-catalogo.sql
+--
+-- Si falló una ejecución parcial (FK sin SED001), volvé a ejecutar este script completo.
 
 CREATE TABLE IF NOT EXISTS catalogo_sedes (
   codigo TEXT PRIMARY KEY,
@@ -10,20 +12,32 @@ CREATE TABLE IF NOT EXISTS catalogo_sedes (
 
 ALTER TABLE catalogo_sedes ADD COLUMN IF NOT EXISTS aduana JSONB;
 
+-- Sede por defecto ANTES de cualquier FK o DEFAULT que apunte a catalogo_sedes
+INSERT INTO catalogo_sedes (codigo, nombre)
+VALUES ('SED001', 'Oficina Ballester')
+ON CONFLICT (codigo) DO UPDATE SET nombre = EXCLUDED.nombre;
+
+-- Columna sin FK inline (evita validar referencias antes de tener SED001)
 ALTER TABLE catalogo_almacenes
-  ADD COLUMN IF NOT EXISTS sede_codigo TEXT REFERENCES catalogo_sedes(codigo) DEFAULT 'SED001';
+  ADD COLUMN IF NOT EXISTS sede_codigo TEXT DEFAULT 'SED001';
+
+-- FK en paso aparte (idempotente si ya existe)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'catalogo_almacenes_sede_codigo_fkey'
+  ) THEN
+    ALTER TABLE catalogo_almacenes
+      ADD CONSTRAINT catalogo_almacenes_sede_codigo_fkey
+      FOREIGN KEY (sede_codigo) REFERENCES catalogo_sedes(codigo);
+  END IF;
+END $$;
 
 ALTER TABLE contenedores
   ADD COLUMN IF NOT EXISTS sede TEXT NOT NULL DEFAULT 'SED001';
 
 CREATE INDEX IF NOT EXISTS idx_contenedores_sede ON contenedores(sede);
 CREATE INDEX IF NOT EXISTS idx_catalogo_almacenes_sede ON catalogo_almacenes(sede_codigo);
-
-INSERT INTO catalogo_sedes (codigo, nombre)
-SELECT 'SED001', 'Oficina Ballester'
-WHERE NOT EXISTS (SELECT 1 FROM catalogo_sedes WHERE codigo = 'SED001');
-
-UPDATE catalogo_sedes SET nombre = 'Oficina Ballester' WHERE codigo = 'SED001';
 
 UPDATE catalogo_almacenes SET sede_codigo = 'SED001' WHERE sede_codigo IS NULL;
 UPDATE contenedores SET sede = 'SED001' WHERE sede IS NULL OR trim(sede) = '';
