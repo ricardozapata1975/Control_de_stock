@@ -43,12 +43,13 @@ UPDATE catalogo_almacenes SET sede_codigo = 'SED001' WHERE sede_codigo IS NULL;
 UPDATE contenedores SET sede = 'SED001' WHERE sede IS NULL OR trim(sede) = '';
 
 -- Resolver contenedor con sede en el código completo
+-- Parámetros obligatorios primero; opcionales al final (regla 42P13 de PostgreSQL)
 CREATE OR REPLACE FUNCTION resolver_contenedor_ubicacion(
-  p_sede TEXT DEFAULT 'SED001',
   p_almacen TEXT,
   p_armario TEXT,
   p_estante TEXT,
-  p_contenedor TEXT DEFAULT NULL
+  p_contenedor TEXT DEFAULT NULL,
+  p_sede TEXT DEFAULT 'SED001'
 )
 RETURNS UUID
 LANGUAGE plpgsql
