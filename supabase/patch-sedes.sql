@@ -4,8 +4,11 @@
 CREATE TABLE IF NOT EXISTS catalogo_sedes (
   codigo TEXT PRIMARY KEY,
   nombre TEXT NOT NULL,
+  aduana JSONB,
   created_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
+
+ALTER TABLE catalogo_sedes ADD COLUMN IF NOT EXISTS aduana JSONB;
 
 ALTER TABLE catalogo_almacenes
   ADD COLUMN IF NOT EXISTS sede_codigo TEXT REFERENCES catalogo_sedes(codigo) DEFAULT 'SED001';
@@ -17,8 +20,10 @@ CREATE INDEX IF NOT EXISTS idx_contenedores_sede ON contenedores(sede);
 CREATE INDEX IF NOT EXISTS idx_catalogo_almacenes_sede ON catalogo_almacenes(sede_codigo);
 
 INSERT INTO catalogo_sedes (codigo, nombre)
-SELECT 'SED001', 'Sede principal'
+SELECT 'SED001', 'Oficina Ballester'
 WHERE NOT EXISTS (SELECT 1 FROM catalogo_sedes WHERE codigo = 'SED001');
+
+UPDATE catalogo_sedes SET nombre = 'Oficina Ballester' WHERE codigo = 'SED001';
 
 UPDATE catalogo_almacenes SET sede_codigo = 'SED001' WHERE sede_codigo IS NULL;
 UPDATE contenedores SET sede = 'SED001' WHERE sede IS NULL OR trim(sede) = '';

@@ -7,17 +7,31 @@ import {
   ensureCatalogoSeededInDb,
   insertAlmacenToDb,
   insertArmarioToDb,
+  insertSedeToDb,
   saveCatalogoToDb,
+  updateAlmacenSedeInDb,
   updateNextAlmacenNumInDb,
   updateNextArmarioNumInDb,
+  updateNextSedeNumInDb,
 } from './catalogoDb.js';
+import {
+  ADUANA_ARMARIO,
+  ADUANA_CONTENEDOR,
+  ADUANA_ESTANTE,
+  bootstrapSedesCatalog,
+  createAduanaForSede,
+  nextSedeCode,
+} from './sedeBootstrap.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const CATALOGO_PATH = path.join(__dirname, '../data/catalogo.json');
 
 const DEFAULT = {
   sedes: {
-    SED001: { nombre: 'Sede principal' },
+    SED001: {
+      nombre: 'Oficina Ballester',
+      aduana: { almacen: 'ALM02', armario: 'A00', estante: 'E01', contenedor: 'C01' },
+    },
   },
   almacenes: {
     ALM01: {
@@ -31,8 +45,19 @@ const DEFAULT = {
         A02: { nombre: 'Armario Electrónica', tipo: 'armario' },
       },
     },
+    ALM02: {
+      sede: 'SED001',
+      tipo: 'Depósito',
+      nombre: 'Recepción tránsito — Oficina Ballester',
+      esAduana: true,
+      nextArmarioNum: 1,
+      armarios: {
+        A00: { nombre: 'Gabinete recepción (Aduana)', tipo: 'gabinete' },
+      },
+    },
   },
-  nextAlmacenNum: 2,
+  nextSedeNum: 2,
+  nextAlmacenNum: 3,
   estanteMin: 1,
   estanteMax: 9,
   contenedorReglas: {
@@ -66,18 +91,18 @@ function normalizeArmarioTipo(tipo) {
 async function loadCatalogoFromFile() {
   try {
     const raw = await fs.readFile(CATALOGO_PATH, 'utf-8');
-    const data = migrateCatalogoStructure({ ...DEFAULT, ...JSON.parse(raw) });
+    const data = bootstrapSedesCatalog(migrateCatalogoStructure({ ...DEFAULT, ...JSON.parse(raw) }));
     if (!data.nextAlmacenNum) {
       data.nextAlmacenNum = Object.keys(data.almacenes || {}).length + 1;
     }
     return data;
   } catch {
-    return migrateCatalogoStructure({ ...DEFAULT });
+    return bootstrapSedesCatalog(migrateCatalogoStructure({ ...DEFAULT }));
   }
 }
 
 async function saveCatalogoToFile(data) {
-  const migrated = migrateCatalogoStructure({ ...DEFAULT, ...data });
+  const migrated = bootstrapSedesCatalog(migrateCatalogoStructure({ ...DEFAULT, ...data }));
   await fs.mkdir(path.dirname(CATALOGO_PATH), { recursive: true });
   await fs.writeFile(CATALOGO_PATH, JSON.stringify(migrated, null, 2));
   return migrated;
@@ -221,4 +246,77 @@ export async function addArmario({ almacen, tipo, nombre }) {
 
 export function invalidateCatalogoCache() {
   cache = null;
+}
+
+export async function addSede({ nombre }) {
+  const nombreNorm = String(nombre || '').trim();
+  if (!nombreNorm) {
+    throw Object.assign(new Error('El nombre de la sede es obligatorio'), { status: 400 });
+  }
+
+  const c = await loadCatalogo();
+  c.sedes = c.sedes || {};
+  const codigo = nextSedeCode(c);
+  if (c.sedes[codigo]) {
+    throw Object.assign(new Error(`Código ${codigo} ya existe`), { status: 409 });
+  }
+
+  c.sedes[codigo] = { nombre: nombreNorm };
+  const aduana = createAduanaForSede(c, codigo, nombreNorm);
+
+  if (useSupabaseCatalogo()) {
+    await insertSedeToDb({ codigo, nombre: nombreNorm, aduana });
+    const alm = c.almacenes[aduana.almacen];
+    await insertAlmacenToDb({
+      codigo: aduana.almacen,
+      tipo: alm.tipo,
+      nombre: alm.nombre,
+      sedeCodigo: codigo,
+      nextArmarioNum: alm.nextArmarioNum,
+      esAduana: true,
+    });
+    await insertArmarioToDb({
+      almacen: aduana.almacen,
+      codigo: ADUANA_ARMARIO,
+      nombre: alm.armarios[ADUANA_ARMARIO].nombre,
+      tipo: alm.armarios[ADUANA_ARMARIO].tipo,
+    });
+    await updateNextAlmacenNumInDb(c.nextAlmacenNum);
+    await updateNextSedeNumInDb(c.nextSedeNum);
+    invalidateCatalogoCache();
+    const fresh = await loadCatalogo();
+    applyCatalogo(fresh);
+  } else {
+    await saveCatalogoToFile(c);
+    cache = c;
+    applyCatalogo(c);
+  }
+
+  return { codigo, nombre: nombreNorm, aduana };
+}
+
+export async function assignAlmacenSede({ almacen, sede }) {
+  const almCode = String(almacen || '').trim().toUpperCase();
+  const sedeCode = String(sede || '').trim().toUpperCase();
+  const c = await loadCatalogo();
+  if (!c.almacenes?.[almCode]) {
+    throw Object.assign(new Error(`Almacén no registrado: ${almCode}`), { status: 404 });
+  }
+  if (!c.sedes?.[sedeCode]) {
+    throw Object.assign(new Error(`Sede no registrada: ${sedeCode}`), { status: 404 });
+  }
+  c.almacenes[almCode].sede = sedeCode;
+
+  if (useSupabaseCatalogo()) {
+    await updateAlmacenSedeInDb(almCode, sedeCode);
+    invalidateCatalogoCache();
+    const fresh = await loadCatalogo();
+    applyCatalogo(fresh);
+  } else {
+    await saveCatalogoToFile(c);
+    cache = c;
+    applyCatalogo(c);
+  }
+
+  return { almacen: almCode, sede: sedeCode };
 }

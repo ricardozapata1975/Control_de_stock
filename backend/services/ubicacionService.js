@@ -10,6 +10,7 @@ import {
   listArmarios,
   listArmariosPorAlmacen,
   listSedes,
+  getAduanaUbicacion,
   getSedeForAlmacen,
   mapUbicacionFields,
   normalizeAlmacen,
@@ -33,8 +34,13 @@ export function getCatalogoUbicacion(almacenFilter) {
     return { codigo: code, nombre: `Estante ${i + 1}` };
   });
   const armariosPorAlmacen = listArmariosPorAlmacen();
+  const sedes = listSedes();
+  const aduanasPorSede = Object.fromEntries(
+    sedes.filter((s) => s.aduana).map((s) => [s.codigo, { ...s.aduana, sedeNombre: s.nombre }])
+  );
   return {
-    sedes: listSedes(),
+    sedes,
+    aduanasPorSede,
     almacenes: listAlmacenes(),
     armarios: almacenFilter ? listArmarios(almacenFilter) : [],
     armariosPorAlmacen,

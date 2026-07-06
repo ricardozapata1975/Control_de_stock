@@ -6,7 +6,7 @@ import RemitoRecibir from '../components/RemitoRecibir';
 import SearchFilters from '../components/SearchFilters';
 import UbicacionSelector from '../components/UbicacionSelector';
 import { formatUbicacionLabel } from '../utils/contenedor';
-import { ALMACEN_DEFAULT, buildCedeLabel, getAlmacenNombreFromCatalog, SEDE_DEFAULT } from '../utils/ubicacion';
+import { ALMACEN_DEFAULT, buildCedeLabel, getAlmacenNombreFromCatalog, resolveAduanaUbicacion, SEDE_DEFAULT } from '../utils/ubicacion';
 import { todayIsoDate } from '../utils/remitoStorage';
 
 const EMPTY_FORM = {
@@ -76,7 +76,7 @@ export default function RemitoSalida() {
   const [inventario, setInventario] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filters, setFilters] = useState({ q: '', almacen: '', armario: '', tipo: '' });
-  const [catalogo, setCatalogo] = useState({ almacenes: [], armariosPorAlmacen: {} });
+  const [catalogo, setCatalogo] = useState({ almacenes: [], armariosPorAlmacen: {}, sedes: [], aduanasPorSede: {} });
   const [tipos, setTipos] = useState([]);
   const [cart, setCart] = useState(() => new Map());
   const [showPreview, setShowPreview] = useState(false);
@@ -115,6 +115,8 @@ export default function RemitoSalida() {
         setCatalogo({
           almacenes: cat.almacenes || [],
           armariosPorAlmacen: cat.armariosPorAlmacen || {},
+          sedes: cat.sedes || [],
+          aduanasPorSede: cat.aduanasPorSede || {},
         });
         setTipos(tiposData.tipos || []);
         const list = empresasData.empresas || [];
@@ -242,6 +244,17 @@ export default function RemitoSalida() {
     setConfirmado(false);
     setRemitoId(null);
   };
+
+  useEffect(() => {
+    if (tipoRemito !== 'transferencia' || !sedeDestino) return;
+    const aduana = resolveAduanaUbicacion(catalogo, sedeDestino);
+    if (aduana) {
+      setAlmacenDestino(aduana.almacen);
+      setDestArmario(aduana.armario);
+      setDestEstante(aduana.estante);
+      setDestContenedor(aduana.contenedor || '');
+    }
+  }, [tipoRemito, sedeDestino, catalogo.aduanasPorSede]);
 
   useEffect(() => {
     if (tipoRemito !== 'transferencia' || !almacenDestino) return;
@@ -696,6 +709,10 @@ export default function RemitoSalida() {
                 <>
                   <hr className="border-border" />
                   <h4 className="font-bold text-content">Transferencia entre almacenes</h4>
+                  <p className="text-xs text-muted">
+                    El destino por defecto es la <strong>aduana</strong> de la sede (recepción tránsito).
+                    El responsable en destino reubicará el stock luego.
+                  </p>
                   <div>
                     <label className="text-label">Almacén origen</label>
                     <select

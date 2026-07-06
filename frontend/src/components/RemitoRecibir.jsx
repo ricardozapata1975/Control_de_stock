@@ -2,11 +2,12 @@ import { useCallback, useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { formatFechaDmy } from '../utils/fecha';
 import UbicacionSelector from './UbicacionSelector';
-import { ALMACEN_DEFAULT } from '../utils/ubicacion';
+import { ALMACEN_DEFAULT, resolveAduanaUbicacion, SEDE_DEFAULT } from '../utils/ubicacion';
 
 function RecibirModal({ remito, catalogo, onClose, onConfirmado }) {
   const ubi = remito.ubicacionDestino || {};
-  const [almacen, setAlmacen] = useState(remito.almacenDestino || ALMACEN_DEFAULT);
+  const [sede, setSede] = useState(ubi.sede || SEDE_DEFAULT);
+  const [almacen, setAlmacen] = useState(ubi.almacen || remito.almacenDestino || ALMACEN_DEFAULT);
   const [armario, setArmario] = useState(ubi.armario || 'A01');
   const [estante, setEstante] = useState(ubi.estante || 'E01');
   const [contenedor, setContenedor] = useState(ubi.contenedor || '');
@@ -22,7 +23,13 @@ function RecibirModal({ remito, catalogo, onClose, onConfirmado }) {
     setSubmitting(true);
     try {
       await api.recibirTransferencia(remito.id, {
-        ubicacionDestino: { almacen, armario, estante, contenedor: contenedor || null },
+        ubicacionDestino: {
+          sede,
+          almacen,
+          armario,
+          estante,
+          contenedor: contenedor || null,
+        },
       });
       onConfirmado();
       onClose();
@@ -58,13 +65,28 @@ function RecibirModal({ remito, catalogo, onClose, onConfirmado }) {
 
         <div className="mb-4">
           <h4 className="mb-2 font-bold text-content">Ubicación destino</h4>
+          <p className="mb-2 text-xs text-muted">
+            Por defecto la aduana de la sede (recepción tránsito). Podés confirmar ahí o elegir el
+            destino final dentro de la sede.
+          </p>
           <UbicacionSelector
             catalogo={catalogo}
+            sede={sede}
             almacen={almacen}
             armario={armario}
             estante={estante}
             contenedor={contenedor}
             almacenDisabled
+            onSedeChange={(v) => {
+              setSede(v);
+              const aduana = resolveAduanaUbicacion(catalogo, v);
+              if (aduana) {
+                setAlmacen(aduana.almacen);
+                setArmario(aduana.armario);
+                setEstante(aduana.estante);
+                setContenedor(aduana.contenedor || '');
+              }
+            }}
             onAlmacenChange={setAlmacen}
             onArmarioChange={setArmario}
             onEstanteChange={setEstante}
@@ -91,7 +113,12 @@ export default function RemitoRecibir() {
   const [remitos, setRemitos] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filtroAlmacen, setFiltroAlmacen] = useState('');
-  const [catalogo, setCatalogo] = useState({ almacenes: [], armariosPorAlmacen: {} });
+  const [catalogo, setCatalogo] = useState({
+    almacenes: [],
+    armariosPorAlmacen: {},
+    sedes: [],
+    aduanasPorSede: {},
+  });
   const [recibirRemito, setRecibirRemito] = useState(null);
   const [success, setSuccess] = useState('');
 
@@ -115,6 +142,8 @@ export default function RemitoRecibir() {
       setCatalogo({
         almacenes: cat.almacenes || [],
         armariosPorAlmacen: cat.armariosPorAlmacen || {},
+        sedes: cat.sedes || [],
+        aduanasPorSede: cat.aduanasPorSede || {},
       });
     });
   }, []);

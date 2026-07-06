@@ -18,7 +18,7 @@ import { getUsers, postUser, putUser, deleteUserHandler, postResetPassword, post
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem } from './controllers/adminController.js';
-import { getCatalogo, postAlmacen, postArmario } from './controllers/ubicacionController.js';
+import { getCatalogo, postAlmacen, postArmario, postSede, patchAlmacenSede } from './controllers/ubicacionController.js';
 import { getTipos } from './controllers/tiposController.js';
 import docsRouter from './routes/docs.js';
 import {
@@ -130,6 +130,8 @@ app.get('/api/ubicacion/catalogo', getCatalogo);
 app.get('/api/tipos', getTipos);
 app.post('/api/admin/catalogo/almacen', requireAuth, requireAdmin, postAlmacen);
 app.post('/api/admin/catalogo/armario', requireAuth, requireAdmin, postArmario);
+app.post('/api/admin/catalogo/sede', requireAuth, requireAdmin, postSede);
+app.patch('/api/admin/catalogo/almacen-sede', requireAuth, requireAdmin, patchAlmacenSede);
 
 // Inventario
 app.get('/api/inventario', getInventario);

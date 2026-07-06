@@ -1,8 +1,10 @@
 import { getSupabase } from '../db/supabase.js';
 import { canonicalAlmacenCode, migrateCatalogoStructure, SEDE_DEFAULT } from './ubicacionUtils.js';
+import { bootstrapSedesCatalog } from './sedeBootstrap.js';
 
 const CONFIG_KEYS = [
   'nextAlmacenNum',
+  'nextSedeNum',
   'estanteMin',
   'estanteMax',
   'contenedorReglas',
@@ -27,7 +29,10 @@ function buildCatalogoFromRows(sedesRows, almacenesRows, armariosRows, configRow
 
   const sedes = {};
   for (const s of sedesRows || []) {
-    sedes[s.codigo] = { nombre: s.nombre };
+    sedes[s.codigo] = {
+      nombre: s.nombre,
+      aduana: s.aduana || null,
+    };
   }
 
   const almacenes = {};
@@ -49,15 +54,18 @@ function buildCatalogoFromRows(sedesRows, almacenesRows, armariosRows, configRow
     };
   }
 
-  return migrateCatalogoStructure({
-    sedes,
-    almacenes,
-    nextAlmacenNum: config.nextAlmacenNum ?? 2,
-    estanteMin: config.estanteMin ?? 1,
-    estanteMax: config.estanteMax ?? 9,
-    contenedorReglas: config.contenedorReglas,
-    contenedorEspecial: config.contenedorEspecial ?? 'SC',
-  });
+  return bootstrapSedesCatalog(
+    migrateCatalogoStructure({
+      sedes,
+      almacenes,
+      nextAlmacenNum: config.nextAlmacenNum ?? 2,
+      nextSedeNum: config.nextSedeNum ?? 2,
+      estanteMin: config.estanteMin ?? 1,
+      estanteMax: config.estanteMax ?? 9,
+      contenedorReglas: config.contenedorReglas,
+      contenedorEspecial: config.contenedorEspecial ?? 'SC',
+    })
+  );
 }
 
 function catalogoToDbPayload(catalogo) {
@@ -73,6 +81,7 @@ function catalogoToDbPayload(catalogo) {
   const sedesRows = Object.entries(migrated.sedes || {}).map(([codigo, info]) => ({
     codigo,
     nombre: info.nombre || codigo,
+    aduana: info.aduana || null,
   }));
 
   const armariosRows = [];
@@ -193,6 +202,42 @@ export async function saveCatalogoToDb(catalogo) {
   return migrated;
 }
 
+export async function insertSedeToDb({ codigo, nombre, aduana }) {
+  const supabase = getSupabase();
+  const { error } = await supabase.from('catalogo_sedes').insert({
+    codigo,
+    nombre,
+    aduana: aduana || null,
+  });
+  if (error) throw Object.assign(new Error(error.message), { status: error.code === '23505' ? 409 : 500 });
+}
+
+export async function updateSedeAduanaInDb(codigo, aduana) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('catalogo_sedes')
+    .update({ aduana, nombre: undefined })
+    .eq('codigo', codigo);
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+}
+
+export async function updateAlmacenSedeInDb(almacen, sedeCodigo) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('catalogo_almacenes')
+    .update({ sede_codigo: sedeCodigo })
+    .eq('codigo', almacen);
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+}
+
+export async function updateNextSedeNumInDb(nextNum) {
+  const supabase = getSupabase();
+  const { error } = await supabase
+    .from('catalogo_config')
+    .upsert({ key: 'nextSedeNum', value: nextNum }, { onConflict: 'key' });
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+}
+
 export async function insertAlmacenToDb({ codigo, tipo, nombre, sedeCodigo = 'SED001', nextArmarioNum = 0 }) {
   const supabase = getSupabase();
   const { error } = await supabase.from('catalogo_almacenes').insert({
@@ -289,10 +334,18 @@ export async function ensureCatalogoSeededInDb(defaultCatalogo) {
 
   const current = await loadCatalogoFromDb();
   if (current && Object.keys(current.almacenes || {}).length > 0) {
-    return syncMissingFromContenedores(current);
+    const bootstrapped = bootstrapSedesCatalog(current);
+    const needsSave =
+      JSON.stringify(bootstrapped.sedes) !== JSON.stringify(current.sedes) ||
+      JSON.stringify(bootstrapped.almacenes) !== JSON.stringify(current.almacenes);
+    if (needsSave) {
+      await saveCatalogoToDb(bootstrapped);
+      console.log('[Catalogo] Sedes/aduanas bootstrap aplicado en Supabase');
+    }
+    return syncMissingFromContenedores(bootstrapped);
   }
 
-  const seeded = migrateCatalogoStructure(defaultCatalogo);
+  const seeded = bootstrapSedesCatalog(migrateCatalogoStructure(defaultCatalogo));
   await saveCatalogoToDb(seeded);
   console.log('[Catalogo] Seed inicial escrito en Supabase');
   return syncMissingFromContenedores(seeded);

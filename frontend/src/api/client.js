@@ -99,6 +99,10 @@ export const api = {
     request('/api/admin/catalogo/almacen', { method: 'POST', body: JSON.stringify(body) }),
   adminCreateArmario: (body) =>
     request('/api/admin/catalogo/armario', { method: 'POST', body: JSON.stringify(body) }),
+  adminCreateSede: (body) =>
+    request('/api/admin/catalogo/sede', { method: 'POST', body: JSON.stringify(body) }),
+  adminAssignAlmacenSede: (body) =>
+    request('/api/admin/catalogo/almacen-sede', { method: 'PATCH', body: JSON.stringify(body) }),
   egreso: (body) => request('/api/egreso', { method: 'POST', body: JSON.stringify(body) }),
   ingreso: (body) => request('/api/ingreso', { method: 'POST', body: JSON.stringify(body) }),
   sync: (actions) => request('/api/sync', { method: 'POST', body: JSON.stringify(actions) }),

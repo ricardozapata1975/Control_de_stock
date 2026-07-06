@@ -43,6 +43,29 @@ export function getAlmacenesForSede(catalogo, sede) {
   return all.filter((a) => String(a.sede || SEDE_DEFAULT).toUpperCase() === code);
 }
 
+export function getAduanaForSede(catalogo, sede) {
+  const code = String(sede || SEDE_DEFAULT).toUpperCase();
+  if (catalogo?.aduanasPorSede?.[code]) return catalogo.aduanasPorSede[code];
+  const found = getSedesFromCatalog(catalogo).find((s) => String(s.codigo).toUpperCase() === code);
+  return found?.aduana || null;
+}
+
+export function resolveAduanaUbicacion(catalogo, sede) {
+  const aduana = getAduanaForSede(catalogo, sede);
+  if (!aduana) return null;
+  return {
+    sede: codeFromSede(sede),
+    almacen: aduana.almacen,
+    armario: aduana.armario || 'A00',
+    estante: aduana.estante || 'E01',
+    contenedor: aduana.contenedor || 'C01',
+  };
+}
+
+function codeFromSede(sede) {
+  return String(sede || SEDE_DEFAULT).toUpperCase();
+}
+
 export function getAlmacenNombreFromCatalog(catalogo, almacen) {
   const code = String(almacen || ALMACEN_DEFAULT).toUpperCase();
   const found = catalogo?.almacenes?.find((a) => String(a.codigo).toUpperCase() === code);

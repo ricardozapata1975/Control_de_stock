@@ -78,7 +78,14 @@ export function listSedes() {
   return Object.entries(sedesMap).map(([codigo, info]) => ({
     codigo,
     nombre: info?.nombre || codigo,
+    aduana: info?.aduana || null,
   }));
+}
+
+export function getAduanaUbicacion(sede) {
+  const code = canonicalSedeCode(sede || SEDE_DEFAULT) || SEDE_DEFAULT;
+  const info = sedesMap[code];
+  return info?.aduana || null;
 }
 
 export function getSedeInfo(sede) {
