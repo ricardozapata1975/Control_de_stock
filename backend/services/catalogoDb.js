@@ -11,6 +11,35 @@ const CONFIG_KEYS = [
   'contenedorEspecial',
 ];
 
+function isMissingTableError(error) {
+  if (!error) return false;
+  const msg = String(error.message || '');
+  return (
+    error.code === '42P01' ||
+    error.code === 'PGRST205' ||
+    /does not exist/i.test(msg) ||
+    /schema cache/i.test(msg) ||
+    /could not find the table/i.test(msg)
+  );
+}
+
+function isMissingColumnError(error, column) {
+  if (!error) return false;
+  const msg = String(error.message || '');
+  const col = String(column || '');
+  return (
+    error.code === '42703' ||
+    (col && new RegExp(`\\b${col}\\b`, 'i').test(msg) && /column/i.test(msg))
+  );
+}
+
+async function isSedesTableAvailable(supabase) {
+  const { error } = await supabase.from('catalogo_sedes').select('codigo').limit(1);
+  if (!error) return true;
+  if (isMissingTableError(error)) return false;
+  throw Object.assign(new Error(error.message), { status: 500 });
+}
+
 function rowToConfigValue(key, value) {
   if (value === undefined || value === null) return null;
   if (key === 'contenedorEspecial') return JSON.stringify(String(value));
@@ -108,7 +137,7 @@ async function isCatalogoDbAvailable() {
   const supabase = getSupabase();
   const { error } = await supabase.from('catalogo_almacenes').select('codigo').limit(1);
   if (!error) return true;
-  if (error.code === '42P01' || /does not exist/i.test(error.message || '')) {
+  if (error.code === '42P01' || isMissingTableError(error)) {
     console.warn(
       '[Catalogo] Tablas catalogo_* no encontradas en Supabase. Ejecutá supabase/patch-catalogo.sql'
     );
@@ -122,21 +151,29 @@ export async function loadCatalogoFromDb() {
   if (!available) return null;
 
   const supabase = getSupabase();
+  const sedesTableOk = await isSedesTableAvailable(supabase).catch(() => false);
+
   const [sedRes, almRes, armRes, cfgRes] = await Promise.all([
-    supabase.from('catalogo_sedes').select('*').order('codigo'),
+    sedesTableOk
+      ? supabase.from('catalogo_sedes').select('*').order('codigo')
+      : Promise.resolve({ data: [], error: null }),
     supabase.from('catalogo_almacenes').select('*').order('codigo'),
     supabase.from('catalogo_armarios').select('*').order('almacen_codigo').order('codigo'),
     supabase.from('catalogo_config').select('*'),
   ]);
 
-  if (sedRes.error && sedRes.error.code !== '42P01') {
+  if (!sedesTableOk) {
+    console.warn(
+      '[Catalogo] Tabla catalogo_sedes no encontrada. El servidor arranca igual; ejecutá supabase/patch-sedes.sql en Supabase.'
+    );
+  } else if (sedRes.error && !isMissingTableError(sedRes.error)) {
     throw Object.assign(new Error(sedRes.error.message), { status: 500 });
   }
   if (almRes.error) throw Object.assign(new Error(almRes.error.message), { status: 500 });
   if (armRes.error) throw Object.assign(new Error(armRes.error.message), { status: 500 });
   if (cfgRes.error) throw Object.assign(new Error(cfgRes.error.message), { status: 500 });
 
-  return buildCatalogoFromRows(sedRes.data, almRes.data, armRes.data, cfgRes.data);
+  return buildCatalogoFromRows(sedRes.data || [], almRes.data, armRes.data, cfgRes.data);
 }
 
 export async function saveCatalogoToDb(catalogo) {
@@ -178,12 +215,21 @@ export async function saveCatalogoToDb(catalogo) {
   }
 
   if (sedesRows.length) {
-    const { error } = await supabase.from('catalogo_sedes').upsert(sedesRows, { onConflict: 'codigo' });
-    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+    const sedesTableOk = await isSedesTableAvailable(supabase).catch(() => false);
+    if (sedesTableOk) {
+      const { error } = await supabase.from('catalogo_sedes').upsert(sedesRows, { onConflict: 'codigo' });
+      if (error && !isMissingTableError(error)) {
+        throw Object.assign(new Error(error.message), { status: 500 });
+      }
+    }
   }
 
   if (almacenesRows.length) {
-    const { error } = await supabase.from('catalogo_almacenes').upsert(almacenesRows, { onConflict: 'codigo' });
+    let { error } = await supabase.from('catalogo_almacenes').upsert(almacenesRows, { onConflict: 'codigo' });
+    if (error && isMissingColumnError(error, 'sede_codigo')) {
+      const rowsSinSede = almacenesRows.map(({ sede_codigo, ...rest }) => rest);
+      ({ error } = await supabase.from('catalogo_almacenes').upsert(rowsSinSede, { onConflict: 'codigo' }));
+    }
     if (error) throw Object.assign(new Error(error.message), { status: 500 });
   }
 
@@ -204,6 +250,11 @@ export async function saveCatalogoToDb(catalogo) {
 
 export async function insertSedeToDb({ codigo, nombre, aduana }) {
   const supabase = getSupabase();
+  const available = await isSedesTableAvailable(supabase).catch(() => false);
+  if (!available) {
+    console.warn('[Catalogo] insertSedeToDb omitido: falta tabla catalogo_sedes');
+    return;
+  }
   const { error } = await supabase.from('catalogo_sedes').insert({
     codigo,
     nombre,
@@ -214,19 +265,28 @@ export async function insertSedeToDb({ codigo, nombre, aduana }) {
 
 export async function updateSedeAduanaInDb(codigo, aduana) {
   const supabase = getSupabase();
+  const available = await isSedesTableAvailable(supabase).catch(() => false);
+  if (!available) {
+    console.warn('[Catalogo] updateSedeAduanaInDb omitido: falta tabla catalogo_sedes');
+    return;
+  }
   const { error } = await supabase
     .from('catalogo_sedes')
-    .update({ aduana, nombre: undefined })
+    .update({ aduana })
     .eq('codigo', codigo);
   if (error) throw Object.assign(new Error(error.message), { status: 500 });
 }
 
 export async function updateAlmacenSedeInDb(almacen, sedeCodigo) {
   const supabase = getSupabase();
-  const { error } = await supabase
+  let { error } = await supabase
     .from('catalogo_almacenes')
     .update({ sede_codigo: sedeCodigo })
     .eq('codigo', almacen);
+  if (error && isMissingColumnError(error, 'sede_codigo')) {
+    console.warn('[Catalogo] sede_codigo no existe en catalogo_almacenes; ejecutá patch-sedes.sql');
+    return;
+  }
   if (error) throw Object.assign(new Error(error.message), { status: 500 });
 }
 
@@ -240,13 +300,18 @@ export async function updateNextSedeNumInDb(nextNum) {
 
 export async function insertAlmacenToDb({ codigo, tipo, nombre, sedeCodigo = 'SED001', nextArmarioNum = 0 }) {
   const supabase = getSupabase();
-  const { error } = await supabase.from('catalogo_almacenes').insert({
+  let payload = {
     codigo,
     sede_codigo: sedeCodigo,
     tipo,
     nombre,
     next_armario_num: nextArmarioNum,
-  });
+  };
+  let { error } = await supabase.from('catalogo_almacenes').insert(payload);
+  if (error && isMissingColumnError(error, 'sede_codigo')) {
+    const { sede_codigo, ...rest } = payload;
+    ({ error } = await supabase.from('catalogo_almacenes').insert(rest));
+  }
   if (error) throw Object.assign(new Error(error.message), { status: error.code === '23505' ? 409 : 500 });
 }
 
