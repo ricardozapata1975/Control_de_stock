@@ -580,7 +580,7 @@ export default function Agenda() {
                   {empresaForm.logoUrl && (
                     <button
                       type="button"
-                      className="mt-2 text-sm text-danger underline"
+                      className="mt-2 text-sm text-amber-700 underline dark:text-amber-300"
                       onClick={() => removeAsset('logo')}
                       disabled={!!uploading}
                     >
@@ -606,7 +606,7 @@ export default function Agenda() {
                   {empresaForm.firmaUrl && (
                     <button
                       type="button"
-                      className="mt-2 text-sm text-danger underline"
+                      className="mt-2 text-sm text-amber-700 underline dark:text-amber-300"
                       onClick={() => removeAsset('firma')}
                       disabled={!!uploading}
                     >
