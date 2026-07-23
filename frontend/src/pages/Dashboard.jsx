@@ -18,7 +18,7 @@ const DEFAULT_PAGE_SIZE = 25;
 
 export default function Dashboard() {
   const navigate = useNavigate();
-  const { isAdmin } = useAuth();
+  const { isAdmin, sede, sedeNombre } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
   const {
     inventario,
@@ -28,6 +28,7 @@ export default function Dashboard() {
     filters,
     setFilters,
     resetFilters,
+    setSessionSede,
     fetchInventario,
     clearError,
   } = useStore();
@@ -49,21 +50,32 @@ export default function Dashboard() {
     const codigo = searchParams.get('codigo');
     const tipoUbicacion = searchParams.get('tipoUbicacion') || '';
     if (codigo) {
-      setFilters({ ...DEFAULT_FILTERS, codigo, scanType: tipoUbicacion, armario: '' });
+      setFilters({
+        ...DEFAULT_FILTERS,
+        sede: sede || '',
+        codigo,
+        scanType: tipoUbicacion,
+        armario: '',
+      });
     } else {
       resetFilters();
+      if (sede) setSessionSede(sede);
     }
     // Solo al montar Inventario: no restaurar filtros de otra pantalla en la misma sesión.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   useEffect(() => {
-    Promise.all([api.catalogoUbicacion(), api.tipos()]).then(([cat, tiposData]) => {
+    if (sede) setSessionSede(sede);
+  }, [sede, setSessionSede]);
+
+  useEffect(() => {
+    Promise.all([api.catalogoUbicacion(sede ? { sede } : {}), api.tipos()]).then(([cat, tiposData]) => {
       setCatalogoAlmacenes(cat.almacenes || []);
       setArmariosPorAlmacen(cat.armariosPorAlmacen || {});
       setTipos(tiposData.tipos || []);
     });
-  }, []);
+  }, [sede]);
 
   useEffect(() => {
     if (!catalogoAlmacenes.length && !tipos.length) return;
@@ -107,7 +119,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchInventario();
-  }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.codigo]);
+  }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.codigo, filters.sede]);
 
   const scanLabel = useMemo(() => {
     if (!filters.codigo) return null;
@@ -187,8 +199,15 @@ export default function Dashboard() {
 
   return (
     <div className="w-full min-w-0">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="page-title">Inventario</h2>
+      <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
+        <div>
+          <h2 className="page-title">Inventario</h2>
+          {(sedeNombre || sede) && (
+            <p className="text-sm text-muted">
+              Sucursal: <strong className="text-content">{sedeNombre || sede}</strong>
+            </p>
+          )}
+        </div>
         <button
           type="button"
           className="btn-secondary py-2 text-base"

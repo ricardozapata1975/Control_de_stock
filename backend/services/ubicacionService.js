@@ -28,7 +28,7 @@ function isDemoMode() {
   return config.demoMode;
 }
 
-export function getCatalogoUbicacion(almacenFilter) {
+export function getCatalogoUbicacion(almacenFilter, sedeFilter) {
   const estantes = Array.from({ length: 9 }, (_, i) => {
     const code = `E${String(i + 1).padStart(2, '0')}`;
     return { codigo: code, nombre: `Estante ${i + 1}` };
@@ -38,16 +38,18 @@ export function getCatalogoUbicacion(almacenFilter) {
   const aduanasPorSede = Object.fromEntries(
     sedes.filter((s) => s.aduana).map((s) => [s.codigo, { ...s.aduana, sedeNombre: s.nombre }])
   );
+  const almacenes = listAlmacenes(sedeFilter || undefined);
   return {
     sedes,
     aduanasPorSede,
-    almacenes: listAlmacenes(),
+    almacenes,
     armarios: almacenFilter ? listArmarios(almacenFilter) : [],
     armariosPorAlmacen,
     estantes,
     contenedorOpcional: true,
     contenedorValidos: getContenedorHelpText(),
     almacenDefault: ALMACEN_DEFAULT,
+    sedeFilter: sedeFilter || null,
   };
 }
 

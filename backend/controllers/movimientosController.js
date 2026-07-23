@@ -12,12 +12,15 @@ export async function getMovimientos(req, res) {
     desde: req.query.desde,
     hasta: req.query.hasta,
     pendiente: req.query.pendiente,
+    sede: req.query.sede || req.user?.sede || '',
   });
   res.json({ movimientos, total: movimientos.length });
 }
 
 export async function getPendientes(req, res) {
-  const movimientos = await listPendientes();
+  const movimientos = await listPendientes({
+    sede: req.query.sede || req.user?.sede || '',
+  });
   res.json({ movimientos, total: movimientos.length });
 }
 

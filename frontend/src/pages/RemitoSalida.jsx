@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api/client';
+import { useAuth } from '../auth/AuthProvider';
 import ClienteAutocomplete from '../components/ClienteAutocomplete';
 import RemitoDocument from '../components/RemitoDocument';
 import RemitoRecibir from '../components/RemitoRecibir';
@@ -73,11 +74,12 @@ function itemDescripcionRemito(linea) {
 }
 
 export default function RemitoSalida() {
+  const { sede: sessionSede, sedeNombre } = useAuth();
   const [vista, setVista] = useState('emitir');
   const [tipoRemito, setTipoRemito] = useState('venta');
   const [inventario, setInventario] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ q: '', almacen: '', armario: '', tipo: '' });
+  const [filters, setFilters] = useState({ q: '', almacen: '', armario: '', tipo: '', sede: '' });
   const [catalogo, setCatalogo] = useState({ almacenes: [], armariosPorAlmacen: {}, sedes: [], aduanasPorSede: {} });
   const [tipos, setTipos] = useState([]);
   const [cart, setCart] = useState(() => new Map());
@@ -106,15 +108,27 @@ export default function RemitoSalida() {
   );
 
   useEffect(() => {
+    if (sessionSede) {
+      setFilters((prev) => ({ ...prev, sede: sessionSede }));
+      setSedeOrigen(sessionSede);
+      setSedeDestino(sessionSede);
+    }
+  }, [sessionSede]);
+
+  useEffect(() => {
     setLoading(true);
     api
       .inventario(filters)
       .then((data) => setInventario(data.items || []))
       .finally(() => setLoading(false));
-  }, [filters.q, filters.almacen, filters.armario, filters.tipo]);
+  }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.sede]);
 
   useEffect(() => {
-    Promise.all([api.catalogoUbicacion(), api.tipos(), api.empresasEmisoras()])
+    Promise.all([
+      api.catalogoUbicacion(sessionSede ? { sede: sessionSede } : {}),
+      api.tipos(),
+      api.empresasEmisoras(),
+    ])
       .then(([cat, tiposData, empresasData]) => {
         setCatalogo({
           almacenes: cat.almacenes || [],
@@ -130,7 +144,7 @@ export default function RemitoSalida() {
         }
       })
       .catch(() => {});
-  }, []);
+  }, [sessionSede]);
 
   useEffect(() => {
     if (!empresaId || confirmado) return;
@@ -492,7 +506,8 @@ export default function RemitoSalida() {
         <div>
           <h2 className="page-title">Remito de salida</h2>
           <p className="text-muted">
-            Seleccioná ítems desde la lista, la cámara o un lector láser; confirmá el remito para
+            Sucursal: <strong className="text-content">{sedeNombre || sessionSede || '—'}</strong>
+            . Seleccioná ítems desde la lista, la cámara o un lector láser; confirmá el remito para
             descontar stock y luego imprimí.
           </p>
         </div>

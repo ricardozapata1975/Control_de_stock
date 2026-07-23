@@ -185,6 +185,19 @@ export async function demoListInventario(filters = {}) {
       (i) => String(i.codigoFabricante || '').trim().toLowerCase() === codigoFab.toLowerCase()
     );
   }
+  const sede = String(filters.sede || '').trim().toUpperCase();
+  if (sede) {
+    items = items.filter((i) => {
+      if (i.sede) return String(i.sede).toUpperCase() === sede;
+      const alms = new Set(
+        Object.entries(db.catalogo?.almacenes || {})
+          .filter(([, info]) => (info?.sede || 'SED001') === sede)
+          .map(([c]) => c)
+      );
+      // demo: filtrar por almacén del contenedor si hay catálogo; si no, dejar pasar SED001 default
+      return !i.almacen || i.almacen.startsWith('ALM') ? true : alms.size ? alms.has(i.almacen) : true;
+    });
+  }
 
   const lowStock = items.filter((i) => Number(i.cantidad) === 0);
   return { items, total: items.length, lowStock, lowStockThreshold: config.lowStockThreshold };

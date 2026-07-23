@@ -43,8 +43,20 @@ export function AuthProvider({ children }) {
     try {
       const data = await api.me();
       if (data?.user) {
-        persist(data.user, savedToken);
-        return data.user;
+        // Conservar sedeNombre del perfil local si /me no lo trae con nombre
+        const prev = (() => {
+          try {
+            return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}');
+          } catch {
+            return {};
+          }
+        })();
+        const merged = {
+          ...data.user,
+          sedeNombre: data.user.sedeNombre || prev.sedeNombre || null,
+        };
+        persist(merged, savedToken);
+        return merged;
       }
     } catch {
       clearSession();
@@ -91,8 +103,12 @@ export function AuthProvider({ children }) {
     };
   }, [clearSession, refreshSession]);
 
-  const login = useCallback(async (username, password) => {
-    const data = await api.login({ username: username.trim(), password: password || '' });
+  const login = useCallback(async (username, password, sede) => {
+    const data = await api.login({
+      username: username.trim(),
+      password: password || '',
+      sede,
+    });
     return data;
   }, []);
 
@@ -110,8 +126,23 @@ export function AuthProvider({ children }) {
   );
 
   const setPassword = useCallback(
-    async ({ setupToken, token: changeToken, newPassword, confirmPassword }) => {
-      const data = await api.setPassword({ setupToken, token: changeToken, newPassword, confirmPassword });
+    async ({ setupToken, token: changeToken, newPassword, confirmPassword, sede }) => {
+      const data = await api.setPassword({
+        setupToken,
+        token: changeToken,
+        newPassword,
+        confirmPassword,
+        sede,
+      });
+      persist(data.user, data.token);
+      return data.user;
+    },
+    [persist]
+  );
+
+  const switchSede = useCallback(
+    async (sede) => {
+      const data = await api.switchSede({ sede });
       persist(data.user, data.token);
       return data.user;
     },
@@ -133,11 +164,14 @@ export function AuthProvider({ children }) {
         beginFirstLogin,
         completeLogin,
         setPassword,
+        switchSede,
         logout,
         refreshSession,
         ready,
         isLoggedIn: !!user && !!token,
         isAdmin,
+        sede: user?.sede || null,
+        sedeNombre: user?.sedeNombre || null,
       }}
     >
       {children}

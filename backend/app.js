@@ -13,9 +13,9 @@ import {
   postIngreso,
 } from './controllers/movimientosController.js';
 import { postSync } from './controllers/syncController.js';
-import { getMe, postFirstLogin, postForgotPassword, postLogin, postResetPassword as postAuthResetPassword, postSetPassword } from './controllers/authController.js';
+import { getMe, postFirstLogin, postForgotPassword, postLogin, postResetPassword as postAuthResetPassword, postSetPassword, postSwitchSede } from './controllers/authController.js';
 import { getUsers, postUser, putUser, deleteUserHandler, postResetPassword, postSendWelcome, getUsersImportSpecHandler, postUsersImportPreview, postUsersImport } from './controllers/userController.js';
-import { requireAuth, requireAdmin } from './middleware/auth.js';
+import { requireAuth, requireAdmin, optionalAuth } from './middleware/auth.js';
 import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem, postItemImagen, deleteItemImagen } from './controllers/adminController.js';
 import { getCatalogo, postAlmacen, postArmario, postSede, patchAlmacenSede } from './controllers/ubicacionController.js';
@@ -126,16 +126,15 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Catálogo de ubicación (almacén / armario / estante / contenedor)
-app.get('/api/ubicacion/catalogo', getCatalogo);
+app.get('/api/ubicacion/catalogo', optionalAuth, getCatalogo);
+
+app.get('/api/inventario', optionalAuth, getInventario);
+app.get('/inventario', optionalAuth, getInventario);
 app.get('/api/tipos', getTipos);
 app.post('/api/admin/catalogo/almacen', requireAuth, requireAdmin, postAlmacen);
 app.post('/api/admin/catalogo/armario', requireAuth, requireAdmin, postArmario);
 app.post('/api/admin/catalogo/sede', requireAuth, requireAdmin, postSede);
 app.patch('/api/admin/catalogo/almacen-sede', requireAuth, requireAdmin, patchAlmacenSede);
-
-// Inventario
-app.get('/api/inventario', getInventario);
-app.get('/inventario', getInventario);
 
 // Contenedores / QR
 app.get('/api/contenedor', getContenedores);
@@ -143,9 +142,9 @@ app.get('/api/contenedor/:codigo', getContenedor);
 app.get('/contenedor/:codigo', getContenedor);
 
 // Movimientos
-app.get('/api/movimientos', getMovimientos);
-app.get('/movimientos', getMovimientos);
-app.get('/api/movimientos/pendientes', getPendientes);
+app.get('/api/movimientos', optionalAuth, getMovimientos);
+app.get('/movimientos', optionalAuth, getMovimientos);
+app.get('/api/movimientos/pendientes', optionalAuth, getPendientes);
 
 app.post('/api/egreso', requireAuth, postEgreso);
 app.post('/egreso', requireAuth, postEgreso);
@@ -170,6 +169,7 @@ app.get('/api/auth/me', requireAuth, getMe);
 app.post('/api/auth/login', postLogin);
 app.post('/api/auth/first-login', postFirstLogin);
 app.post('/api/auth/set-password', postSetPassword);
+app.post('/api/auth/sede', requireAuth, postSwitchSede);
 app.post('/api/auth/forgot-password', postForgotPassword);
 app.post('/api/auth/reset-password', postAuthResetPassword);
 

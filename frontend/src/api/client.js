@@ -75,6 +75,8 @@ export const api = {
     request('/api/auth/first-login', { method: 'POST', body: JSON.stringify(body) }),
   setPassword: (body) =>
     request('/api/auth/set-password', { method: 'POST', body: JSON.stringify(body) }),
+  switchSede: (body) =>
+    request('/api/auth/sede', { method: 'POST', body: JSON.stringify(body) }),
   forgotPassword: (body) =>
     request('/api/auth/forgot-password', { method: 'POST', body: JSON.stringify(body) }),
   resetPassword: (body) =>
@@ -90,10 +92,19 @@ export const api = {
     const qs = new URLSearchParams(params).toString();
     return request(`/api/movimientos${qs ? `?${qs}` : ''}`);
   },
-  pendientes: () => request('/api/movimientos/pendientes'),
+  pendientes: (params = {}) => {
+    const qs = new URLSearchParams(params).toString();
+    return request(`/api/movimientos/pendientes${qs ? `?${qs}` : ''}`);
+  },
   contenedor: (codigo) => request(`/api/contenedor/${encodeURIComponent(codigo)}`),
   contenedores: () => request('/api/contenedor'),
-  catalogoUbicacion: () => request('/api/ubicacion/catalogo'),
+  catalogoUbicacion: (params = {}) => {
+    const clean = Object.fromEntries(
+      Object.entries(params).filter(([, v]) => v != null && String(v).trim() !== '')
+    );
+    const qs = new URLSearchParams(clean).toString();
+    return request(`/api/ubicacion/catalogo${qs ? `?${qs}` : ''}`);
+  },
   tipos: () => request('/api/tipos'),
   adminCreateAlmacen: (body) =>
     request('/api/admin/catalogo/almacen', { method: 'POST', body: JSON.stringify(body) }),

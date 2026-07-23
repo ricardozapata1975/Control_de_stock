@@ -1,5 +1,6 @@
 import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
+import { almacenesCodigosDeSede } from './sedeScope.js';
 
 /** PostgREST embed falla si movimientos no tiene FK a items/contenedores (producción legacy). */
 async function enrichMovimientosRows(supabase, rows) {
@@ -15,7 +16,7 @@ async function enrichMovimientosRows(supabase, rows) {
     contIds.length
       ? supabase
           .from('contenedores')
-          .select('id, codigo, ubicacion, estante, contenedor')
+          .select('id, codigo, ubicacion, estante, contenedor, almacen, sede')
           .in('id', contIds)
       : { data: [], error: null },
   ]);
@@ -73,7 +74,19 @@ export async function listMovimientos(filters = {}) {
   if (error) throw Object.assign(new Error(error.message), { status: 500 });
 
   const egresoRows = await enrichMovimientosRows(supabase, data || []);
-  const egresoIds = egresoRows.map((r) => r.id);
+  const sede = String(filters.sede || '').trim().toUpperCase();
+  const scopedRows = sede
+    ? egresoRows.filter((row) => {
+        const cont = row.contenedores;
+        if (!cont) return false;
+        if (cont.sede) return String(cont.sede).toUpperCase() === sede;
+        // fallback: almacén de la sede
+        const alms = almacenesCodigosDeSede(sede);
+        return alms.includes(String(cont.almacen || '').toUpperCase());
+      })
+    : egresoRows;
+
+  const egresoIds = scopedRows.map((r) => r.id);
   let ingresoByEgreso = {};
 
   if (egresoIds.length) {
@@ -88,11 +101,11 @@ export async function listMovimientos(filters = {}) {
     );
   }
 
-  return egresoRows.map((row) => mapMovimiento(row, ingresoByEgreso[row.id]));
+  return scopedRows.map((row) => mapMovimiento(row, ingresoByEgreso[row.id]));
 }
 
-export async function listPendientes() {
-  if (demo.isDemoMode()) return demo.demoListMovimientos({ pendiente: true });
+export async function listPendientes(filters = {}) {
+  if (demo.isDemoMode()) return demo.demoListMovimientos({ pendiente: true, ...filters });
 
   const supabase = getSupabase();
   const { data: ids, error } = await supabase.from('v_egresos_pendientes').select('id');
@@ -106,7 +119,17 @@ export async function listPendientes() {
 
   if (err2) throw Object.assign(new Error(err2.message), { status: 500 });
   const rows = await enrichMovimientosRows(supabase, data || []);
-  return rows.map((m) => mapMovimiento(m, null));
+  const sede = String(filters.sede || '').trim().toUpperCase();
+  const scoped = sede
+    ? rows.filter((row) => {
+        const cont = row.contenedores;
+        if (!cont) return false;
+        if (cont.sede) return String(cont.sede).toUpperCase() === sede;
+        const alms = almacenesCodigosDeSede(sede);
+        return alms.includes(String(cont.almacen || '').toUpperCase());
+      })
+    : rows;
+  return scoped.map((m) => mapMovimiento(m, null));
 }
 
 function mapMovimiento(row, ingresoRow = null) {

@@ -32,6 +32,10 @@ async function attachSessionUser(req, res) {
     role: normalizeRole(sessionUser.role),
     mustChangePassword: sessionUser.mustChangePassword,
     isActive: sessionUser.isActive,
+    sedeDefault: sessionUser.sedeDefault || null,
+    // Sucursal de trabajo de esta sesión (elige en login / cambio de sede)
+    sede: payload.sede || sessionUser.sedeDefault || null,
+    sedeNombre: payload.sedeNombre || null,
   };
   return req.user;
 }
@@ -49,5 +53,33 @@ export async function requireAdmin(req, res, next) {
     return res.status(403).json({ error: 'Acceso solo para administrador' });
   }
   req.admin = user;
+  next();
+}
+
+/** Adjunta usuario si hay token válido; no bloquea si no hay sesión. */
+export async function optionalAuth(req, res, next) {
+  const token = extractToken(req);
+  if (!token) return next();
+
+  const payload = verifyToken(token);
+  if (!payload?.id) return next();
+
+  try {
+    const sessionUser = await getSessionUser(payload.id);
+    if (!sessionUser) return next();
+    req.user = {
+      id: sessionUser.id,
+      username: sessionUser.username,
+      name: sessionUser.name,
+      role: normalizeRole(sessionUser.role),
+      mustChangePassword: sessionUser.mustChangePassword,
+      isActive: sessionUser.isActive,
+      sedeDefault: sessionUser.sedeDefault || null,
+      sede: payload.sede || sessionUser.sedeDefault || null,
+      sedeNombre: payload.sedeNombre || null,
+    };
+  } catch {
+    /* ignore */
+  }
   next();
 }

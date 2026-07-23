@@ -3,7 +3,8 @@ import { addAlmacen, addArmario, addSede, assignAlmacenSede } from '../services/
 
 export async function getCatalogo(req, res) {
   const almacen = req.query?.almacen || '';
-  res.json(getCatalogoUbicacion(almacen || undefined));
+  const sede = req.query?.sede || req.user?.sede || '';
+  res.json(getCatalogoUbicacion(almacen || undefined, sede || undefined));
 }
 
 export async function postAlmacen(req, res) {

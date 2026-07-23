@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { api } from '../api/client';
 import { isAdminRole } from '../utils/role';
 import ThemeToggle from '../components/ThemeToggle';
 
@@ -11,6 +12,8 @@ export default function Login() {
   const [step, setStep] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPasswordValue] = useState('');
+  const [sede, setSede] = useState('');
+  const [sedes, setSedes] = useState([]);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [setupToken, setSetupToken] = useState('');
@@ -18,6 +21,18 @@ export default function Login() {
   const [pendingUser, setPendingUser] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    api
+      .catalogoUbicacion()
+      .then((cat) => {
+        const list = cat.sedes || [];
+        setSedes(list);
+        if (list.length === 1) setSede(list[0].codigo);
+        else if (list.some((s) => s.codigo === 'SED001')) setSede('SED001');
+      })
+      .catch(() => setSedes([]));
+  }, []);
 
   if (isLoggedIn) {
     return <Navigate to={isAdmin ? '/admin' : '/'} replace />;
@@ -40,9 +55,13 @@ export default function Login() {
   const submitLogin = async (e) => {
     e.preventDefault();
     setError('');
+    if (!sede) {
+      setError('Elegí la sucursal donde vas a trabajar');
+      return;
+    }
     setLoading(true);
     try {
-      const data = await login(username, password);
+      const data = await login(username, password, sede);
       if (data.requiresPasswordSetup) {
         setPendingUser(data.user);
         setSetupToken(data.setupToken);
@@ -67,6 +86,10 @@ export default function Login() {
   const submitFirstLogin = async (e) => {
     e.preventDefault();
     setError('');
+    if (!sede) {
+      setError('Elegí la sucursal donde vas a trabajar');
+      return;
+    }
     setLoading(true);
     try {
       const data = await beginFirstLogin(username);
@@ -83,6 +106,10 @@ export default function Login() {
   const submitPassword = async (e) => {
     e.preventDefault();
     setError('');
+    if (!sede) {
+      setError('Elegí la sucursal donde vas a trabajar');
+      return;
+    }
     setLoading(true);
     try {
       const profile = await savePassword({
@@ -90,6 +117,7 @@ export default function Login() {
         token: step === 'change' ? changeToken : undefined,
         newPassword,
         confirmPassword,
+        sede,
       });
       goHome(profile);
     } catch (err) {
@@ -120,6 +148,31 @@ export default function Login() {
         : step === 'change'
           ? `Actualizá la contraseña de ${pendingUser?.name || pendingUser?.username}.`
           : '';
+
+  const sedeSelect = (
+    <div>
+      <label className="text-label" htmlFor="login-sede">
+        Sucursal *
+      </label>
+      <select
+        id="login-sede"
+        className="input-field"
+        value={sede}
+        onChange={(e) => setSede(e.target.value)}
+        required
+      >
+        <option value="">Elegí tu sucursal…</option>
+        {sedes.map((s) => (
+          <option key={s.codigo} value={s.codigo}>
+            {s.nombre || s.codigo}
+          </option>
+        ))}
+      </select>
+      <p className="mt-1 text-xs text-subtle">
+        Vas a ver inventario, alertas e historial solo de esta sucursal.
+      </p>
+    </div>
+  );
 
   return (
     <div className="relative flex min-h-screen flex-col items-center justify-center bg-surface px-6 py-10">
@@ -158,6 +211,7 @@ export default function Login() {
                 onSubmit={submitLogin}
                 className="space-y-4 rounded-lg border border-border bg-surface-muted/60 p-5"
               >
+                {sedeSelect}
                 <div>
                   <label className="text-label" htmlFor="login-username">
                     Usuario
@@ -169,7 +223,6 @@ export default function Login() {
                     onChange={(e) => setUsername(e.target.value)}
                     autoComplete="username"
                     required
-                    autoFocus
                   />
                 </div>
                 <div>
@@ -220,6 +273,7 @@ export default function Login() {
 
           {isFirstStep && (
             <form onSubmit={submitFirstLogin} className="space-y-4">
+              {sedeSelect}
               <div>
                 <label className="text-label" htmlFor="first-login-username">
                   Usuario
@@ -254,6 +308,7 @@ export default function Login() {
 
           {isSetupStep && (
             <form onSubmit={submitPassword} className="space-y-4">
+              {sedeSelect}
               <div>
                 <label className="text-label" htmlFor="new-password">
                   Nueva contraseña

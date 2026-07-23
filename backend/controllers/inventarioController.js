@@ -13,6 +13,7 @@ export async function getInventario(req, res) {
       typeof req.query.codigoFabricante === 'string'
         ? req.query.codigoFabricante.trim()
         : req.query.codigoFabricante || req.query.codigo_fabricante,
+    sede: req.query.sede || req.user?.sede || '',
   });
   res.json(data);
 }

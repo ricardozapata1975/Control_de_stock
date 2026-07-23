@@ -3,12 +3,14 @@ import QrScanner from './QrScanner';
 import { LaserBarcodeCapture } from './AssignBarcodeModal';
 import { formatUbicacionLabel } from '../utils/contenedor';
 import { resolveScanToInventario } from '../utils/resolveScan';
+import { useAuth } from '../auth/AuthProvider';
 
 /**
  * Carga múltiple de ítems al remito por cámara o lector láser.
  * En cada lectura: confirma ítem → pide cantidad → "Leer otro" / "Finalizar".
  */
 export default function RemitoScanLoader({ mode, onAddItem, onClose }) {
+  const { sede } = useAuth();
   const [phase, setPhase] = useState(mode === 'laser' ? 'laser' : 'camera'); // camera | laser | pick | qty | done-msg
   const [candidates, setCandidates] = useState([]);
   const [selected, setSelected] = useState(null);
@@ -51,7 +53,7 @@ export default function RemitoScanLoader({ mode, onAddItem, onClose }) {
     setError('');
     setLooking(true);
     setPhase('looking');
-    const result = await resolveScanToInventario(scan);
+    const result = await resolveScanToInventario(scan, { sede });
     handleResolved(result);
   };
 

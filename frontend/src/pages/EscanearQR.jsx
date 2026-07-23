@@ -4,8 +4,10 @@ import QrScanner from '../components/QrScanner';
 import ScanResultPanel from '../components/ScanResultPanel';
 import { resolveScanToInventario } from '../utils/resolveScan';
 import { QR_TYPES } from '../utils/qrPayload';
+import { useAuth } from '../auth/AuthProvider';
 
 export default function EscanearQR() {
+  const { sede } = useAuth();
   const [scanning, setScanning] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -18,7 +20,7 @@ export default function EscanearQR() {
     setResult(null);
 
     try {
-      const resolved = await resolveScanToInventario(parsed);
+      const resolved = await resolveScanToInventario(parsed, { sede });
       if (!resolved.ok) {
         throw new Error(resolved.error || 'Código no reconocido');
       }

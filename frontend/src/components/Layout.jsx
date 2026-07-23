@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
+import { api } from '../api/client';
 import OfflineStatus from './OfflineStatus';
 import ThemeToggle from './ThemeToggle';
 
@@ -42,14 +43,23 @@ function NavItems({ items, onNavigate }) {
 }
 
 export default function Layout() {
-  const { user, logout, isAdmin } = useAuth();
+  const { user, logout, isAdmin, sede, sedeNombre, switchSede } = useAuth();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [sedes, setSedes] = useState([]);
+  const [switching, setSwitching] = useState(false);
   const navLinks = isAdmin ? [...links, ...adminLinks] : links;
 
   useEffect(() => {
     setDrawerOpen(false);
   }, [location.pathname]);
+
+  useEffect(() => {
+    api
+      .catalogoUbicacion()
+      .then((cat) => setSedes(cat.sedes || []))
+      .catch(() => setSedes([]));
+  }, []);
 
   useEffect(() => {
     if (!drawerOpen) return;
@@ -65,6 +75,43 @@ export default function Layout() {
   }, [drawerOpen]);
 
   const closeDrawer = () => setDrawerOpen(false);
+
+  const onChangeSede = async (codigo) => {
+    if (!codigo || codigo === sede) return;
+    setSwitching(true);
+    try {
+      await switchSede(codigo);
+      window.location.reload();
+    } catch (err) {
+      window.alert(err.message || 'No se pudo cambiar de sucursal');
+    } finally {
+      setSwitching(false);
+    }
+  };
+
+  const sedeBlock = (
+    <div className="min-w-0">
+      <label className="text-[10px] font-semibold uppercase tracking-wide text-subtle">Sucursal</label>
+      {sedes.length > 1 ? (
+        <select
+          className="mt-0.5 w-full rounded-md border border-border bg-surface-muted px-2 py-1.5 text-sm font-semibold text-content"
+          value={sede || ''}
+          disabled={switching}
+          onChange={(e) => onChangeSede(e.target.value)}
+        >
+          {sedes.map((s) => (
+            <option key={s.codigo} value={s.codigo}>
+              {s.nombre || s.codigo}
+            </option>
+          ))}
+        </select>
+      ) : (
+        <p className="truncate text-sm font-semibold text-accent">
+          {sedeNombre || sede || '—'}
+        </p>
+      )}
+    </div>
+  );
 
   return (
     <div className="flex h-screen overflow-hidden bg-surface">
@@ -96,6 +143,7 @@ export default function Layout() {
         </nav>
 
         <div className="shrink-0 space-y-3 border-t border-border p-4">
+          {sedeBlock}
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-content">{user?.name}</p>
             {isAdmin && (
@@ -134,7 +182,9 @@ export default function Layout() {
 
             <div className="min-w-0 flex-1 lg:hidden">
               <h1 className="truncate text-sm font-bold text-content">Inventario Px Control</h1>
-              <p className="truncate text-xs text-content-muted">{user?.name}</p>
+              <p className="truncate text-xs text-content-muted">
+                {sedeNombre || sede || user?.name}
+              </p>
             </div>
 
             <div className="ml-auto flex items-center gap-2 lg:hidden">

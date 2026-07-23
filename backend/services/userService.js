@@ -7,6 +7,7 @@ import { config } from '../config.js';
 import { getSupabase } from '../db/supabase.js';
 import { sign, verifyToken } from './jwtService.js';
 import { isEmailConfigured, sendPasswordResetEmail, sendWelcomeEmail } from './emailService.js';
+import { resolveSedeInfo } from './sedeScope.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DEMO_USERS_PATH = path.join(__dirname, '../data/demo-users.json');
@@ -63,6 +64,7 @@ export function mapUserPublic(row) {
     hasPassword: !!row.password_hash,
     lastLoginAt: row.last_login_at || null,
     createdAt: row.created_at || null,
+    sedeDefault: row.sede_default || null,
   };
 }
 
@@ -222,24 +224,40 @@ async function updateUserRow(id, patch) {
   }
 
   const supabase = getSupabase();
-  const { data, error } = await supabase
-    .from('users')
-    .update({ ...patch, updated_at: now })
-    .eq('id', id)
-    .select('*')
-    .single();
+  let payload = { ...patch, updated_at: now };
+  let { data, error } = await supabase.from('users').update(payload).eq('id', id).select('*').single();
+
+  if (
+    error &&
+    payload.sede_default !== undefined &&
+    /sede_default|schema cache|column/i.test(error.message || '')
+  ) {
+    const { sede_default, ...rest } = payload;
+    ({ data, error } = await supabase.from('users').update(rest).eq('id', id).select('*').single());
+  }
+
   if (error) throw Object.assign(new Error(error.message), { status: 500 });
   return data;
 }
 
-function buildAuthProfile(row) {
-  return {
+function buildAuthProfile(row, sedeInfo = null) {
+  const profile = {
     id: row.id,
     username: row.username,
     name: row.display_name,
     role: normalizeRole(row.role),
     mustChangePassword: !!row.must_change_password,
   };
+  if (sedeInfo) {
+    profile.sede = sedeInfo.codigo;
+    profile.sedeNombre = sedeInfo.nombre;
+  }
+  return profile;
+}
+
+function resolveLoginSede(requestedSede, row) {
+  const preferred = requestedSede || row?.sede_default || 'SED001';
+  return resolveSedeInfo(preferred);
 }
 
 /** Primer ingreso: valida usuario sin contraseña y devuelve token para crearla */
@@ -263,7 +281,7 @@ export async function beginFirstLogin(username) {
   };
 }
 
-export async function authenticateUser(username, password) {
+export async function authenticateUser(username, password, { sede } = {}) {
   const row = await findByUsername(username);
   if (!row || row.is_active === false) return null;
 
@@ -272,6 +290,7 @@ export async function authenticateUser(username, password) {
       requiresPasswordSetup: true,
       setupToken: signSetupToken(row.id),
       user: mapUserPublic(row),
+      sedePending: sede || row.sede_default || null,
     };
   }
 
@@ -280,33 +299,47 @@ export async function authenticateUser(username, password) {
   const ok = await verifyPassword(pass, row.password_hash);
   if (!ok) return null;
 
-  const profile = buildAuthProfile(row);
-  await updateUserRow(row.id, { last_login_at: new Date().toISOString() });
+  const sedeInfo = resolveLoginSede(sede, row);
+  const profile = buildAuthProfile(row, sedeInfo);
+  await updateUserRow(row.id, {
+    last_login_at: new Date().toISOString(),
+    sede_default: sedeInfo.codigo,
+  });
 
   if (row.must_change_password) {
     return {
       requiresPasswordChange: true,
-      user: mapUserPublic({ ...row, last_login_at: new Date().toISOString() }),
+      user: {
+        ...mapUserPublic({ ...row, last_login_at: new Date().toISOString() }),
+        sede: sedeInfo.codigo,
+        sedeNombre: sedeInfo.nombre,
+      },
       token: sign(profile),
     };
   }
 
   return {
-    user: mapUserPublic({ ...row, last_login_at: new Date().toISOString() }),
+    user: {
+      ...mapUserPublic({ ...row, last_login_at: new Date().toISOString(), sede_default: sedeInfo.codigo }),
+      sede: sedeInfo.codigo,
+      sedeNombre: sedeInfo.nombre,
+    },
     token: sign(profile),
   };
 }
 
-export async function setUserPassword({ setupToken, token, newPassword }) {
+export async function setUserPassword({ setupToken, token, newPassword, sede }) {
   validatePassword(newPassword);
 
   let userId = null;
+  let tokenSede = null;
   if (setupToken) {
     userId = verifySetupToken(setupToken);
   } else if (token) {
     const payload = verifyToken(token);
     if (!payload?.id) throw Object.assign(new Error('Sesión inválida'), { status: 401 });
     userId = payload.id;
+    tokenSede = payload.sede || null;
   }
   if (!userId) throw Object.assign(new Error('Token inválido o expirado'), { status: 401 });
 
@@ -315,16 +348,41 @@ export async function setUserPassword({ setupToken, token, newPassword }) {
     throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
   }
 
+  const sedeInfo = resolveLoginSede(sede || tokenSede, row);
   const password_hash = await hashPassword(newPassword);
   const updated = await updateUserRow(userId, {
     password_hash,
     must_change_password: false,
     last_login_at: new Date().toISOString(),
+    sede_default: sedeInfo.codigo,
   });
 
-  const profile = buildAuthProfile(updated);
+  const profile = buildAuthProfile(updated, sedeInfo);
   return {
-    user: mapUserPublic(updated),
+    user: {
+      ...mapUserPublic(updated),
+      sede: sedeInfo.codigo,
+      sedeNombre: sedeInfo.nombre,
+    },
+    token: sign(profile),
+  };
+}
+
+/** Cambia la sucursal de trabajo de la sesión (nuevo JWT). */
+export async function switchUserSede(userId, sede) {
+  const row = await findById(userId);
+  if (!row || row.is_active === false) {
+    throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
+  }
+  const sedeInfo = resolveSedeInfo(sede);
+  await updateUserRow(userId, { sede_default: sedeInfo.codigo });
+  const profile = buildAuthProfile(row, sedeInfo);
+  return {
+    user: {
+      ...mapUserPublic({ ...row, sede_default: sedeInfo.codigo }),
+      sede: sedeInfo.codigo,
+      sedeNombre: sedeInfo.nombre,
+    },
     token: sign(profile),
   };
 }

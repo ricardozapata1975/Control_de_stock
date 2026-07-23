@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { api } from '../api/client';
+import { useAuth } from '../auth/AuthProvider';
 import { formatFechaDmy } from '../utils/fecha';
 
 const ESTADO_CONFIG = {
@@ -181,6 +182,7 @@ function RemitoDetalleModal({ remitoId, onClose }) {
 }
 
 export default function Historial() {
+  const { sede, sedeNombre } = useAuth();
   const [movimientos, setMovimientos] = useState([]);
   const [loading, setLoading] = useState(false);
   const [persona, setPersona] = useState('');
@@ -195,6 +197,7 @@ export default function Historial() {
       if (persona) params.persona = persona;
       if (desde) params.desde = desde;
       if (hasta) params.hasta = hasta;
+      if (sede) params.sede = sede;
       const data = await api.movimientos(params);
       setMovimientos(data.movimientos);
     } finally {
@@ -204,11 +207,15 @@ export default function Historial() {
 
   useEffect(() => {
     load();
-  }, []);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sede]);
 
   return (
     <div>
-      <h2 className="page-title mb-4">Historial de movimientos</h2>
+      <h2 className="page-title mb-1">Historial de movimientos</h2>
+      <p className="mb-4 text-sm text-muted">
+        Sucursal: <strong className="text-content">{sedeNombre || sede || '—'}</strong>
+      </p>
 
       <div className="card mb-4 grid gap-3 sm:grid-cols-4">
         <input

@@ -11,7 +11,7 @@ function pickBestStockRows(items) {
   return withStock.length ? withStock : items;
 }
 
-export async function resolveScanToInventario(scanOrText) {
+export async function resolveScanToInventario(scanOrText, { sede } = {}) {
   const parsed =
     typeof scanOrText === 'string'
       ? parseQrScan(scanOrText) || { type: 'raw', raw: String(scanOrText).trim() }
@@ -27,12 +27,14 @@ export async function resolveScanToInventario(scanOrText) {
     parsed.itemId ||
     (typeof scanOrText === 'string' ? scanOrText.trim() : '');
 
+  const sedeFilter = sede ? { sede } : {};
+
   try {
     if (parsed.type === QR_TYPES.ITEM && parsed.itemId) {
-      const data = await api.inventario({ itemId: parsed.itemId });
+      const data = await api.inventario({ itemId: parsed.itemId, ...sedeFilter });
       const items = pickBestStockRows(data.items || []);
       if (!items.length) {
-        return { ok: false, error: 'Ítem sin stock en inventario', items: [], raw, parsed };
+        return { ok: false, error: 'Ítem sin stock en inventario de esta sucursal', items: [], raw, parsed };
       }
       return { ok: true, items, raw, parsed, matchType: 'item' };
     }
@@ -40,7 +42,12 @@ export async function resolveScanToInventario(scanOrText) {
     if (parsed.type && parsed.type !== 'raw' && parsed.codigo) {
       try {
         const cont = await api.contenedor(parsed.codigo);
-        const items = pickBestStockRows(cont.items || []);
+        let items = pickBestStockRows(cont.items || []);
+        if (sede) {
+          items = items.filter(
+            (i) => !i.sede || String(i.sede).toUpperCase() === String(sede).toUpperCase()
+          );
+        }
         if (items.length) {
           return { ok: true, items, raw, parsed, matchType: 'ubicacion' };
         }
@@ -54,14 +61,13 @@ export async function resolveScanToInventario(scanOrText) {
       return { ok: false, error: 'Código vacío', items: [], raw: '' };
     }
 
-    const byFab = await api.inventario({ codigoFabricante: code });
+    const byFab = await api.inventario({ codigoFabricante: code, ...sedeFilter });
     const fabItems = pickBestStockRows(byFab.items || []);
     if (fabItems.length) {
       return { ok: true, items: fabItems, raw: code, parsed, matchType: 'fabricante' };
     }
 
-    // Fallback: búsqueda libre por el texto
-    const byQ = await api.inventario({ q: code });
+    const byQ = await api.inventario({ q: code, ...sedeFilter });
     const qItems = (byQ.items || []).filter(
       (i) =>
         String(i.codigoFabricante || '').trim().toLowerCase() === code.toLowerCase() ||
@@ -73,7 +79,7 @@ export async function resolveScanToInventario(scanOrText) {
 
     return {
       ok: false,
-      error: `No se encontró un ítem con el código «${code}»`,
+      error: `No se encontró un ítem con el código «${code}» en esta sucursal`,
       items: [],
       raw: code,
       parsed,
