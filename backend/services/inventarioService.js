@@ -83,6 +83,10 @@ export async function listInventario(filters = {}) {
       query = query.eq('armario', filters.armario);
       if (filters.almacen) query = query.eq('almacen', filters.almacen);
     }
+    const cont = String(filters.contenedor || '').trim().toUpperCase();
+    if (cont) {
+      query = query.eq('contenedor', cont);
+    }
   }
   if (filters.tipo) query = query.ilike('tipo', filters.tipo);
 
@@ -109,6 +113,8 @@ export async function listInventario(filters = {}) {
     fallback = applySedeViaAlmacenes(fallback, sede);
     if (filters.almacen) fallback = fallback.eq('almacen', filters.almacen);
     if (filters.armario) fallback = fallback.eq('armario', filters.armario);
+    const contFb = String(filters.contenedor || '').trim().toUpperCase();
+    if (contFb) fallback = fallback.eq('contenedor', contFb);
     if (filters.tipo) fallback = fallback.ilike('tipo', filters.tipo);
     if (filters.itemId) fallback = fallback.eq('item_id', filters.itemId);
     if (codigoFab) fallback = fallback.eq('codigo_fabricante', codigoFab);

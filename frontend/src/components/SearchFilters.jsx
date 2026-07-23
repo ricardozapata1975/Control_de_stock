@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { ALMACENES, ARMARIOS, getArmarioNombre, getArmariosForAlmacen } from '../utils/ubicacion';
 
 export default function SearchFilters({
@@ -7,6 +8,7 @@ export default function SearchFilters({
   showClear = false,
   almacenes,
   armariosPorAlmacen,
+  contenedores,
   tipos,
   variant = 'full',
 }) {
@@ -21,12 +23,29 @@ export default function SearchFilters({
         }));
 
   const selectedAlmacen = filters.almacen || '';
+  const selectedArmario = filters.armario || '';
   const armarioList = selectedAlmacen
     ? getArmariosForAlmacen({ armariosPorAlmacen }, selectedAlmacen)
     : Object.entries(ARMARIOS).map(([codigo, nombre]) => ({ codigo, nombre }));
 
+  const contenedorOptions = useMemo(() => {
+    const list = Array.isArray(contenedores) ? contenedores : [];
+    const codes = new Set();
+    for (const c of list) {
+      if (selectedAlmacen && c.almacen && c.almacen !== selectedAlmacen) continue;
+      if (selectedArmario && c.armario && c.armario !== selectedArmario) continue;
+      const code = String(c.contenedor || '').trim().toUpperCase();
+      if (code) codes.add(code);
+    }
+    return [...codes].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
+  }, [contenedores, selectedAlmacen, selectedArmario]);
+
   const handleAlmacenChange = (almacen) => {
-    onChange({ almacen, armario: '' });
+    onChange({ almacen, armario: '', contenedor: '' });
+  };
+
+  const handleArmarioChange = (armario) => {
+    onChange({ armario, contenedor: '' });
   };
 
   return (
@@ -40,7 +59,7 @@ export default function SearchFilters({
       )}
       <div
         className={`card grid min-w-0 max-w-full gap-3 overflow-hidden ${
-          ubicacionOnly ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-4'
+          ubicacionOnly ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'
         }`}
       >
       {!ubicacionOnly && (
@@ -74,7 +93,7 @@ export default function SearchFilters({
         <select
           className="input-field max-w-full"
           value={filters.armario}
-          onChange={(e) => onChange({ armario: e.target.value })}
+          onChange={(e) => handleArmarioChange(e.target.value)}
           disabled={!selectedAlmacen}
         >
           <option value="">{selectedAlmacen ? 'Todos' : 'Elegí almacén primero'}</option>
@@ -85,6 +104,30 @@ export default function SearchFilters({
           ))}
         </select>
       </div>
+      {!ubicacionOnly && (
+        <div className="min-w-0">
+          <label className="text-label">Contenedor</label>
+          <select
+            className="input-field max-w-full"
+            value={filters.contenedor || ''}
+            onChange={(e) => onChange({ contenedor: e.target.value })}
+            disabled={!selectedAlmacen}
+          >
+            <option value="">
+              {selectedAlmacen
+                ? contenedorOptions.length
+                  ? 'Todos'
+                  : 'Sin contenedores en esta ubicación'
+                : 'Elegí almacén primero'}
+            </option>
+            {contenedorOptions.map((code) => (
+              <option key={code} value={code}>
+                {code === 'SC' ? 'SC — Sin contenedor' : code}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {!ubicacionOnly && (
         <div className="min-w-0">
           <label className="text-label">Tipo</label>

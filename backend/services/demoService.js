@@ -176,6 +176,10 @@ export async function demoListInventario(filters = {}) {
       items = items.filter((i) => i.armario === filters.armario);
       if (filters.almacen) items = items.filter((i) => i.almacen === filters.almacen);
     }
+    const cont = String(filters.contenedor || '').trim().toUpperCase();
+    if (cont) {
+      items = items.filter((i) => String(i.contenedor || '').trim().toUpperCase() === cont);
+    }
   }
   if (filters.tipo) items = items.filter((i) => i.tipo === filters.tipo);
   if (filters.itemId) items = items.filter((i) => i.itemId === filters.itemId);

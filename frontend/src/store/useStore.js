@@ -5,6 +5,7 @@ export const DEFAULT_FILTERS = {
   q: '',
   almacen: '',
   armario: '',
+  contenedor: '',
   tipo: '',
   codigo: '',
   scanType: '',
@@ -33,6 +34,7 @@ export function hasActiveInventoryFilters(filters = DEFAULT_FILTERS) {
     filters.q?.trim() ||
     filters.almacen ||
     filters.armario ||
+    filters.contenedor ||
     filters.tipo ||
     filters.codigo
   );
@@ -44,6 +46,7 @@ function buildInventarioParams(filters) {
   if (q) params.q = q;
   if (filters.almacen) params.almacen = filters.almacen;
   if (filters.armario) params.armario = filters.armario;
+  if (filters.contenedor) params.contenedor = filters.contenedor;
   if (filters.tipo) params.tipo = filters.tipo;
   if (filters.codigo) params.codigo = filters.codigo;
   if (filters.sede) params.sede = filters.sede;
@@ -77,6 +80,7 @@ export const useStore = create((set, get) => ({
         // al cambiar sucursal, limpiar almacén/armario que podrían no pertenecer
         almacen: '',
         armario: '',
+        contenedor: '',
       },
     });
   },

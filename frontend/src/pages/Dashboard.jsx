@@ -43,6 +43,7 @@ export default function Dashboard() {
   const [pageSize, setPageSize] = useState(DEFAULT_PAGE_SIZE);
   const [catalogoAlmacenes, setCatalogoAlmacenes] = useState([]);
   const [armariosPorAlmacen, setArmariosPorAlmacen] = useState({});
+  const [contenedoresCatalogo, setContenedoresCatalogo] = useState([]);
   const [tipos, setTipos] = useState([]);
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export default function Dashboard() {
         codigo,
         scanType: tipoUbicacion,
         armario: '',
+        contenedor: '',
       });
     } else {
       resetFilters();
@@ -70,10 +72,15 @@ export default function Dashboard() {
   }, [sede, setSessionSede]);
 
   useEffect(() => {
-    Promise.all([api.catalogoUbicacion(sede ? { sede } : {}), api.tipos()]).then(([cat, tiposData]) => {
+    Promise.all([
+      api.catalogoUbicacion(sede ? { sede } : {}),
+      api.tipos(),
+      api.contenedores().catch(() => ({ contenedores: [] })),
+    ]).then(([cat, tiposData, cnt]) => {
       setCatalogoAlmacenes(cat.almacenes || []);
       setArmariosPorAlmacen(cat.armariosPorAlmacen || {});
       setTipos(tiposData.tipos || []);
+      setContenedoresCatalogo(cnt.contenedores || []);
     });
   }, [sede]);
 
@@ -86,6 +93,7 @@ export default function Dashboard() {
     if (filters.almacen && !validAlmacenes.has(filters.almacen)) {
       patch.almacen = '';
       patch.armario = '';
+      patch.contenedor = '';
     }
 
     if (filters.armario && filters.almacen) {
@@ -93,6 +101,7 @@ export default function Dashboard() {
       const validArmarios = new Set(armarios.map((a) => a.codigo));
       if (!validArmarios.has(filters.armario)) {
         patch.armario = '';
+        patch.contenedor = '';
       }
     }
 
@@ -107,19 +116,19 @@ export default function Dashboard() {
 
   useEffect(() => {
     setPage(1);
-  }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.codigo, filters.scanType, pageSize]);
+  }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.codigo, filters.scanType, pageSize]);
 
   useEffect(() => {
     const codigo = searchParams.get('codigo');
     const tipoUbicacion = searchParams.get('tipoUbicacion') || '';
     if (codigo) {
-      setFilters({ codigo, scanType: tipoUbicacion, armario: '' });
+      setFilters({ codigo, scanType: tipoUbicacion, armario: '', contenedor: '' });
     }
   }, [searchParams, setFilters]);
 
   useEffect(() => {
     fetchInventario();
-  }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.codigo, filters.sede]);
+  }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.codigo, filters.sede]);
 
   const scanLabel = useMemo(() => {
     if (!filters.codigo) return null;
@@ -248,7 +257,11 @@ export default function Dashboard() {
         showClear={activeFilters}
         onClear={clearAllFilters}
         onChange={(f) => {
-          if ((f.armario !== undefined && f.armario) || (f.almacen !== undefined && f.almacen)) {
+          if (
+            (f.armario !== undefined && f.armario) ||
+            (f.almacen !== undefined && f.almacen) ||
+            (f.contenedor !== undefined && f.contenedor)
+          ) {
             setFilters({ ...f, codigo: '', scanType: '' });
             setSearchParams({});
           } else {
@@ -257,6 +270,7 @@ export default function Dashboard() {
         }}
         almacenes={catalogoAlmacenes}
         armariosPorAlmacen={armariosPorAlmacen}
+        contenedores={contenedoresCatalogo}
         tipos={tipos}
       />
       {inventario.length > 0 && (
