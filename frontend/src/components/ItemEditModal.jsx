@@ -10,6 +10,7 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
     calibracion: '',
     comentario: '',
     fechaRelevamiento: '',
+    codigoFabricante: '',
   });
 
   useEffect(() => {
@@ -23,6 +24,7 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
       calibracion: item.calibracion || '',
       comentario: item.comentario || '',
       fechaRelevamiento: item.fechaRelevamiento || '',
+      codigoFabricante: item.codigoFabricante || '',
     });
   }, [item]);
 
@@ -95,6 +97,20 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
               value={form.comentario}
               onChange={set('comentario')}
             />
+          </div>
+          <div>
+            <label className="text-label">Código barras / QR (fabricante)</label>
+            <input
+              className="input-field font-mono"
+              placeholder="Código original del fabricante"
+              value={form.codigoFabricante}
+              onChange={set('codigoFabricante')}
+              autoComplete="off"
+              spellCheck={false}
+            />
+            <p className="mt-1 text-xs text-subtle">
+              Podés editarlo o borrarlo. También se carga con la cámara desde el detalle del ítem.
+            </p>
           </div>
           <div>
             <label className="text-label">Fecha relevamiento</label>
