@@ -5,6 +5,7 @@ import RemitoDocument from '../components/RemitoDocument';
 import RemitoRecibir from '../components/RemitoRecibir';
 import RemitoScanLoader from '../components/RemitoScanLoader';
 import SearchFilters from '../components/SearchFilters';
+import ItemThumb from '../components/ItemThumb';
 import UbicacionSelector from '../components/UbicacionSelector';
 import { formatUbicacionLabel } from '../utils/contenedor';
 import { ALMACEN_DEFAULT, buildCedeLabel, getAlmacenNombreFromCatalog, resolveAduanaUbicacion, SEDE_DEFAULT } from '../utils/ubicacion';
@@ -461,7 +462,7 @@ export default function RemitoSalida() {
   };
 
   return (
-    <div className="pb-28">
+    <div className="w-full min-w-0 max-w-full overflow-x-hidden pb-28">
       <div className="mb-4 flex flex-wrap gap-2 print:hidden">
         <button
           type="button"
@@ -616,14 +617,14 @@ export default function RemitoSalida() {
             <p className="text-muted print:hidden">Sin resultados para estos filtros.</p>
           )}
 
-          <div className="card mb-6 grid gap-2 print:hidden sm:grid-cols-2 lg:grid-cols-3">
+          <div className="card mb-6 grid w-full min-w-0 max-w-full gap-2 overflow-hidden print:hidden sm:grid-cols-2 lg:grid-cols-3">
             {filteredItems.map((item) => {
               const stockId = item.stockId || item.id;
               const checked = isInCart(stockId);
               return (
                 <label
                   key={stockId}
-                  className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 transition hover:bg-surface-hover ${
+                  className={`flex min-w-0 max-w-full cursor-pointer items-start gap-2.5 overflow-hidden rounded-lg border p-3 transition hover:bg-surface-hover ${
                     checked ? 'border-accent bg-accent/10' : 'border-border text-content'
                   }`}
                 >
@@ -631,14 +632,17 @@ export default function RemitoSalida() {
                     type="checkbox"
                     checked={checked}
                     onChange={() => toggleItem(item)}
-                    className="mt-1 h-5 w-5 shrink-0 accent-accent"
+                    className="mt-1.5 h-5 w-5 shrink-0 accent-accent"
                   />
-                  <span className="min-w-0 flex-1">
-                    <span className="block font-semibold text-content">{itemLinea(item)}</span>
-                    <span className="block truncate text-xs text-content-muted">
+                  <ItemThumb item={item} />
+                  <span className="min-w-0 flex-1 overflow-hidden">
+                    <span className="block break-words font-semibold leading-snug text-content">
+                      {itemLinea(item)}
+                    </span>
+                    <span className="mt-0.5 block break-words text-xs text-content-muted">
                       {formatUbicacionLabel(item)}
                     </span>
-                    <span className="mt-1 inline-block rounded bg-surface-muted px-2 py-0.5 text-xs font-bold">
+                    <span className="mt-1 inline-block max-w-full rounded bg-surface-muted px-2 py-0.5 text-xs font-bold">
                       Stock: {item.cantidad}
                     </span>
                     {item.codigoFabricante && (

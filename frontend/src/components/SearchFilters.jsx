@@ -30,7 +30,7 @@ export default function SearchFilters({
   };
 
   return (
-    <div className="mb-4 space-y-2">
+    <div className="mb-4 min-w-0 max-w-full space-y-2">
       {showClear && onClear && (
         <div className="flex justify-end">
           <button type="button" className="text-sm font-semibold text-accent underline hover:text-content" onClick={onClear}>
@@ -39,25 +39,25 @@ export default function SearchFilters({
         </div>
       )}
       <div
-        className={`card grid gap-3 ${
+        className={`card grid min-w-0 max-w-full gap-3 overflow-hidden ${
           ubicacionOnly ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-4'
         }`}
       >
       {!ubicacionOnly && (
-        <div>
+        <div className="min-w-0">
           <label className="text-label">Buscar</label>
           <input
-            className="input-field"
+            className="input-field max-w-full"
             placeholder="Nombre, tipo, comentario, calibración..."
             value={filters.q}
             onChange={(e) => onChange({ q: e.target.value })}
           />
         </div>
       )}
-      <div>
+      <div className="min-w-0">
         <label className="text-label">Almacén</label>
         <select
-          className="input-field"
+          className="input-field max-w-full"
           value={filters.almacen || ''}
           onChange={(e) => handleAlmacenChange(e.target.value)}
         >
@@ -69,10 +69,10 @@ export default function SearchFilters({
           ))}
         </select>
       </div>
-      <div>
+      <div className="min-w-0">
         <label className="text-label">Armario / estantería</label>
         <select
-          className="input-field"
+          className="input-field max-w-full"
           value={filters.armario}
           onChange={(e) => onChange({ armario: e.target.value })}
           disabled={!selectedAlmacen}
@@ -86,10 +86,10 @@ export default function SearchFilters({
         </select>
       </div>
       {!ubicacionOnly && (
-        <div>
+        <div className="min-w-0">
           <label className="text-label">Tipo</label>
           <select
-            className="input-field"
+            className="input-field max-w-full"
             value={filters.tipo}
             onChange={(e) => onChange({ tipo: e.target.value })}
           >

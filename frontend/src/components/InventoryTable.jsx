@@ -1,25 +1,5 @@
 import { formatUbicacionLabel } from '../utils/contenedor';
-
-function ItemThumb({ item }) {
-  if (item.imagenUrl) {
-    return (
-      <img
-        src={item.imagenUrl}
-        alt=""
-        className="h-11 w-11 shrink-0 rounded-md object-cover bg-slate-900 ring-1 ring-border"
-        loading="lazy"
-      />
-    );
-  }
-  return (
-    <div
-      className="flex h-11 w-11 shrink-0 items-center justify-center rounded-md bg-surface-muted text-[10px] font-bold uppercase text-subtle ring-1 ring-border"
-      aria-hidden
-    >
-      {(item.nombre || '?').slice(0, 2)}
-    </div>
-  );
-}
+import ItemThumb from './ItemThumb';
 
 export default function InventoryTable({ items, onRowClick, loading = false }) {
   if (loading && !items.length) {
