@@ -730,6 +730,26 @@ export async function demoUpdateItem(itemId, body) {
   return { ok: true, item: { id: item.id, ...mapItemCampos(item), nombre: item.nombre } };
 }
 
+export async function demoUploadItemImage(itemId, { dataUrl }) {
+  const db = await load();
+  const item = db.items.find((i) => i.id === itemId);
+  if (!item) throw Object.assign(new Error('Ítem no encontrado'), { status: 404 });
+  item.imagen_url = dataUrl;
+  item.imagen_path = `demo/${itemId}.jpg`;
+  await save(db);
+  return { ok: true, itemId, imagenUrl: dataUrl, imagenPath: item.imagen_path };
+}
+
+export async function demoDeleteItemImage(itemId) {
+  const db = await load();
+  const item = db.items.find((i) => i.id === itemId);
+  if (!item) throw Object.assign(new Error('Ítem no encontrado'), { status: 404 });
+  item.imagen_url = null;
+  item.imagen_path = null;
+  await save(db);
+  return { ok: true, itemId };
+}
+
 export async function demoBajaItem(itemId, adminName) {
   const db = await load();
   const item = db.items.find((i) => i.id === itemId);

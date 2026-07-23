@@ -4,6 +4,7 @@ import { config } from '../config.js';
 import { resolveUbicacion } from './ubicacionService.js';
 import { mapUbicacionFields } from './ubicacionUtils.js';
 import { itemPartialUpdateFromBody, itemPayloadFromBody, mapItemCampos } from './itemFields.js';
+import { publicItemImageUrl } from './itemImageService.js';
 
 function isDemoMode() {
   return config.demoMode;
@@ -42,6 +43,7 @@ export async function listItemsAdmin() {
       tipo: item.tipo,
       detalle: item.detalle,
       ...mapItemCampos(item),
+      imagenUrl: item.imagen_url || publicItemImageUrl(item.imagen_path) || '',
       activo: item.activo !== false,
       totalStock,
       ubicaciones: rows.map((s) => {

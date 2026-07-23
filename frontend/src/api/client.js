@@ -119,6 +119,15 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({}),
     }),
+  adminUploadItemImage: (itemId, body) =>
+    request(`/api/admin/items/${encodeURIComponent(itemId)}/imagen`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  adminDeleteItemImage: (itemId) =>
+    request(`/api/admin/items/${encodeURIComponent(itemId)}/imagen`, {
+      method: 'DELETE',
+    }),
   importEspecificacion: () => request('/api/admin/import/especificacion'),
   importCsv: (body) =>
     request('/api/admin/import/csv', { method: 'POST', body: JSON.stringify(body) }),

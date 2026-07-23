@@ -17,7 +17,7 @@ import { getMe, postFirstLogin, postForgotPassword, postLogin, postResetPassword
 import { getUsers, postUser, putUser, deleteUserHandler, postResetPassword, postSendWelcome, getUsersImportSpecHandler, postUsersImportPreview, postUsersImport } from './controllers/userController.js';
 import { requireAuth, requireAdmin } from './middleware/auth.js';
 import { ensureSeedAdmin } from './services/userService.js';
-import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem } from './controllers/adminController.js';
+import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem, postItemImagen, deleteItemImagen } from './controllers/adminController.js';
 import { getCatalogo, postAlmacen, postArmario, postSede, patchAlmacenSede } from './controllers/ubicacionController.js';
 import { getTipos } from './controllers/tiposController.js';
 import docsRouter from './routes/docs.js';
@@ -102,7 +102,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: '2mb' }));
+app.use(express.json({ limit: '3mb' }));
 
 // Documentación estática
 app.use('/docs', docsRouter);
@@ -178,6 +178,8 @@ app.get('/api/admin/items', requireAdmin, getAdminItems);
 app.post('/api/admin/stock/alta', requireAdmin, postAltaStock);
 app.put('/api/admin/items/:itemId', requireAdmin, putUpdateItem);
 app.post('/api/admin/items/:itemId/baja', requireAdmin, postBajaItem);
+app.post('/api/admin/items/:itemId/imagen', requireAuth, postItemImagen);
+app.delete('/api/admin/items/:itemId/imagen', requireAuth, deleteItemImagen);
 app.get('/api/admin/import/especificacion', requireAdmin, getEspecificacion);
 app.get('/api/admin/import/plantilla.csv', requireAdmin, getPlantilla);
 app.post('/api/admin/import/csv', requireAdmin, postImportCsv);

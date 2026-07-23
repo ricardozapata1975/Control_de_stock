@@ -10,6 +10,7 @@ import PaginationBar from '../components/PaginationBar';
 import ItemEditModal from '../components/ItemEditModal';
 import ItemDetailModal from '../components/ItemDetailModal';
 import AssignBarcodeModal from '../components/AssignBarcodeModal';
+import CaptureItemPhotoModal from '../components/CaptureItemPhotoModal';
 import { buildEgresoUrlForItem, getUbicacionScanLabel, parsedFromCodigoParam } from '../utils/scanMatch';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -33,6 +34,7 @@ export default function Dashboard() {
 
   const [detailItem, setDetailItem] = useState(null);
   const [barcodeItem, setBarcodeItem] = useState(null);
+  const [photoItem, setPhotoItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -283,6 +285,10 @@ export default function Dashboard() {
             setDetailItem(null);
             setBarcodeItem(item);
           }}
+          onAssignPhoto={(item) => {
+            setDetailItem(null);
+            setPhotoItem(item);
+          }}
         />
       )}
 
@@ -292,6 +298,17 @@ export default function Dashboard() {
           onClose={() => setBarcodeItem(null)}
           onSaved={() => {
             setBarcodeItem(null);
+            fetchInventario();
+          }}
+        />
+      )}
+
+      {photoItem && (
+        <CaptureItemPhotoModal
+          item={photoItem}
+          onClose={() => setPhotoItem(null)}
+          onSaved={() => {
+            setPhotoItem(null);
             fetchInventario();
           }}
         />

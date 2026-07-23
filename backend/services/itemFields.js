@@ -12,6 +12,8 @@ export function mapItemCampos(item) {
     comentario: item.comentario || '',
     fechaRelevamiento: fecha ? String(fecha).slice(0, 10) : null,
     codigoFabricante: codigoFab ? String(codigoFab).trim() : '',
+    imagenUrl: item.imagen_url || item.imagenUrl || '',
+    imagenPath: item.imagen_path || item.imagenPath || '',
   };
 }
 

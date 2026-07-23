@@ -1,4 +1,5 @@
 import { altaStock, bajaItem, listItemsAdmin, updateItem } from '../services/adminService.js';
+import { deleteItemImage, uploadItemImage } from '../services/itemImageService.js';
 
 export async function getAdminItems(req, res) {
   const items = await listItemsAdmin();
@@ -19,5 +20,17 @@ export async function putUpdateItem(req, res) {
 export async function postBajaItem(req, res) {
   const { itemId } = req.params;
   const result = await bajaItem(itemId, req.admin?.name || 'admin');
+  res.json(result);
+}
+
+export async function postItemImagen(req, res) {
+  const { itemId } = req.params;
+  const result = await uploadItemImage(itemId, req.body);
+  res.json(result);
+}
+
+export async function deleteItemImagen(req, res) {
+  const { itemId } = req.params;
+  const result = await deleteItemImage(itemId);
   res.json(result);
 }

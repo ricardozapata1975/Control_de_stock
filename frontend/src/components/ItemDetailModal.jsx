@@ -37,6 +37,7 @@ export default function ItemDetailModal({
   onEdit,
   onDelete,
   onAssignBarcode,
+  onAssignPhoto,
 }) {
   useEffect(() => {
     if (!item) return undefined;
@@ -78,6 +79,16 @@ export default function ItemDetailModal({
           </button>
         </div>
 
+        {item.imagenUrl ? (
+          <div className="mb-5 overflow-hidden rounded-lg border border-border bg-slate-950">
+            <img
+              src={item.imagenUrl}
+              alt={item.nombre}
+              className="mx-auto max-h-56 w-full object-contain"
+            />
+          </div>
+        ) : null}
+
         <dl className="space-y-4 text-sm">
           <DetailRow label="Herramienta" value={herramientaLabel(item)} />
           <DetailRow label="Ubicación" value={formatUbicacionLabel(item)} multiline />
@@ -117,6 +128,13 @@ export default function ItemDetailModal({
               Egreso
             </button>
           )}
+          <button
+            type="button"
+            className="btn-secondary min-h-[44px] flex-1 sm:flex-none"
+            onClick={() => onAssignPhoto?.(item)}
+          >
+            {item.imagenUrl ? 'Cambiar foto' : 'Agregar foto'}
+          </button>
           <button
             type="button"
             className="btn-secondary min-h-[44px] flex-1 sm:flex-none"

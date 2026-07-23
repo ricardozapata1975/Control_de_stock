@@ -3,6 +3,7 @@ import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
 import { mapUbicacionFields, parseCodigo, codigoLookupVariants } from './ubicacionUtils.js';
 import { mapItemCampos } from './itemFields.js';
+import { publicItemImageUrl } from './itemImageService.js';
 
 function mapInventarioRow(row) {
   const ubi = mapUbicacionFields({
@@ -13,6 +14,9 @@ function mapInventarioRow(row) {
     contenedor: row.contenedor,
     ubicacion: row.ubicacion,
   });
+  const campos = mapItemCampos(row);
+  const imagenUrl =
+    campos.imagenUrl || publicItemImageUrl(row.imagen_path || row.imagenPath) || '';
   return {
     id: row.stock_id || row.id,
     stockId: row.stock_id || row.id,
@@ -25,10 +29,11 @@ function mapInventarioRow(row) {
     modelo: row.modelo,
     tipo: row.tipo,
     detalle: row.detalle,
-    ...mapItemCampos(row),
+    ...campos,
+    imagenUrl,
     cantidad: row.cantidad,
     codigo: row.contenedor_codigo || row.contenedorCodigo,
-    codigoFabricante: row.codigo_fabricante || row.codigoFabricante || '',
+    codigoFabricante: row.codigo_fabricante || row.codigoFabricante || campos.codigoFabricante || '',
   };
 }
 
