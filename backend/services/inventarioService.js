@@ -28,6 +28,7 @@ function mapInventarioRow(row) {
     ...mapItemCampos(row),
     cantidad: row.cantidad,
     codigo: row.contenedor_codigo || row.contenedorCodigo,
+    codigoFabricante: row.codigo_fabricante || row.codigoFabricante || '',
   };
 }
 
@@ -64,15 +65,51 @@ export async function listInventario(filters = {}) {
     }
   }
   if (filters.tipo) query = query.ilike('tipo', filters.tipo);
+
+  const codigoFab = String(filters.codigoFabricante || filters.codigo_fabricante || '').trim();
+  if (codigoFab) {
+    query = query.eq('codigo_fabricante', codigoFab);
+  }
+
+  if (filters.itemId) {
+    query = query.eq('item_id', filters.itemId);
+  }
+
   if (filters.q) {
     const term = `%${filters.q}%`;
     query = query.or(
-      `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term}`
+      `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term},codigo_fabricante.ilike.${term}`
     );
   }
 
   const { data, error } = await query;
-  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+  if (error) {
+    // Vista aún sin columna: degradar búsqueda de texto sin tumbar el listado
+    if (
+      filters.q &&
+      /codigo_fabricante/i.test(error.message || '') &&
+      !codigoFab
+    ) {
+      let fallback = supabase.from('v_inventario').select('*').order('nombre');
+      if (filters.tipo) fallback = fallback.ilike('tipo', filters.tipo);
+      if (filters.almacen) fallback = fallback.eq('almacen', filters.almacen);
+      if (filters.armario) fallback = fallback.eq('armario', filters.armario);
+      const term = `%${filters.q}%`;
+      fallback = fallback.or(
+        `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term}`
+      );
+      const { data: data2, error: err2 } = await fallback;
+      if (err2) throw Object.assign(new Error(err2.message), { status: 500 });
+      const items = (data2 || []).map(mapInventarioRow);
+      return {
+        items,
+        total: items.length,
+        lowStock: items.filter((i) => Number(i.cantidad) === 0),
+        lowStockThreshold: config.lowStockThreshold,
+      };
+    }
+    throw Object.assign(new Error(error.message), { status: 500 });
+  }
 
   const items = (data || []).map(mapInventarioRow);
   const lowStock = items.filter((i) => Number(i.cantidad) === 0);

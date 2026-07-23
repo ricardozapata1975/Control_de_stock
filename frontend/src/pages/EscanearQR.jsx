@@ -2,7 +2,7 @@ import { useState } from 'react';
 import FocusedPage from '../components/FocusedPage';
 import QrScanner from '../components/QrScanner';
 import ScanResultPanel from '../components/ScanResultPanel';
-import { api } from '../api/client';
+import { resolveScanToInventario } from '../utils/resolveScan';
 import { QR_TYPES } from '../utils/qrPayload';
 
 export default function EscanearQR() {
@@ -18,21 +18,26 @@ export default function EscanearQR() {
     setResult(null);
 
     try {
-      if (parsed.type === QR_TYPES.ITEM && parsed.itemId) {
-        const data = await api.inventario();
-        const items = (data.items || []).filter((i) => i.itemId === parsed.itemId);
-        if (!items.length) throw new Error('Artículo no encontrado en inventario');
-        setResult({ parsed, items, contenedor: null });
-      } else if (parsed.codigo) {
-        const data = await api.contenedor(parsed.codigo);
-        setResult({
-          parsed,
-          items: data.items || [],
-          contenedor: data.contenedor,
-        });
-      } else {
-        throw new Error('Código QR no reconocido');
+      const resolved = await resolveScanToInventario(parsed);
+      if (!resolved.ok) {
+        throw new Error(resolved.error || 'Código no reconocido');
       }
+
+      const displayParsed =
+        resolved.matchType === 'fabricante'
+          ? {
+              type: QR_TYPES.ITEM,
+              itemId: resolved.items[0]?.itemId,
+              codigoFabricante: resolved.raw,
+            }
+          : resolved.parsed;
+
+      setResult({
+        parsed: displayParsed,
+        items: resolved.items,
+        contenedor: null,
+        matchType: resolved.matchType,
+      });
     } catch (e) {
       setError(e.message || 'No se pudo cargar el escaneo');
     } finally {
@@ -49,13 +54,14 @@ export default function EscanearQR() {
     <FocusedPage>
       <h2 className="page-title mb-2 text-center sm:text-left">ESCANEAR QR</h2>
       <p className="mb-6 text-center text-muted sm:text-left">
-        Escaneá y elegí <strong className="text-content">egreso</strong> o{' '}
-        <strong className="text-content">ingreso</strong> sin salir del flujo.
+        Escaneá QR de ubicación, código de fabricante o el QR del ítem. Luego elegí{' '}
+        <strong className="text-content">egreso</strong> o{' '}
+        <strong className="text-content">ingreso</strong>.
       </p>
 
       {!result && (
         <button type="button" className="btn-primary mx-auto block w-full sm:mx-0" onClick={() => setScanning(true)}>
-          📷 Escanear QR
+          Escanear QR / código de barras
         </button>
       )}
 
@@ -81,13 +87,14 @@ export default function EscanearQR() {
         />
       )}
 
-      {!result && (
-        <p className="mt-4 text-center text-sm text-muted sm:text-left">
-          Ubicación: A01 · A01-E03 · A01-E03-C05 / B12 / H01 / SC · o QR de artículo con item_id
-        </p>
+      {scanning && (
+        <QrScanner
+          mode="raw"
+          title="Escanear QR / código"
+          onClose={() => setScanning(false)}
+          onScan={handleScan}
+        />
       )}
-
-      {scanning && <QrScanner onScan={handleScan} onClose={() => setScanning(false)} />}
     </FocusedPage>
   );
 }

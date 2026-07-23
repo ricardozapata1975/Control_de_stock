@@ -56,6 +56,11 @@ export default function ScanResultPanel({ parsed, contenedor, items = [], onScan
         {isItem && (
           <p className="font-mono text-sm text-subtle">item_id: {parsed.itemId}</p>
         )}
+        {parsed.codigoFabricante && (
+          <p className="font-mono text-sm text-subtle">
+            Cód. fabricante: {parsed.codigoFabricante}
+          </p>
+        )}
         {isUbicacion && (
           <p className="mt-2 text-sm text-content-muted">
             {items.length} herramienta{items.length !== 1 ? 's' : ''} en esta ubicación

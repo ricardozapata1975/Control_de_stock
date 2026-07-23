@@ -8,6 +8,11 @@ export async function getInventario(req, res) {
     armario: req.query.armario,
     tipo: req.query.tipo,
     codigo: req.query.codigo,
+    itemId: req.query.itemId,
+    codigoFabricante:
+      typeof req.query.codigoFabricante === 'string'
+        ? req.query.codigoFabricante.trim()
+        : req.query.codigoFabricante || req.query.codigo_fabricante,
   });
   res.json(data);
 }

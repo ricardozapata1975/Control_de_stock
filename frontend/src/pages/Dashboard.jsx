@@ -9,6 +9,7 @@ import InventoryTable from '../components/InventoryTable';
 import PaginationBar from '../components/PaginationBar';
 import ItemEditModal from '../components/ItemEditModal';
 import ItemDetailModal from '../components/ItemDetailModal';
+import AssignBarcodeModal from '../components/AssignBarcodeModal';
 import { buildEgresoUrlForItem, getUbicacionScanLabel, parsedFromCodigoParam } from '../utils/scanMatch';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
@@ -31,6 +32,7 @@ export default function Dashboard() {
   } = useStore();
 
   const [detailItem, setDetailItem] = useState(null);
+  const [barcodeItem, setBarcodeItem] = useState(null);
   const [editItem, setEditItem] = useState(null);
   const [saving, setSaving] = useState(false);
   const [actionError, setActionError] = useState('');
@@ -277,6 +279,21 @@ export default function Dashboard() {
           onEgreso={handleEgreso}
           onEdit={handleEditFromDetail}
           onDelete={handleDelete}
+          onAssignBarcode={(item) => {
+            setDetailItem(null);
+            setBarcodeItem(item);
+          }}
+        />
+      )}
+
+      {barcodeItem && (
+        <AssignBarcodeModal
+          item={barcodeItem}
+          onClose={() => setBarcodeItem(null)}
+          onSaved={() => {
+            setBarcodeItem(null);
+            fetchInventario();
+          }}
         />
       )}
 

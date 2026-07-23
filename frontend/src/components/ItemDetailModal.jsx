@@ -36,6 +36,7 @@ export default function ItemDetailModal({
   onEgreso,
   onEdit,
   onDelete,
+  onAssignBarcode,
 }) {
   useEffect(() => {
     if (!item) return undefined;
@@ -95,6 +96,16 @@ export default function ItemDetailModal({
             }
           />
           <DetailRow label="Tipo" value={item.tipo} />
+          <DetailRow
+            label="Cód. fabricante"
+            value={
+              item.codigoFabricante ? (
+                <span className="font-mono">{item.codigoFabricante}</span>
+              ) : (
+                'Sin asignar'
+              )
+            }
+          />
           <DetailRow label="Calibración" value={item.calibracion} multiline />
           <DetailRow label="Comentario" value={item.comentario} multiline />
           <DetailRow label="Fecha relev." value={formatFecha(item.fecha_relevamiento)} />
@@ -106,6 +117,13 @@ export default function ItemDetailModal({
               Egreso
             </button>
           )}
+          <button
+            type="button"
+            className="btn-secondary min-h-[44px] flex-1 sm:flex-none"
+            onClick={() => onAssignBarcode?.(item)}
+          >
+            {item.codigoFabricante ? 'Cambiar código de barras' : 'Agregar código de barras'}
+          </button>
           {isAdmin && (
             <>
               <button

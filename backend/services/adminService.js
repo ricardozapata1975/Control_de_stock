@@ -3,7 +3,7 @@ import * as demo from './demoService.js';
 import { config } from '../config.js';
 import { resolveUbicacion } from './ubicacionService.js';
 import { mapUbicacionFields } from './ubicacionUtils.js';
-import { itemPayloadFromBody, mapItemCampos } from './itemFields.js';
+import { itemPartialUpdateFromBody, itemPayloadFromBody, mapItemCampos } from './itemFields.js';
 
 function isDemoMode() {
   return config.demoMode;
@@ -290,14 +290,29 @@ export async function updateItem(itemId, body) {
     'comentario',
     'fechaRelevamiento',
     'fecha_relevamiento',
+    'codigoFabricante',
+    'codigo_fabricante',
   ];
   const hasItemUpdate = itemFieldKeys.some((k) => itemBody[k] !== undefined);
 
   if (hasItemUpdate) {
-    const payload = itemPayloadFromBody(itemBody);
-    if (!payload.nombre) throw Object.assign(new Error('El nombre es obligatorio'), { status: 400 });
+    const payload = itemPartialUpdateFromBody(itemBody);
+    if (Object.keys(payload).length === 0) {
+      throw Object.assign(new Error('No hay campos de ítem para actualizar'), { status: 400 });
+    }
+    if (payload.nombre !== undefined && !payload.nombre) {
+      throw Object.assign(new Error('El nombre es obligatorio'), { status: 400 });
+    }
     const { error } = await supabase.from('items').update(payload).eq('id', itemId);
-    if (error) throw Object.assign(new Error(error.message), { status: 500 });
+    if (error) {
+      if (error.code === '23505') {
+        throw Object.assign(
+          new Error('Ese código de fabricante ya está asignado a otro ítem'),
+          { status: 409 }
+        );
+      }
+      throw Object.assign(new Error(error.message), { status: 500 });
+    }
   }
 
   if (hasStockUpdate) {

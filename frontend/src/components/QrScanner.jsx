@@ -1,8 +1,20 @@
 import { useEffect, useRef, useState } from 'react';
-import { Html5Qrcode } from 'html5-qrcode';
+import { Html5Qrcode, Html5QrcodeSupportedFormats } from 'html5-qrcode';
 import { parseQrScan } from '../utils/qrPayload';
 
 const SCANNER_ID = 'qr-reader';
+
+const BARCODE_FORMATS = [
+  Html5QrcodeSupportedFormats.QR_CODE,
+  Html5QrcodeSupportedFormats.EAN_13,
+  Html5QrcodeSupportedFormats.EAN_8,
+  Html5QrcodeSupportedFormats.CODE_128,
+  Html5QrcodeSupportedFormats.CODE_39,
+  Html5QrcodeSupportedFormats.UPC_A,
+  Html5QrcodeSupportedFormats.UPC_E,
+  Html5QrcodeSupportedFormats.ITF,
+  Html5QrcodeSupportedFormats.CODABAR,
+];
 
 function isLocalHost() {
   const h = window.location.hostname;
@@ -25,9 +37,14 @@ function pickPreferredCamera(cameras) {
   return cameras[0].id;
 }
 
-function qrBoxConfig() {
+function qrBoxConfig({ wide = false } = {}) {
   const el = document.getElementById(SCANNER_ID);
   const w = el?.clientWidth || 280;
+  if (wide) {
+    const boxW = Math.min(320, Math.max(220, Math.floor(w * 0.9)));
+    const boxH = Math.min(140, Math.max(90, Math.floor(boxW * 0.4)));
+    return { fps: 10, qrbox: { width: boxW, height: boxH }, aspectRatio: 1.777 };
+  }
   const size = Math.min(280, Math.max(180, Math.floor(w * 0.82)));
   return { fps: 10, qrbox: { width: size, height: size } };
 }
@@ -54,12 +71,27 @@ function mapCameraError(err) {
   return `No se pudo iniciar la cámara. ${msg ? `(${msg})` : 'Probá el código manual.'}`;
 }
 
-export default function QrScanner({ onScan, onClose }) {
+/**
+ * @param {object} props
+ * @param {(result: object) => void} props.onScan
+ * @param {() => void} props.onClose
+ * @param {'ubicacion'|'raw'} [props.mode] ubicacion=parse QR de inventario; raw=cualquier código/QR
+ * @param {string} [props.title]
+ * @param {string} [props.manualPlaceholder]
+ */
+export default function QrScanner({
+  onScan,
+  onClose,
+  mode = 'ubicacion',
+  title = 'Escanear QR',
+  manualPlaceholder = 'A01-E01-C01 o item_id',
+}) {
   const scannerRef = useRef(null);
   const onScanRef = useRef(onScan);
   const [error, setError] = useState(null);
   const [manual, setManual] = useState('');
   const [starting, setStarting] = useState(true);
+  const rawMode = mode === 'raw';
 
   onScanRef.current = onScan;
 
@@ -73,9 +105,27 @@ export default function QrScanner({ onScan, onClose }) {
     let cancelled = false;
     let html5 = null;
 
-    const onDecode = (decoded) => {
-      const parsed = parseQrScan(decoded);
-      if (!parsed || !html5) return;
+    const emit = (decoded) => {
+      const text = String(decoded || '').trim();
+      if (!text || !html5) return;
+
+      if (rawMode) {
+        html5
+          .stop()
+          .catch(() => {})
+          .finally(() => onScanRef.current({ type: 'raw', raw: text, codigo: text }));
+        return;
+      }
+
+      const parsed = parseQrScan(text);
+      if (!parsed) {
+        // Código de fabricante u otro: devolver raw para que el caller busque
+        html5
+          .stop()
+          .catch(() => {})
+          .finally(() => onScanRef.current({ type: 'raw', raw: text, codigo: text }));
+        return;
+      }
       html5
         .stop()
         .catch(() => {})
@@ -89,15 +139,17 @@ export default function QrScanner({ onScan, onClose }) {
       html5 = new Html5Qrcode(SCANNER_ID);
       scannerRef.current = html5;
 
-      const config = qrBoxConfig();
-      const scanConfig = { ...config };
+      const config = {
+        ...qrBoxConfig({ wide: rawMode }),
+        formatsToSupport: BARCODE_FORMATS,
+      };
 
       try {
         const cameras = await Html5Qrcode.getCameras();
         if (cancelled) return;
 
         if (!cameras?.length) {
-          await html5.start({ facingMode: 'user' }, scanConfig, onDecode, () => {});
+          await html5.start({ facingMode: 'user' }, config, emit, () => {});
           if (!cancelled) setStarting(false);
           return;
         }
@@ -112,7 +164,7 @@ export default function QrScanner({ onScan, onClose }) {
           if (cancelled) return;
           try {
             if (html5.isScanning) await html5.stop().catch(() => {});
-            await html5.start(cameraId, scanConfig, onDecode, () => {});
+            await html5.start(cameraId, config, emit, () => {});
             if (!cancelled) {
               setError(null);
               setStarting(false);
@@ -127,7 +179,7 @@ export default function QrScanner({ onScan, onClose }) {
           if (cancelled) return;
           try {
             if (html5.isScanning) await html5.stop().catch(() => {});
-            await html5.start({ facingMode }, scanConfig, onDecode, () => {});
+            await html5.start({ facingMode }, config, emit, () => {});
             if (!cancelled) {
               setError(null);
               setStarting(false);
@@ -162,19 +214,28 @@ export default function QrScanner({ onScan, onClose }) {
         instance?.clear?.();
       }
     };
-  }, []);
+  }, [rawMode]);
 
   const submitManual = () => {
-    const parsed = parseQrScan(manual);
+    const text = manual.trim();
+    if (!text) {
+      setError('Ingresá un código');
+      return;
+    }
+    if (rawMode) {
+      onScan({ type: 'raw', raw: text, codigo: text });
+      return;
+    }
+    const parsed = parseQrScan(text);
     if (parsed) onScan(parsed);
-    else setError('Código inválido. Ej: A01-E03, A01 o item_id');
+    else onScan({ type: 'raw', raw: text, codigo: text });
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
+    <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/70 p-4">
       <div className="card max-h-[90vh] w-full max-w-md overflow-y-auto border-2 border-slate-300 dark:border-border">
         <div className="mb-3 flex items-center justify-between">
-          <h3 className="section-title text-slate-900 dark:text-content">Escanear QR</h3>
+          <h3 className="section-title text-slate-900 dark:text-content">{title}</h3>
           <button
             type="button"
             onClick={onClose}
@@ -203,7 +264,7 @@ export default function QrScanner({ onScan, onClose }) {
           <div className="flex gap-2">
             <input
               className="input-field"
-              placeholder="A01-E01-C01 o item_id"
+              placeholder={manualPlaceholder}
               value={manual}
               onChange={(e) => setManual(e.target.value)}
               onKeyDown={(e) => e.key === 'Enter' && submitManual()}

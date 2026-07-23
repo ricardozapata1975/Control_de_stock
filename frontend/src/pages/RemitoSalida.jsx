@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import ClienteAutocomplete from '../components/ClienteAutocomplete';
 import RemitoDocument from '../components/RemitoDocument';
 import RemitoRecibir from '../components/RemitoRecibir';
+import RemitoScanLoader from '../components/RemitoScanLoader';
 import SearchFilters from '../components/SearchFilters';
 import UbicacionSelector from '../components/UbicacionSelector';
 import { formatUbicacionLabel } from '../utils/contenedor';
@@ -88,6 +89,8 @@ export default function RemitoSalida() {
   const [remitoId, setRemitoId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  const [addMode, setAddMode] = useState('lista'); // lista | camara | laser
+  const [scanLoader, setScanLoader] = useState(null); // null | 'camara' | 'laser'
   const [almacenOrigen, setAlmacenOrigen] = useState(ALMACEN_DEFAULT);
   const [sedeOrigen, setSedeOrigen] = useState(SEDE_DEFAULT);
   const [almacenDestino, setAlmacenDestino] = useState('');
@@ -174,6 +177,32 @@ export default function RemitoSalida() {
       const next = new Map(prev);
       if (next.has(stockId)) next.delete(stockId);
       else next.set(stockId, cartEntryFromItem(item));
+      return next;
+    });
+    setConfirmado(false);
+    setRemitoId(null);
+  };
+
+  const addScannedItem = (item, cantidad) => {
+    const stockId = item.stockId || item.id;
+    setCart((prev) => {
+      const next = new Map(prev);
+      const existing = next.get(stockId);
+      if (existing) {
+        const max = existing.cantidadDisponible;
+        const sum = existing.cantidad + cantidad;
+        next.set(stockId, {
+          ...existing,
+          cantidad: max > 0 ? Math.min(sum, max) : sum,
+        });
+      } else {
+        const entry = cartEntryFromItem(item);
+        const max = entry.cantidadDisponible;
+        next.set(stockId, {
+          ...entry,
+          cantidad: max > 0 ? Math.min(cantidad, max) : cantidad,
+        });
+      }
       return next;
     });
     setConfirmado(false);
@@ -462,7 +491,8 @@ export default function RemitoSalida() {
         <div>
           <h2 className="page-title">Remito de salida</h2>
           <p className="text-muted">
-            Seleccioná ítems, confirmá el remito para descontar stock y luego imprimí.
+            Seleccioná ítems desde la lista, la cámara o un lector láser; confirmá el remito para
+            descontar stock y luego imprimí.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
@@ -470,7 +500,7 @@ export default function RemitoSalida() {
             type="button"
             className="btn-secondary text-sm"
             onClick={selectVisible}
-            disabled={!filteredItems.length}
+            disabled={!filteredItems.length || addMode !== 'lista'}
           >
             Agregar visibles
           </button>
@@ -483,6 +513,53 @@ export default function RemitoSalida() {
             Vaciar carrito
           </button>
         </div>
+      </div>
+
+      <div className="card mb-4 print:hidden">
+        <label className="text-label">Cómo agregar ítems</label>
+        <div className="mt-1 flex flex-wrap gap-2">
+          {[
+            { id: 'lista', label: 'Desde la lista' },
+            { id: 'camara', label: 'Cámara (QR / codebar)' },
+            { id: 'laser', label: 'Lector láser' },
+          ].map((opt) => (
+            <button
+              key={opt.id}
+              type="button"
+              className={`rounded-lg px-4 py-2 text-sm font-semibold ${
+                addMode === opt.id
+                  ? 'bg-accent text-white'
+                  : 'border border-border bg-surface-muted text-content'
+              }`}
+              disabled={confirmado}
+              onClick={() => {
+                setAddMode(opt.id);
+                if (opt.id === 'camara' || opt.id === 'laser') {
+                  setScanLoader(opt.id);
+                } else {
+                  setScanLoader(null);
+                }
+              }}
+            >
+              {opt.label}
+            </button>
+          ))}
+        </div>
+        {addMode !== 'lista' && (
+          <p className="mt-2 text-xs text-muted">
+            En cada lectura vas a indicar la cantidad y podés seguir con «Leer otro ítem» o
+            «Finalizar carga».
+          </p>
+        )}
+        {(addMode === 'camara' || addMode === 'laser') && !scanLoader && !confirmado && (
+          <button
+            type="button"
+            className="btn-primary mt-3 min-h-[44px]"
+            onClick={() => setScanLoader(addMode)}
+          >
+            {addMode === 'camara' ? 'Abrir cámara' : 'Activar lector láser'}
+          </button>
+        )}
       </div>
 
       <div className="card mb-4 print:hidden">
@@ -519,6 +596,7 @@ export default function RemitoSalida() {
         )}
       </div>
 
+      {addMode === 'lista' && (
       <div className="print:hidden">
         <SearchFilters
           filters={filters}
@@ -528,43 +606,61 @@ export default function RemitoSalida() {
           tipos={tipos}
         />
       </div>
-
-      {loading && <p className="text-muted print:hidden">Cargando inventario...</p>}
-
-      {!loading && !filteredItems.length && (
-        <p className="text-muted print:hidden">Sin resultados para estos filtros.</p>
       )}
 
-      <div className="card mb-6 grid gap-2 print:hidden sm:grid-cols-2 lg:grid-cols-3">
-        {filteredItems.map((item) => {
-          const stockId = item.stockId || item.id;
-          const checked = isInCart(stockId);
-          return (
-            <label
-              key={stockId}
-              className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 transition hover:bg-surface-hover ${
-                checked ? 'border-accent bg-accent/10' : 'border-border text-content'
-              }`}
-            >
-              <input
-                type="checkbox"
-                checked={checked}
-                onChange={() => toggleItem(item)}
-                className="mt-1 h-5 w-5 shrink-0 accent-accent"
-              />
-              <span className="min-w-0 flex-1">
-                <span className="block font-semibold text-content">{itemLinea(item)}</span>
-                <span className="block truncate text-xs text-content-muted">
-                  {formatUbicacionLabel(item)}
-                </span>
-                <span className="mt-1 inline-block rounded bg-surface-muted px-2 py-0.5 text-xs font-bold">
-                  Stock: {item.cantidad}
-                </span>
-              </span>
-            </label>
-          );
-        })}
-      </div>
+      {addMode === 'lista' && (
+        <>
+          {loading && <p className="text-muted print:hidden">Cargando inventario...</p>}
+
+          {!loading && !filteredItems.length && (
+            <p className="text-muted print:hidden">Sin resultados para estos filtros.</p>
+          )}
+
+          <div className="card mb-6 grid gap-2 print:hidden sm:grid-cols-2 lg:grid-cols-3">
+            {filteredItems.map((item) => {
+              const stockId = item.stockId || item.id;
+              const checked = isInCart(stockId);
+              return (
+                <label
+                  key={stockId}
+                  className={`flex cursor-pointer items-start gap-2 rounded-lg border p-3 transition hover:bg-surface-hover ${
+                    checked ? 'border-accent bg-accent/10' : 'border-border text-content'
+                  }`}
+                >
+                  <input
+                    type="checkbox"
+                    checked={checked}
+                    onChange={() => toggleItem(item)}
+                    className="mt-1 h-5 w-5 shrink-0 accent-accent"
+                  />
+                  <span className="min-w-0 flex-1">
+                    <span className="block font-semibold text-content">{itemLinea(item)}</span>
+                    <span className="block truncate text-xs text-content-muted">
+                      {formatUbicacionLabel(item)}
+                    </span>
+                    <span className="mt-1 inline-block rounded bg-surface-muted px-2 py-0.5 text-xs font-bold">
+                      Stock: {item.cantidad}
+                    </span>
+                    {item.codigoFabricante && (
+                      <span className="mt-1 block truncate font-mono text-[11px] text-subtle">
+                        Fab: {item.codigoFabricante}
+                      </span>
+                    )}
+                  </span>
+                </label>
+              );
+            })}
+          </div>
+        </>
+      )}
+
+      {scanLoader && (
+        <RemitoScanLoader
+          mode={scanLoader}
+          onAddItem={addScannedItem}
+          onClose={() => setScanLoader(null)}
+        />
+      )}
 
       {cartCount > 0 && (
         <aside className="fixed bottom-0 left-0 right-0 z-30 border-t border-border bg-surface-elevated p-4 shadow-lg print:hidden lg:left-72">

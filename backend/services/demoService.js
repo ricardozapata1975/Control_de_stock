@@ -13,7 +13,7 @@ import {
   mapUbicacionFields,
   parseCodigo,
 } from './ubicacionUtils.js';
-import { mapItemCampos, itemCamposFromCsv, itemPayloadFromBody, parseFechaRelevamiento } from './itemFields.js';
+import { mapItemCampos, itemCamposFromCsv, itemPartialUpdateFromBody, itemPayloadFromBody, parseFechaRelevamiento } from './itemFields.js';
 
 async function load() {
   return loadInventoryData();
@@ -149,7 +149,8 @@ export async function demoListInventario(filters = {}) {
         i.tipo?.toLowerCase().includes(t) ||
         i.comentario?.toLowerCase().includes(t) ||
         i.calibracion?.toLowerCase().includes(t) ||
-        i.ubicacion?.toLowerCase().includes(t)
+        i.ubicacion?.toLowerCase().includes(t) ||
+        i.codigoFabricante?.toLowerCase().includes(t)
     );
   }
   if (filters.codigo) {
@@ -177,6 +178,13 @@ export async function demoListInventario(filters = {}) {
     }
   }
   if (filters.tipo) items = items.filter((i) => i.tipo === filters.tipo);
+  if (filters.itemId) items = items.filter((i) => i.itemId === filters.itemId);
+  const codigoFab = String(filters.codigoFabricante || filters.codigo_fabricante || '').trim();
+  if (codigoFab) {
+    items = items.filter(
+      (i) => String(i.codigoFabricante || '').trim().toLowerCase() === codigoFab.toLowerCase()
+    );
+  }
 
   const lowStock = items.filter((i) => Number(i.cantidad) === 0);
   return { items, total: items.length, lowStock, lowStockThreshold: config.lowStockThreshold };
@@ -647,12 +655,30 @@ export async function demoUpdateItem(itemId, body) {
     'comentario',
     'fechaRelevamiento',
     'fecha_relevamiento',
+    'codigoFabricante',
+    'codigo_fabricante',
   ];
   const hasItemUpdate = itemFieldKeys.some((k) => itemBody[k] !== undefined);
 
   if (hasItemUpdate) {
-    const payload = itemPayloadFromBody({ ...item, ...itemBody, nombre: itemBody.nombre ?? item.nombre });
-    if (!payload.nombre) throw Object.assign(new Error('El nombre es obligatorio'), { status: 400 });
+    const payload = itemPartialUpdateFromBody(itemBody);
+    if (payload.nombre !== undefined && !payload.nombre) {
+      throw Object.assign(new Error('El nombre es obligatorio'), { status: 400 });
+    }
+    if (payload.codigo_fabricante) {
+      const clash = db.items.find(
+        (i) =>
+          i.id !== itemId &&
+          String(i.codigo_fabricante || '').trim().toLowerCase() ===
+            String(payload.codigo_fabricante).trim().toLowerCase()
+      );
+      if (clash) {
+        throw Object.assign(
+          new Error('Ese código de fabricante ya está asignado a otro ítem'),
+          { status: 409 }
+        );
+      }
+    }
     Object.assign(item, payload);
   }
 

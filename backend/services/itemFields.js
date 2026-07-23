@@ -1,16 +1,23 @@
+export function normalizeCodigoFabricante(val) {
+  const s = String(val ?? '').trim();
+  return s || null;
+}
+
 export function mapItemCampos(item) {
   if (!item) return {};
   const fecha = item.fecha_relevamiento ?? item.fechaRelevamiento ?? null;
+  const codigoFab = item.codigo_fabricante ?? item.codigoFabricante ?? null;
   return {
     calibracion: item.calibracion || '',
     comentario: item.comentario || '',
     fechaRelevamiento: fecha ? String(fecha).slice(0, 10) : null,
+    codigoFabricante: codigoFab ? String(codigoFab).trim() : '',
   };
 }
 
 export function itemPayloadFromBody(body) {
   const fecha = body.fechaRelevamiento ?? body.fecha_relevamiento;
-  return {
+  const payload = {
     nombre: body.nombre?.trim(),
     marca: body.marca?.trim() || '',
     modelo: body.modelo?.trim() || '',
@@ -20,6 +27,35 @@ export function itemPayloadFromBody(body) {
     comentario: body.comentario?.trim() || '',
     fecha_relevamiento: parseFechaRelevamiento(fecha),
   };
+  if (body.codigoFabricante !== undefined || body.codigo_fabricante !== undefined) {
+    payload.codigo_fabricante = normalizeCodigoFabricante(
+      body.codigoFabricante ?? body.codigo_fabricante
+    );
+  }
+  return payload;
+}
+
+/** Actualización parcial de ítem (solo campos presentes en body). */
+export function itemPartialUpdateFromBody(body) {
+  const updates = {};
+  if (body.nombre !== undefined) updates.nombre = String(body.nombre || '').trim();
+  if (body.marca !== undefined) updates.marca = String(body.marca || '').trim();
+  if (body.modelo !== undefined) updates.modelo = String(body.modelo || '').trim();
+  if (body.tipo !== undefined) updates.tipo = String(body.tipo || '').trim();
+  if (body.detalle !== undefined) updates.detalle = String(body.detalle || '').trim();
+  if (body.calibracion !== undefined) updates.calibracion = String(body.calibracion || '').trim();
+  if (body.comentario !== undefined) updates.comentario = String(body.comentario || '').trim();
+  if (body.fechaRelevamiento !== undefined || body.fecha_relevamiento !== undefined) {
+    updates.fecha_relevamiento = parseFechaRelevamiento(
+      body.fechaRelevamiento ?? body.fecha_relevamiento
+    );
+  }
+  if (body.codigoFabricante !== undefined || body.codigo_fabricante !== undefined) {
+    updates.codigo_fabricante = normalizeCodigoFabricante(
+      body.codigoFabricante ?? body.codigo_fabricante
+    );
+  }
+  return updates;
 }
 
 /** Acepta AAAA-MM-DD, DD/MM/AAAA, D/M/AAAA (Excel en español) */
