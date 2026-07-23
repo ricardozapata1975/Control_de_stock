@@ -117,6 +117,11 @@ async function sendViaResendApi({ from, to, subject, text, html }) {
     throw Object.assign(new Error('RESEND_API_KEY no configurada'), { status: 503 });
   }
 
+  const toList = (Array.isArray(to) ? to : [to]).map((e) => String(e || '').trim()).filter(Boolean);
+  if (!toList.length) {
+    throw Object.assign(new Error('Destinatario de correo inválido'), { status: 400 });
+  }
+
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), EMAIL_SEND_TIMEOUT_MS);
   try {
@@ -126,7 +131,7 @@ async function sendViaResendApi({ from, to, subject, text, html }) {
         Authorization: `Bearer ${resendApiKey}`,
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ from, to: [to], subject, text, html }),
+      body: JSON.stringify({ from, to: toList, subject, text, html }),
       signal: controller.signal,
     });
     const data = await res.json().catch(() => ({}));
@@ -136,14 +141,14 @@ async function sendViaResendApi({ from, to, subject, text, html }) {
         (Array.isArray(data.errors) ? data.errors.map((e) => e.message).join('; ') : null) ||
         data.error ||
         `HTTP ${res.status}`;
-      throw Object.assign(new Error(formatResendError(res.status, detail, to)), {
+      throw Object.assign(new Error(formatResendError(res.status, detail, toList.join(', '))), {
         status: res.status >= 500 ? 502 : 400,
       });
     }
     if (!data.id) {
       console.warn('[Email/Resend] Respuesta sin id de mensaje:', data);
     } else {
-      console.log(`[Email/Resend] Enviado id=${data.id} to=${to} from=${from}`);
+      console.log(`[Email/Resend] Enviado id=${data.id} to=${toList.join(', ')} from=${from}`);
     }
     return { ok: true, mode: 'resend', id: data.id };
   } catch (err) {
@@ -295,3 +300,82 @@ export async function sendWelcomeEmail({ to, displayName, username }) {
 
   return deliverEmail({ from, to: recipient, subject, text, html });
 }
+
+export async function sendSolicitudEnvioEmail({
+  to,
+  requesterName,
+  requesterUsername,
+  itemNombre,
+  itemMarca,
+  itemModelo,
+  cantidad,
+  ubicacion,
+  sedeOrigenNombre,
+  sedeOrigenCodigo,
+  sedeDestinoNombre,
+  sedeDestinoCodigo,
+  mensaje,
+}) {
+  const recipients = (Array.isArray(to) ? to : [to])
+    .map((e) => String(e || '').trim().toLowerCase())
+    .filter(Boolean);
+  if (!recipients.length) {
+    throw Object.assign(new Error('Destinatario de correo inválido'), { status: 400 });
+  }
+
+  const from = resolveFromAddress({ logWarning: true });
+  const itemLabel = [itemNombre, itemMarca, itemModelo].filter(Boolean).join(' · ');
+  const subject = `Solicitud de envío: ${itemNombre} (${sedeDestinoNombre} → ${sedeOrigenNombre})`;
+  const msgBlock = mensaje ? `\nMensaje del solicitante:\n${mensaje}\n` : '';
+  const text = [
+    'Solicitud de envío entre sucursales',
+    '',
+    `Solicitante: ${requesterName}${requesterUsername ? ` (${requesterUsername})` : ''}`,
+    `Sucursal que pide: ${sedeOrigenNombre} (${sedeOrigenCodigo})`,
+    `Sucursal con stock: ${sedeDestinoNombre} (${sedeDestinoCodigo})`,
+    '',
+    `Ítem: ${itemLabel}`,
+    `Cantidad pedida: ${cantidad}`,
+    `Ubicación en origen del stock: ${ubicacion || '—'}`,
+    msgBlock,
+    'Esta solicitud no mueve stock automáticamente. Coordiná el remito/transferencia según el procedimiento habitual.',
+    '',
+    '— Inventario Px Control',
+  ]
+    .filter((line) => line !== undefined)
+    .join('\n');
+
+  const safe = escapeHtml;
+  const html = `
+    <h2>Solicitud de envío entre sucursales</h2>
+    <p><strong>Solicitante:</strong> ${safe(requesterName)}${
+      requesterUsername ? ` (${safe(requesterUsername)})` : ''
+    }</p>
+    <p><strong>Sucursal que pide:</strong> ${safe(sedeOrigenNombre)} (${safe(sedeOrigenCodigo)})</p>
+    <p><strong>Sucursal con stock:</strong> ${safe(sedeDestinoNombre)} (${safe(sedeDestinoCodigo)})</p>
+    <ul>
+      <li><strong>Ítem:</strong> ${safe(itemLabel)}</li>
+      <li><strong>Cantidad pedida:</strong> ${safe(cantidad)}</li>
+      <li><strong>Ubicación:</strong> ${safe(ubicacion || '—')}</li>
+    </ul>
+    ${
+      mensaje
+        ? `<p><strong>Mensaje:</strong></p><p>${safe(mensaje)}</p>`
+        : ''
+    }
+    <p class="muted">Esta solicitud no mueve stock automáticamente. Coordiná el remito/transferencia según el procedimiento habitual.</p>
+    <p>— Inventario Px Control</p>
+  `;
+
+  if (config.email.provider === 'console') {
+    console.log('[Email/console] Solicitud de envío');
+    console.log(`  To: ${recipients.join(', ')}`);
+    console.log(`  Subject: ${subject}`);
+    console.log(text);
+    return { ok: true, mode: 'console', recipients };
+  }
+
+  await deliverEmail({ from, to: recipients, subject, text, html });
+  return { ok: true, mode: config.email.provider, recipients };
+}
+

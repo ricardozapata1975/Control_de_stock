@@ -130,6 +130,8 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({}),
     }),
+  solicitarEnvio: (body) =>
+    request('/api/solicitudes-envio', { method: 'POST', body: JSON.stringify(body) }),
   adminUploadItemImage: (itemId, body) =>
     request(`/api/admin/items/${encodeURIComponent(itemId)}/imagen`, {
       method: 'POST',

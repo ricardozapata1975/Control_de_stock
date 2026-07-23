@@ -7,6 +7,7 @@ import ThemeToggle from './ThemeToggle';
 
 const links = [
   { to: '/', label: 'Inventario', end: true },
+  { to: '/consulta-sucursales', label: 'Otras sucursales' },
   { to: '/escanear', label: 'QR' },
   { to: '/egreso', label: 'Egreso' },
   { to: '/ingreso', label: 'Ingreso' },

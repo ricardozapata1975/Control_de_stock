@@ -2,9 +2,10 @@ import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
 import { config } from '../config.js';
 import { resolveUbicacion } from './ubicacionService.js';
-import { mapUbicacionFields } from './ubicacionUtils.js';
+import { mapUbicacionFields, normalizeAlmacen, getSedeForAlmacen } from './ubicacionUtils.js';
 import { itemPartialUpdateFromBody, itemPayloadFromBody, mapItemCampos } from './itemFields.js';
 import { publicItemImageUrl } from './itemImageService.js';
+import { almacenesCodigosDeSede } from './sedeScope.js';
 
 function isDemoMode() {
   return config.demoMode;
@@ -30,7 +31,9 @@ export async function listItemsAdmin() {
   const { data: stock, error: e2 } = await supabase.from('stock').select('id, item_id, contenedor_id, cantidad');
   if (e2) throw Object.assign(new Error(e2.message), { status: 500 });
 
-  const { data: contenedores } = await supabase.from('contenedores').select('id, codigo, almacen, armario, estante, contenedor');
+  const { data: contenedores } = await supabase
+    .from('contenedores')
+    .select('id, codigo, almacen, armario, estante, contenedor, sede');
 
   return (items || []).map((item) => {
     const rows = (stock || []).filter((s) => s.item_id === item.id);
@@ -60,6 +63,20 @@ export async function listItemsAdmin() {
   });
 }
 
+function assertAlmacenEnSede(almacen, sedeSession) {
+  if (!sedeSession || !almacen) return;
+  const alm = normalizeAlmacen(almacen);
+  const allowed = almacenesCodigosDeSede(sedeSession);
+  if (allowed.length && !allowed.includes(alm)) {
+    throw Object.assign(
+      new Error(
+        `El almacén ${alm} no pertenece a la sucursal activa (${sedeSession}). Cambiá de sucursal o elegí un almacén de esa sede.`
+      ),
+      { status: 403 }
+    );
+  }
+}
+
 export async function altaStock(body, adminName) {
   const {
     modo = 'nuevo',
@@ -78,6 +95,7 @@ export async function altaStock(body, adminName) {
     estante,
     contenedor,
     cantidad,
+    sede,
   } = body;
 
   const qty = Number(cantidad);
@@ -85,6 +103,9 @@ export async function altaStock(body, adminName) {
   if (!contenedorId && (!armario || !estante)) {
     throw Object.assign(new Error('Armario y estante son obligatorios'), { status: 400 });
   }
+
+  const sedeTrabajo = sede || (almacen ? getSedeForAlmacen(almacen) : null);
+  if (almacen) assertAlmacenEnSede(almacen, sede);
 
   let ubicacion;
   if (contenedorId && isDemoMode()) {
@@ -102,7 +123,13 @@ export async function altaStock(body, adminName) {
     if (!cont) throw Object.assign(new Error('Ubicación no encontrada'), { status: 404 });
     ubicacion = cont;
   } else {
-    ubicacion = await resolveUbicacion({ almacen, armario, estante, contenedor });
+    ubicacion = await resolveUbicacion({
+      sede: sedeTrabajo,
+      almacen,
+      armario,
+      estante,
+      contenedor,
+    });
   }
 
   const resolvedContenedorId = ubicacion.id;
@@ -192,7 +219,7 @@ export async function altaStock(body, adminName) {
   };
 }
 
-async function updateItemStock(itemId, { stockId, cantidad, almacen, armario, estante, contenedor }) {
+async function updateItemStock(itemId, { stockId, cantidad, almacen, armario, estante, contenedor, sede }) {
   if (!stockId) {
     throw Object.assign(new Error('stockId requerido para editar ubicación/cantidad'), { status: 400 });
   }
@@ -201,6 +228,8 @@ async function updateItemStock(itemId, { stockId, cantidad, almacen, armario, es
   if (Number.isNaN(qty) || qty < 0) {
     throw Object.assign(new Error('Cantidad inválida'), { status: 400 });
   }
+
+  if (almacen) assertAlmacenEnSede(almacen, sede);
 
   const supabase = getSupabase();
   const { data: stockRow, error: es } = await supabase
@@ -214,7 +243,13 @@ async function updateItemStock(itemId, { stockId, cantidad, almacen, armario, es
 
   let targetContenedorId = stockRow.contenedor_id;
   if (armario && estante) {
-    const ubicacion = await resolveUbicacion({ almacen, armario, estante, contenedor });
+    const ubicacion = await resolveUbicacion({
+      sede: sede || getSedeForAlmacen(almacen),
+      almacen,
+      armario,
+      estante,
+      contenedor,
+    });
     targetContenedorId = ubicacion.id;
   }
 
@@ -271,7 +306,7 @@ export async function updateItem(itemId, body) {
   if (!itemId) throw Object.assign(new Error('itemId requerido'), { status: 400 });
   if (isDemoMode()) return demo.demoUpdateItem(itemId, body);
 
-  const { stockId, cantidad, almacen, armario, estante, contenedor, ...itemBody } = body;
+  const { stockId, cantidad, almacen, armario, estante, contenedor, sede, ...itemBody } = body;
   const hasStockUpdate =
     stockId !== undefined ||
     cantidad !== undefined ||
@@ -318,7 +353,7 @@ export async function updateItem(itemId, body) {
   }
 
   if (hasStockUpdate) {
-    await updateItemStock(itemId, { stockId, cantidad, almacen, armario, estante, contenedor });
+    await updateItemStock(itemId, { stockId, cantidad, almacen, armario, estante, contenedor, sede });
   }
 
   if (!hasItemUpdate && !hasStockUpdate) {

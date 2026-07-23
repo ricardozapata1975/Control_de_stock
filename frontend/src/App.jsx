@@ -15,6 +15,7 @@ import Item from './pages/Item';
 import AdminStock from './pages/AdminStock';
 import ImportarCSV from './pages/ImportarCSV';
 import AdminUsers from './pages/AdminUsers';
+import ConsultaSucursales from './pages/ConsultaSucursales';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
@@ -54,6 +55,7 @@ export default function App() {
               <Route path="egreso" element={<Egreso />} />
               <Route path="ingreso" element={<Ingreso />} />
               <Route path="historial" element={<Historial />} />
+              <Route path="consulta-sucursales" element={<ConsultaSucursales />} />
               <Route path="escanear" element={<EscanearQR />} />
               <Route path="imprimir-qr" element={<ImprimirQR />} />
               <Route path="remito" element={<RemitoSalida />} />

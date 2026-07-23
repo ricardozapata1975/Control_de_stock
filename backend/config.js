@@ -37,6 +37,8 @@ export const config = {
     provider: process.env.EMAIL_PROVIDER || 'console',
     from: process.env.EMAIL_FROM || 'Inventario Px Control <noreply@pxcontrol.com>',
     resendApiKey: process.env.RESEND_API_KEY || '',
+    /** Destinatarios extra (CSV) para solicitudes de envío entre sucursales */
+    solicitudesTo: process.env.EMAIL_SOLICITUDES_TO || '',
     smtp: {
       host: process.env.SMTP_HOST || '',
       port: Number(process.env.SMTP_PORT) || 587,

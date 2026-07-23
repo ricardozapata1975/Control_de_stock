@@ -7,13 +7,19 @@ export async function getAdminItems(req, res) {
 }
 
 export async function postAltaStock(req, res) {
-  const result = await altaStock(req.body, req.admin?.name || 'admin');
+  const result = await altaStock(
+    { ...req.body, sede: req.body?.sede || req.user?.sede || req.admin?.sede },
+    req.admin?.name || req.user?.name || 'admin'
+  );
   res.status(201).json(result);
 }
 
 export async function putUpdateItem(req, res) {
   const { itemId } = req.params;
-  const result = await updateItem(itemId, req.body);
+  const result = await updateItem(itemId, {
+    ...req.body,
+    sede: req.body?.sede || req.user?.sede || req.admin?.sede,
+  });
   res.json(result);
 }
 

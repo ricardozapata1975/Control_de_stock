@@ -41,6 +41,7 @@ import {
   postRecibirTransferencia,
   postRemito,
 } from './controllers/remitosController.js';
+import { postSolicitudEnvio } from './controllers/solicitudEnvioController.js';
 import { loadCatalogo } from './services/catalogoService.js';
 import { applyCatalogo } from './services/ubicacionUtils.js';
 import path from 'path';
@@ -160,6 +161,8 @@ app.post('/api/remitos', requireAuth, postRemito);
 app.get('/api/remitos/transferencias/pendientes', requireAuth, getTransferenciasPendientes);
 app.post('/api/remitos/:id/recibir', requireAuth, postRecibirTransferencia);
 app.get('/api/remitos/:id', requireAuth, getRemito);
+
+app.post('/api/solicitudes-envio', requireAuth, postSolicitudEnvio);
 
 app.post('/api/sync', postSync);
 app.post('/sync', postSync);

@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import FilterableSelect from '../components/FilterableSelect';
 import FocusedPage from '../components/FocusedPage';
+import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
 import { ALMACEN_DEFAULT, ALMACEN_TIPOS, ARMARIO_TIPOS, ESTANTES, SEDE_DEFAULT, buildCodigoCompletoPreview, buildCodigoPreview, getArmariosForAlmacen, getSedesFromCatalog, pickDefaultArmario } from '../utils/ubicacion';
 import { CONTENEDOR_HELP } from '../utils/contenedorCodigo';
@@ -22,6 +23,7 @@ function applyUbicacionToForm(ubi, setters) {
 }
 
 export default function AdminStock() {
+  const { sede: sessionSede, sedeNombre: sessionSedeNombre } = useAuth();
   const [items, setItems] = useState([]);
   const [tab, setTab] = useState('alta');
   const [loading, setLoading] = useState(false);
@@ -80,22 +82,45 @@ export default function AdminStock() {
   const armariosCatalogo = armariosForAlmacen(almacen);
   const editArmariosCatalogo = armariosForAlmacen(editAlmacen);
 
+  const syncAlmacenDefaults = (list) => {
+    if (!list?.length) return;
+    const first = list[0].codigo;
+    const codes = new Set(list.map((a) => a.codigo));
+    setAlmacen((prev) => (codes.has(prev) ? prev : first));
+    setEditAlmacen((prev) => (codes.has(prev) ? prev : first));
+    setMapAlmacen((prev) => (codes.has(prev) ? prev : first));
+  };
+
   const load = async () => {
     setLoading(true);
     setError('');
     try {
       const [iData, cat, tiposData] = await Promise.all([
         api.adminItems(),
-        api.catalogoUbicacion(),
+        api.catalogoUbicacion(sessionSede ? { sede: sessionSede } : {}),
         api.tipos(),
       ]);
-      setItems((iData.items || []).filter((i) => i.activo));
-      setCatalogo({
+      setItems(
+        (iData.items || [])
+          .filter((i) => i.activo)
+          .map((item) => {
+            if (!sessionSede) return item;
+            const ubicaciones = (item.ubicaciones || []).filter(
+              (u) => !u.sede || u.sede === sessionSede
+            );
+            const totalStock = ubicaciones.reduce((sum, u) => sum + (u.cantidad || 0), 0);
+            return { ...item, ubicaciones, totalStock };
+          })
+      );
+      const nextCat = {
         sedes: cat.sedes || [],
         aduanasPorSede: cat.aduanasPorSede || {},
         almacenes: cat.almacenes || [],
         armariosPorAlmacen: cat.armariosPorAlmacen || {},
-      });
+      };
+      setCatalogo(nextCat);
+      syncAlmacenDefaults(nextCat.almacenes);
+      if (sessionSede) setMapSede(sessionSede);
       setTipos(tiposData.tipos?.length ? tiposData.tipos : [DEFAULT_TIPO]);
     } catch (e) {
       setError(e.message);
@@ -106,7 +131,9 @@ export default function AdminStock() {
 
   useEffect(() => {
     load();
-  }, []);
+    // Recargar al cambiar sucursal de sesión
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sessionSede]);
 
   useEffect(() => {
     const list = armariosForAlmacen(almacen);
@@ -237,6 +264,7 @@ export default function AdminStock() {
         modelo,
         tipo,
         detalle,
+        sede: sessionSede || undefined,
         almacen,
         armario,
         estante,
@@ -273,6 +301,7 @@ export default function AdminStock() {
         detalle: editDetalle,
         stockId: editStockId,
         cantidad: Number(editCantidad),
+        sede: sessionSede || undefined,
         almacen: editAlmacen,
         armario: editArmario,
         estante: editEstante,
@@ -393,11 +422,17 @@ export default function AdminStock() {
     setSuccess('');
     setLoading(true);
     try {
+      if (!sessionSede) {
+        throw new Error('No hay sucursal activa en la sesión. Volvé a iniciar sesión eligiendo sucursal.');
+      }
       const result = await api.adminCreateAlmacen({
         tipo: nuevoAlmTipo,
         nombre: nuevoAlmNombre.trim(),
+        sede: sessionSede,
       });
-      setSuccess(`Almacén ${result.almacen.codigo} creado: ${result.almacen.nombre}`);
+      setSuccess(
+        `Almacén ${result.almacen.codigo} creado en ${sessionSedeNombre || sessionSede}: ${result.almacen.nombre}`
+      );
       setNuevoAlmNombre('');
       setCatalogo(mergeCatalogo(result.catalogo));
       setAlmacen(result.almacen.codigo);
@@ -589,9 +624,14 @@ export default function AdminStock() {
   return (
     <FocusedPage maxWidth="max-w-5xl">
       <h2 className="page-title mb-2">Administración de stock</h2>
-      <p className="mb-4 text-muted">
+      <p className="mb-2 text-muted">
         Jerarquía: Sede → Almacén → Armario/Gabinete → Estante → Contenedor. Cada sede tiene una{' '}
         <strong>aduana</strong> (recepción tránsito) para transferencias entre ubicaciones.
+      </p>
+      <p className="mb-4 rounded-lg border border-accent/40 bg-surface-muted px-3 py-2 text-sm text-content">
+        Trabajando en sucursal:{' '}
+        <strong className="text-accent">{sessionSedeNombre || sessionSede || '—'}</strong>
+        . Almacenes, armarios e ítems nuevos se asocian a esta sucursal.
       </p>
 
       <details className="card mb-4" open>
@@ -702,9 +742,12 @@ export default function AdminStock() {
               onChange={(e) => setNuevoAlmNombre(e.target.value)}
               required
             />
-            <p className="mt-1 text-xs text-subtle">El código ALMxx se asigna automáticamente.</p>
+            <p className="mt-1 text-xs text-subtle">
+              El código ALMxx se asigna automáticamente y queda ligado a{' '}
+              <strong>{sessionSedeNombre || sessionSede || 'la sucursal activa'}</strong>.
+            </p>
           </div>
-          <button type="submit" className="btn-secondary sm:col-span-3" disabled={loading}>
+          <button type="submit" className="btn-secondary sm:col-span-3" disabled={loading || !sessionSede}>
             Crear almacén
           </button>
         </form>
