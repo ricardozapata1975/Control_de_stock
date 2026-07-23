@@ -22,10 +22,18 @@ export default function RemitoDocument({ form, lineas, empresa, esTransferencia 
       <div className="mb-2 flex border-2 border-black">
         <div className="flex-1 border-r border-black p-2">
           <div className="flex items-start gap-3">
-            <div className="flex h-14 w-14 shrink-0 items-center justify-center border border-black/40 text-[8px] text-black/50">
-              LOGO
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden border border-black/40 bg-white">
+              {empresa?.logoUrl ? (
+                <img
+                  src={empresa.logoUrl}
+                  alt=""
+                  className="max-h-full max-w-full object-contain"
+                />
+              ) : (
+                <span className="text-[8px] text-black/50">LOGO</span>
+              )}
             </div>
-            <div>
+            <div className="min-w-0 flex-1">
               <p className="text-base font-bold uppercase tracking-wide">
                 {empresa?.razonSocial || empresa?.nombre || '—'}
               </p>
@@ -43,6 +51,15 @@ export default function RemitoDocument({ form, lineas, empresa, esTransferencia 
                 {[empresa?.email, empresa?.web].filter(Boolean).join(' — ')}
               </p>
             </div>
+            {empresa?.firmaUrl && (
+              <div className="hidden h-14 w-20 shrink-0 items-center justify-center overflow-hidden sm:flex">
+                <img
+                  src={empresa.firmaUrl}
+                  alt="Firma / sello"
+                  className="max-h-full max-w-full object-contain"
+                />
+              </div>
+            )}
           </div>
         </div>
         <div className="flex w-[42%] flex-col">

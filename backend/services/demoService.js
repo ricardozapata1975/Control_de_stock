@@ -802,6 +802,10 @@ const DEMO_EMPRESAS = [
     web: 'www.systelec.com.ar',
     fechaInicioActividades: '1996-08-02',
     codigoDocumento: '91',
+    sedeCodigo: 'SED001',
+    notas: '',
+    logoUrl: '',
+    firmaUrl: '',
     activo: true,
   },
   {
@@ -818,6 +822,10 @@ const DEMO_EMPRESAS = [
     web: 'www.pxcontrol.com.ar',
     fechaInicioActividades: '2020-01-01',
     codigoDocumento: '91',
+    sedeCodigo: 'SED001',
+    notas: '',
+    logoUrl: '',
+    firmaUrl: '',
     activo: true,
   },
   {
@@ -834,6 +842,10 @@ const DEMO_EMPRESAS = [
     web: 'www.talemec.com.ar',
     fechaInicioActividades: '2020-01-01',
     codigoDocumento: '91',
+    sedeCodigo: '',
+    notas: '',
+    logoUrl: '',
+    firmaUrl: '',
     activo: true,
   },
 ];
@@ -841,12 +853,101 @@ const DEMO_EMPRESAS = [
 const demoClientes = [];
 const demoRemitos = new Map();
 
-export async function demoListEmpresasEmisoras() {
-  return DEMO_EMPRESAS;
+export async function demoListEmpresasEmisoras({ includeInactive = false } = {}) {
+  return DEMO_EMPRESAS.filter((e) => includeInactive || e.activo !== false).map((e) => ({ ...e }));
 }
 
 export async function demoGetEmpresaEmisoraById(id) {
-  return DEMO_EMPRESAS.find((e) => e.id === id) || null;
+  const found = DEMO_EMPRESAS.find((e) => e.id === id);
+  return found ? { ...found } : null;
+}
+
+export async function demoCreateEmpresaEmisora(payload) {
+  const nombre = String(payload?.nombre || '').trim();
+  if (!nombre) {
+    throw Object.assign(new Error('Nombre de la oficina/empresa requerido'), { status: 400 });
+  }
+  const empresa = {
+    id: `demo-emp-${Date.now()}`,
+    nombre,
+    razonSocial: payload.razonSocial || payload.razon_social || nombre,
+    cuit: payload.cuit || '',
+    ingBrutos: payload.ingBrutos || payload.ing_brutos || '',
+    domicilio: payload.domicilio || '',
+    localidad: payload.localidad || '',
+    telefono: payload.telefono || '',
+    fax: payload.fax || '',
+    email: payload.email || '',
+    web: payload.web || '',
+    fechaInicioActividades: payload.fechaInicioActividades || payload.fecha_inicio_actividades || '',
+    codigoDocumento: payload.codigoDocumento || payload.codigo_documento || '91',
+    sedeCodigo: payload.sedeCodigo || payload.sede_codigo || '',
+    notas: payload.notas || '',
+    logoUrl: '',
+    firmaUrl: '',
+    activo: payload.activo !== false,
+  };
+  DEMO_EMPRESAS.push(empresa);
+  return { ...empresa };
+}
+
+export async function demoUpdateEmpresaEmisora(id, payload) {
+  const empresa = DEMO_EMPRESAS.find((e) => e.id === id);
+  if (!empresa) throw Object.assign(new Error('Empresa no encontrada'), { status: 404 });
+  const aliases = {
+    razon_social: 'razonSocial',
+    ing_brutos: 'ingBrutos',
+    fecha_inicio_actividades: 'fechaInicioActividades',
+    codigo_documento: 'codigoDocumento',
+    sede_codigo: 'sedeCodigo',
+  };
+  for (const [k, v] of Object.entries(payload || {})) {
+    const dest = aliases[k] || k;
+    if (
+      [
+        'nombre',
+        'razonSocial',
+        'cuit',
+        'ingBrutos',
+        'domicilio',
+        'localidad',
+        'telefono',
+        'fax',
+        'email',
+        'web',
+        'fechaInicioActividades',
+        'codigoDocumento',
+        'sedeCodigo',
+        'notas',
+        'activo',
+      ].includes(dest)
+    ) {
+      empresa[dest] = v;
+    }
+  }
+  return { ...empresa };
+}
+
+export async function demoUploadEmpresaAsset(empresaId, kind, dataUrl) {
+  const empresa = DEMO_EMPRESAS.find((e) => e.id === empresaId);
+  if (!empresa) throw Object.assign(new Error('Empresa no encontrada'), { status: 404 });
+  if (kind === 'logo') empresa.logoUrl = dataUrl;
+  else empresa.firmaUrl = dataUrl;
+  return {
+    ok: true,
+    empresaId,
+    kind,
+    url: dataUrl,
+    ...(kind === 'logo' ? { logoUrl: dataUrl } : { firmaUrl: dataUrl }),
+  };
+}
+
+export async function demoDeleteEmpresaAsset(empresaId, kind) {
+  const empresa = DEMO_EMPRESAS.find((e) => e.id === empresaId);
+  if (!empresa) throw Object.assign(new Error('Empresa no encontrada'), { status: 404 });
+  if (kind === 'logo') empresa.logoUrl = '';
+  else empresa.firmaUrl = '';
+  return { ok: true, empresaId, kind };
 }
 
 export async function demoGetNextRemitoNumero(empresaEmisoraId) {
@@ -859,14 +960,24 @@ export async function demoGetNextRemitoNumero(empresaEmisoraId) {
   return max + 1;
 }
 
-export async function demoSearchClientes(q = '') {
+export async function demoSearchClientes(q = '', { includeInactive = false, limit = 20 } = {}) {
   const term = String(q || '').trim().toLowerCase();
-  if (!term) return demoClientes.slice(0, 20);
-  return demoClientes.filter((c) => c.nombre.toLowerCase().includes(term)).slice(0, 20);
+  let list = demoClientes.filter((c) => includeInactive || c.activo !== false);
+  if (term) {
+    list = list.filter((c) =>
+      [c.nombre, c.razonSocial, c.cuit, c.localidad]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(term)
+    );
+  }
+  return list.slice(0, limit).map((c) => ({ ...c }));
 }
 
 export async function demoGetClienteById(id) {
-  return demoClientes.find((c) => c.id === id) || null;
+  const found = demoClientes.find((c) => c.id === id);
+  return found ? { ...found } : null;
 }
 
 export async function demoCreateCliente(payload) {
@@ -881,9 +992,39 @@ export async function demoCreateCliente(payload) {
     localidad: payload.localidad || '',
     vRef: payload.vRef || payload.v_ref || '',
     cuit: payload.cuit || '',
+    telefono: payload.telefono || '',
+    email: payload.email || '',
+    contacto: payload.contacto || '',
+    notas: payload.notas || '',
+    activo: payload.activo !== false,
   };
   demoClientes.push(cliente);
-  return cliente;
+  return { ...cliente };
+}
+
+export async function demoUpdateCliente(id, payload) {
+  const cliente = demoClientes.find((c) => c.id === id);
+  if (!cliente) throw Object.assign(new Error('Cliente no encontrado'), { status: 404 });
+  const keys = [
+    'nombre',
+    'razonSocial',
+    'iva',
+    'domicilio',
+    'localidad',
+    'vRef',
+    'cuit',
+    'telefono',
+    'email',
+    'contacto',
+    'notas',
+    'activo',
+  ];
+  for (const k of keys) {
+    if (payload?.[k] !== undefined) cliente[k] = payload[k];
+  }
+  if (payload?.razon_social !== undefined) cliente.razonSocial = payload.razon_social;
+  if (payload?.v_ref !== undefined) cliente.vRef = payload.v_ref;
+  return { ...cliente };
 }
 
 export async function demoCrearRemito(payload, createdBy) {

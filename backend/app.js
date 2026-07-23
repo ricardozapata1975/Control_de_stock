@@ -33,8 +33,8 @@ import {
   postDbRow,
   putDbRow,
 } from './controllers/dbAdminController.js';
-import { getEmpresasEmisoras, getProximoNumero } from './controllers/empresasEmisorasController.js';
-import { getClientes, postClientes } from './controllers/clientesController.js';
+import { getEmpresasEmisoras, getProximoNumero, postEmpresaEmisora, putEmpresaEmisora, postEmpresaAsset, deleteEmpresaAssetHandler } from './controllers/empresasEmisorasController.js';
+import { getClientes, postClientes, putCliente, deleteClienteHandler } from './controllers/clientesController.js';
 import {
   getRemito,
   getTransferenciasPendientes,
@@ -155,8 +155,14 @@ app.post('/ingreso', requireAuth, postIngreso);
 // Remitos y clientes
 app.get('/api/clientes', requireAuth, getClientes);
 app.post('/api/clientes', requireAuth, postClientes);
+app.put('/api/clientes/:id', requireAuth, putCliente);
+app.delete('/api/clientes/:id', requireAuth, deleteClienteHandler);
 app.get('/api/empresas-emisoras', requireAuth, getEmpresasEmisoras);
 app.get('/api/empresas-emisoras/proximo-numero', requireAuth, getProximoNumero);
+app.post('/api/empresas-emisoras', requireAuth, postEmpresaEmisora);
+app.put('/api/empresas-emisoras/:id', requireAuth, putEmpresaEmisora);
+app.post('/api/empresas-emisoras/:id/:kind', requireAuth, postEmpresaAsset);
+app.delete('/api/empresas-emisoras/:id/:kind', requireAuth, deleteEmpresaAssetHandler);
 app.post('/api/remitos', requireAuth, postRemito);
 app.get('/api/remitos/transferencias/pendientes', requireAuth, getTransferenciasPendientes);
 app.post('/api/remitos/:id/recibir', requireAuth, postRecibirTransferencia);

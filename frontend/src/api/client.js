@@ -188,11 +188,42 @@ export const api = {
       method: 'POST',
       body: JSON.stringify({ csv, modoDuplicados }),
     }),
-  clientes: (q = '') => {
-    const qs = q ? `?q=${encodeURIComponent(q)}` : '';
-    return request(`/api/clientes${qs}`);
+  clientes: (q = '', opts = {}) => {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (opts.agenda) params.set('agenda', '1');
+    const qs = params.toString();
+    return request(`/api/clientes${qs ? `?${qs}` : ''}`);
   },
-  empresasEmisoras: () => request('/api/empresas-emisoras'),
+  createCliente: (body) =>
+    request('/api/clientes', { method: 'POST', body: JSON.stringify(body) }),
+  updateCliente: (id, body) =>
+    request(`/api/clientes/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteCliente: (id) =>
+    request(`/api/clientes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  empresasEmisoras: (opts = {}) => {
+    const qs = opts.all ? '?all=1' : '';
+    return request(`/api/empresas-emisoras${qs}`);
+  },
+  createEmpresaEmisora: (body) =>
+    request('/api/empresas-emisoras', { method: 'POST', body: JSON.stringify(body) }),
+  updateEmpresaEmisora: (id, body) =>
+    request(`/api/empresas-emisoras/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  uploadEmpresaAsset: (id, kind, body) =>
+    request(`/api/empresas-emisoras/${encodeURIComponent(id)}/${encodeURIComponent(kind)}`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  deleteEmpresaAsset: (id, kind) =>
+    request(`/api/empresas-emisoras/${encodeURIComponent(id)}/${encodeURIComponent(kind)}`, {
+      method: 'DELETE',
+    }),
   proximoNumeroRemito: (empresaId) =>
     request(`/api/empresas-emisoras/proximo-numero?empresaId=${encodeURIComponent(empresaId)}`),
   crearRemito: (body) =>
