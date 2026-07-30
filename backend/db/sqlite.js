@@ -40,6 +40,7 @@ function migrateMovimientosColumns() {
   if (!cols.includes('estado')) db.exec(`ALTER TABLE movimientos ADD COLUMN estado TEXT`);
   if (!cols.includes('motivo')) db.exec(`ALTER TABLE movimientos ADD COLUMN motivo TEXT`);
   if (!cols.includes('remito_id')) db.exec(`ALTER TABLE movimientos ADD COLUMN remito_id TEXT`);
+  if (!cols.includes('egreso_lote_id')) db.exec(`ALTER TABLE movimientos ADD COLUMN egreso_lote_id TEXT`);
 }
 
 function migrateItemTiposTable() {
@@ -144,8 +145,8 @@ export function saveInventoryData(data) {
     }
 
     const insMov = db.prepare(
-      `INSERT OR REPLACE INTO movimientos (id, item_id, contenedor_id, tipo, cantidad, usuario, fecha, sync_status, offline_id, egreso_movimiento_id, estado, motivo, remito_id, created_at)
-       VALUES (@id, @item_id, @contenedor_id, @tipo, @cantidad, @usuario, @fecha, @sync_status, @offline_id, @egreso_movimiento_id, @estado, @motivo, @remito_id, @created_at)`
+      `INSERT OR REPLACE INTO movimientos (id, item_id, contenedor_id, tipo, cantidad, usuario, fecha, sync_status, offline_id, egreso_movimiento_id, estado, motivo, remito_id, egreso_lote_id, created_at)
+       VALUES (@id, @item_id, @contenedor_id, @tipo, @cantidad, @usuario, @fecha, @sync_status, @offline_id, @egreso_movimiento_id, @estado, @motivo, @remito_id, @egreso_lote_id, @created_at)`
     );
     for (const row of data.movimientos || []) {
       insMov.run({
@@ -162,6 +163,7 @@ export function saveInventoryData(data) {
         estado: row.estado || null,
         motivo: row.motivo || null,
         remito_id: row.remito_id || null,
+        egreso_lote_id: row.egreso_lote_id || null,
         created_at: row.created_at || new Date().toISOString(),
       });
     }

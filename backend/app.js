@@ -10,7 +10,10 @@ import {
   getMovimientos,
   getPendientes,
   postEgreso,
+  postEgresoContenedor,
   postIngreso,
+  postIngresoLote,
+  getEgresoLoteHandler,
 } from './controllers/movimientosController.js';
 import { postSync } from './controllers/syncController.js';
 import { getMe, postFirstLogin, postForgotPassword, postLogin, postResetPassword as postAuthResetPassword, postSetPassword, postSwitchSede } from './controllers/authController.js';
@@ -149,6 +152,10 @@ app.get('/api/movimientos/pendientes', optionalAuth, getPendientes);
 
 app.post('/api/egreso', requireAuth, postEgreso);
 app.post('/egreso', requireAuth, postEgreso);
+app.post('/api/egreso/contenedor', requireAuth, postEgresoContenedor);
+app.get('/api/egreso/lotes/:loteId', requireAuth, getEgresoLoteHandler);
+app.post('/api/egreso/lotes/:loteId/devolver', requireAuth, postIngresoLote);
+app.post('/api/ingreso/lote', requireAuth, postIngresoLote);
 app.post('/api/ingreso', requireAuth, postIngreso);
 app.post('/ingreso', requireAuth, postIngreso);
 

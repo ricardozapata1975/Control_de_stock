@@ -50,6 +50,7 @@ export default function Contenedor() {
         contenedor={data.contenedor}
         items={data.items}
         onScanAgain={() => navigate('/escanear')}
+        onRefresh={load}
       />
       <ContenedorPanel data={data} onRefresh={load} />
     </div>

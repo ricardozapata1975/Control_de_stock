@@ -106,7 +106,33 @@ export const useStore = create((set, get) => ({
       const result = await executeOrQueue('egreso', payload);
       if (!result.offline) await get().fetchInventario();
       set({ loading: false });
-      return { ok: true, offline: result.offline };
+      return { ok: true, offline: result.offline, data: result.result || null };
+    } catch (e) {
+      set({ error: e.message, loading: false });
+      return { ok: false };
+    }
+  },
+
+  registrarEgresoContenedor: async (payload, executeOrQueue) => {
+    set({ loading: true, error: null });
+    try {
+      const result = await executeOrQueue('egreso_contenedor', payload);
+      if (!result.offline) await get().fetchInventario();
+      set({ loading: false });
+      return { ok: true, offline: result.offline, data: result.result || null };
+    } catch (e) {
+      set({ error: e.message, loading: false });
+      return { ok: false };
+    }
+  },
+
+  registrarIngresoLote: async (payload, executeOrQueue) => {
+    set({ loading: true, error: null });
+    try {
+      const result = await executeOrQueue('ingreso_lote', payload);
+      if (!result.offline) await get().fetchInventario();
+      set({ loading: false });
+      return { ok: true, offline: result.offline, data: result.result || null };
     } catch (e) {
       set({ error: e.message, loading: false });
       return { ok: false };
@@ -119,7 +145,7 @@ export const useStore = create((set, get) => ({
       const result = await executeOrQueue('ingreso', payload);
       if (!result.offline) await get().fetchInventario();
       set({ loading: false });
-      return { ok: true, offline: result.offline };
+      return { ok: true, offline: result.offline, data: result.result || null };
     } catch (e) {
       set({ error: e.message, loading: false });
       return { ok: false };

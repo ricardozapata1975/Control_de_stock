@@ -185,6 +185,255 @@ export async function registrarEgreso(payload) {
   return data;
 }
 
+/**
+ * Retira todo el stock de un contenedor físico (kit): un egreso por cada ítem con cantidad > 0.
+ * Agrupa los movimientos en un egreso_lote para remito interno + QR de devolución.
+ */
+export async function registrarEgresoContenedor(payload) {
+  if (demo.isDemoMode()) return demo.demoRegistrarEgresoContenedor(payload);
+
+  const { contenedorId, codigo, usuario, offlineId, egresoLoteId } = payload;
+  const user = String(usuario || '').trim();
+  if (!user) {
+    throw Object.assign(new Error('Usuario requerido'), { status: 400 });
+  }
+
+  let resolvedId = contenedorId;
+  const supabase = getSupabase();
+
+  if (!resolvedId && codigo) {
+    const { getByCodigo } = await import('./contenedorService.js');
+    const data = await getByCodigo(codigo);
+    const id = data?.contenedor?.id;
+    if (!id || String(id).startsWith('alm-') || String(id).startsWith('arm-')) {
+      throw Object.assign(
+        new Error(
+          'Escaneá o elegí un contenedor concreto (ej. C01). No se puede retirar un almacén o armario completo.'
+        ),
+        { status: 400 }
+      );
+    }
+    resolvedId = id;
+  }
+
+  if (!resolvedId) {
+    throw Object.assign(new Error('contenedorId o codigo requerido'), { status: 400 });
+  }
+  if (String(resolvedId).startsWith('alm-') || String(resolvedId).startsWith('arm-')) {
+    throw Object.assign(
+      new Error('Solo se puede retirar un contenedor físico completo, no un almacén o armario'),
+      { status: 400 }
+    );
+  }
+
+  const { data: cont, error: ec } = await supabase
+    .from('contenedores')
+    .select('id, codigo, contenedor, armario, estante, almacen')
+    .eq('id', resolvedId)
+    .maybeSingle();
+  if (ec) throw Object.assign(new Error(ec.message), { status: 500 });
+  if (!cont) throw Object.assign(new Error('Contenedor no encontrado'), { status: 404 });
+
+  const { data: stockRows, error: es } = await supabase
+    .from('stock')
+    .select('id, item_id, contenedor_id, cantidad, items(id, nombre, marca, modelo, tipo)')
+    .eq('contenedor_id', resolvedId)
+    .gt('cantidad', 0);
+  if (es) {
+    const { data: plain, error: e2 } = await supabase
+      .from('stock')
+      .select('id, item_id, contenedor_id, cantidad')
+      .eq('contenedor_id', resolvedId)
+      .gt('cantidad', 0);
+    if (e2) throw Object.assign(new Error(e2.message), { status: 500 });
+    return egresarStockRows(plain || [], resolvedId, cont, user, offlineId, egresoLoteId);
+  }
+
+  return egresarStockRows(stockRows || [], resolvedId, cont, user, offlineId, egresoLoteId);
+}
+
+function newLoteId(preferred) {
+  const raw = String(preferred || '').trim();
+  if (raw && /^[0-9a-f-]{36}$/i.test(raw)) return raw.toLowerCase();
+  return crypto.randomUUID();
+}
+
+async function egresarStockRows(stockRows, contenedorId, cont, usuario, offlineId, preferredLoteId) {
+  const rows = (stockRows || []).filter((s) => Number(s.cantidad) > 0);
+  if (!rows.length) {
+    throw Object.assign(new Error('El contenedor no tiene stock para retirar'), { status: 400 });
+  }
+
+  const supabase = getSupabase();
+  const loteId = newLoteId(preferredLoteId);
+  const fecha = new Date().toISOString();
+
+  const { error: elErr } = await supabase.from('egreso_lotes').insert({
+    id: loteId,
+    contenedor_id: contenedorId,
+    contenedor_codigo: cont?.codigo || null,
+    usuario,
+    created_at: fecha,
+  });
+  if (elErr) {
+    if (/egreso_lotes|schema cache|does not exist/i.test(elErr.message || '')) {
+      throw Object.assign(
+        new Error('Ejecutá supabase/patch-egreso-lote.sql en Supabase para habilitar retiro con remito/QR'),
+        { status: 503 }
+      );
+    }
+    throw Object.assign(new Error(elErr.message), { status: 500 });
+  }
+
+  const egresos = [];
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    const qty = Number(row.cantidad);
+    const lineOfflineId = offlineId ? `${offlineId}:${row.item_id}` : null;
+    const result = await registrarEgreso({
+      itemId: row.item_id,
+      contenedorId,
+      cantidad: qty,
+      usuario,
+      offlineId: lineOfflineId,
+    });
+    const movId = result?.movimiento_id || result?.movimientoId || null;
+    if (movId) {
+      const { error: upErr } = await supabase
+        .from('movimientos')
+        .update({ egreso_lote_id: loteId })
+        .eq('id', movId);
+      if (upErr && !/egreso_lote|column/i.test(upErr.message || '')) {
+        console.warn('[egreso_lote] no se pudo asociar movimiento', upErr.message);
+      }
+    }
+    egresos.push({
+      movimientoId: movId,
+      itemId: row.item_id,
+      nombre: row.items?.nombre || null,
+      marca: row.items?.marca || null,
+      modelo: row.items?.modelo || null,
+      tipo: row.items?.tipo || null,
+      cantidad: qty,
+      result,
+    });
+  }
+
+  return {
+    ok: true,
+    egresoLoteId: loteId,
+    contenedorId,
+    contenedorCodigo: cont?.codigo || null,
+    usuario,
+    fecha,
+    totalItems: egresos.length,
+    totalUnidades: egresos.reduce((s, e) => s + e.cantidad, 0),
+    egresos,
+    qrPayload: `inventario://devolucion/${loteId}`,
+  };
+}
+
+export async function getEgresoLote(loteId) {
+  if (demo.isDemoMode()) return demo.demoGetEgresoLote(loteId);
+
+  const id = String(loteId || '').trim();
+  if (!id) throw Object.assign(new Error('loteId requerido'), { status: 400 });
+
+  const supabase = getSupabase();
+  const { data: lote, error: e1 } = await supabase
+    .from('egreso_lotes')
+    .select('*')
+    .eq('id', id)
+    .maybeSingle();
+  if (e1) {
+    if (/egreso_lotes|schema cache|does not exist/i.test(e1.message || '')) {
+      throw Object.assign(
+        new Error('Ejecutá supabase/patch-egreso-lote.sql en Supabase'),
+        { status: 503 }
+      );
+    }
+    throw Object.assign(new Error(e1.message), { status: 500 });
+  }
+  if (!lote) throw Object.assign(new Error('Lote de egreso no encontrado'), { status: 404 });
+
+  const { data: movs, error: e2 } = await supabase
+    .from('movimientos')
+    .select('*')
+    .eq('tipo', 'egreso')
+    .eq('egreso_lote_id', id)
+    .order('fecha', { ascending: true });
+  if (e2) throw Object.assign(new Error(e2.message), { status: 500 });
+
+  const enriched = await enrichMovimientosRows(supabase, movs || []);
+  const egresoIds = enriched.map((r) => r.id);
+  let ingresoByEgreso = {};
+  if (egresoIds.length) {
+    const { data: ingresos, error: e3 } = await supabase
+      .from('movimientos')
+      .select('egreso_movimiento_id, fecha, usuario')
+      .eq('tipo', 'ingreso')
+      .in('egreso_movimiento_id', egresoIds);
+    if (e3) throw Object.assign(new Error(e3.message), { status: 500 });
+    ingresoByEgreso = Object.fromEntries(
+      (ingresos || []).map((i) => [i.egreso_movimiento_id, i])
+    );
+  }
+
+  const lineas = enriched.map((row) => {
+    const mapped = mapMovimiento(row, ingresoByEgreso[row.id]);
+    return {
+      ...mapped,
+      pendiente: !ingresoByEgreso[row.id] && mapped.estadoHistorial === 'pendiente_devolucion',
+    };
+  });
+  const pendientes = lineas.filter((l) => l.pendiente);
+
+  return {
+    id: lote.id,
+    contenedorId: lote.contenedor_id,
+    contenedorCodigo: lote.contenedor_codigo,
+    usuario: lote.usuario,
+    fecha: lote.created_at,
+    totalItems: lineas.length,
+    totalUnidades: lineas.reduce((s, l) => s + Number(l.cantidad || 0), 0),
+    pendientesCount: pendientes.length,
+    completoDevuelto: lineas.length > 0 && pendientes.length === 0,
+    lineas,
+    pendientes,
+    qrPayload: `inventario://devolucion/${lote.id}`,
+  };
+}
+
+export async function registrarIngresoLote(payload) {
+  if (demo.isDemoMode()) return demo.demoRegistrarIngresoLote(payload);
+
+  const { egresoLoteId, usuario, offlineId } = payload;
+  const lote = await getEgresoLote(egresoLoteId);
+  if (!lote.pendientes?.length) {
+    throw Object.assign(new Error('Este lote ya fue devuelto o no tiene egresos pendientes'), {
+      status: 409,
+    });
+  }
+
+  const resultados = [];
+  for (const line of lote.pendientes) {
+    const lineOfflineId = offlineId ? `${offlineId}:${line.id}` : null;
+    const result = await registrarIngreso({
+      movimientoId: line.id,
+      usuario: usuario || 'Sistema',
+      offlineId: lineOfflineId,
+    });
+    resultados.push({ movimientoId: line.id, itemId: line.itemId, nombre: line.nombreHerramienta, result });
+  }
+
+  return {
+    ok: true,
+    egresoLoteId: lote.id,
+    totalDevueltos: resultados.length,
+    resultados,
+  };
+}
+
 export async function registrarIngreso(payload) {
   if (demo.isDemoMode()) return demo.demoRegistrarIngreso(payload);
 

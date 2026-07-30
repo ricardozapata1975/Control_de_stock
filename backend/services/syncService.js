@@ -1,4 +1,4 @@
-import { registrarEgreso, registrarIngreso } from './movimientosService.js';
+﻿import { registrarEgreso, registrarEgresoContenedor, registrarIngreso, registrarIngresoLote } from './movimientosService.js';
 import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
 
@@ -24,7 +24,7 @@ export async function processBatchSync(actions) {
       continue;
     }
 
-    if (!demo.isDemoMode()) {
+    if (!demo.isDemoMode() && tipo !== 'egreso_contenedor') {
       const supabase = getSupabase();
       const { data: existing } = await supabase
         .from('movimientos')
@@ -41,6 +41,12 @@ export async function processBatchSync(actions) {
       const payload = normalizePayload(tipo, data);
       if (tipo === 'egreso') {
         const result = await registrarEgreso({ ...payload, offlineId: clientId });
+        results.push({ clientId, ok: true, tipo, result, timestamp });
+      } else if (tipo === 'egreso_contenedor') {
+        const result = await registrarEgresoContenedor({ ...payload, offlineId: clientId });
+        results.push({ clientId, ok: true, tipo, result, timestamp });
+      } else if (tipo === 'ingreso_lote') {
+        const result = await registrarIngresoLote({ ...payload, offlineId: clientId });
         results.push({ clientId, ok: true, tipo, result, timestamp });
       } else if (tipo === 'ingreso') {
         const result = await registrarIngreso({ ...payload, offlineId: clientId });
@@ -76,6 +82,20 @@ function normalizePayload(tipo, data) {
       itemId: data.itemId,
       contenedorId: data.contenedorId,
       cantidad: data.cantidad,
+      usuario: data.usuario || data.nombrePersonal,
+    };
+  }
+  if (tipo === 'egreso_contenedor') {
+    return {
+      contenedorId: data.contenedorId,
+      codigo: data.codigo,
+      usuario: data.usuario || data.nombrePersonal,
+      egresoLoteId: data.egresoLoteId,
+    };
+  }
+  if (tipo === 'ingreso_lote') {
+    return {
+      egresoLoteId: data.egresoLoteId || data.loteId,
       usuario: data.usuario || data.nombrePersonal,
     };
   }

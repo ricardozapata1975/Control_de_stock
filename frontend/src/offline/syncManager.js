@@ -40,7 +40,9 @@ export async function executeOrQueue(tipo, data) {
     try {
       const batch = [{ clientId: `direct-${Date.now()}`, tipo, data, timestamp: new Date().toISOString() }];
       const res = await api.sync(batch);
-      if (res.results?.[0]?.ok) return { ok: true, offline: false };
+      if (res.results?.[0]?.ok) {
+        return { ok: true, offline: false, result: res.results[0].result };
+      }
       const fail = res.results?.[0];
       if (fail && !fail.ok) {
         throw new Error(fail.error || 'Error al sincronizar');
@@ -50,5 +52,5 @@ export async function executeOrQueue(tipo, data) {
     }
   }
   await enqueueAction({ tipo, data });
-  return { ok: true, offline: true };
+  return { ok: true, offline: true, result: null };
 }

@@ -423,6 +423,146 @@ export async function demoRegistrarEgreso({ itemId, contenedorId, cantidad, usua
   return { ok: true, movimiento_id: mov.id, stock_restante: stock.cantidad };
 }
 
+export async function demoRegistrarEgresoContenedor({
+  contenedorId,
+  codigo,
+  usuario,
+  offlineId,
+  egresoLoteId,
+}) {
+  const user = String(usuario || '').trim();
+  if (!user) throw Object.assign(new Error('Usuario requerido'), { status: 400 });
+
+  const db = await load();
+  let cont = null;
+  if (contenedorId) {
+    cont = db.contenedores.find((c) => c.id === contenedorId);
+  } else if (codigo) {
+    const parsed = parseCodigo(codigo);
+    const variants = codigoLookupVariants(parsed);
+    cont = db.contenedores.find((c) => variants.includes(c.codigo));
+  }
+  if (!cont) throw Object.assign(new Error('Contenedor no encontrado'), { status: 404 });
+
+  const rows = db.stock.filter((s) => s.contenedor_id === cont.id && s.cantidad > 0);
+  if (!rows.length) {
+    throw Object.assign(new Error('El contenedor no tiene stock para retirar'), { status: 400 });
+  }
+
+  const loteId =
+    String(egresoLoteId || '').trim() ||
+    `lote-${Date.now().toString(36)}-${Math.random().toString(36).slice(2, 8)}`;
+  const fecha = new Date().toISOString();
+
+  const egresos = [];
+  for (const row of rows) {
+    const qty = Number(row.cantidad);
+    const lineOfflineId = offlineId ? `${offlineId}:${row.item_id}` : null;
+    const result = await demoRegistrarEgreso({
+      itemId: row.item_id,
+      contenedorId: cont.id,
+      cantidad: qty,
+      usuario: user,
+      offlineId: lineOfflineId,
+    });
+    const db2 = await load();
+    const mov = db2.movimientos.find((m) => m.id === result.movimiento_id);
+    if (mov) {
+      mov.egreso_lote_id = loteId;
+      await save(db2);
+    }
+    const item = db2.items.find((i) => i.id === row.item_id);
+    egresos.push({
+      movimientoId: result.movimiento_id,
+      itemId: row.item_id,
+      nombre: item?.nombre || null,
+      marca: item?.marca || null,
+      modelo: item?.modelo || null,
+      tipo: item?.tipo || null,
+      cantidad: qty,
+      result,
+    });
+  }
+
+  return {
+    ok: true,
+    egresoLoteId: loteId,
+    contenedorId: cont.id,
+    contenedorCodigo: cont.codigo,
+    usuario: user,
+    fecha,
+    totalItems: egresos.length,
+    totalUnidades: egresos.reduce((s, e) => s + e.cantidad, 0),
+    egresos,
+    qrPayload: `inventario://devolucion/${loteId}`,
+  };
+}
+
+export async function demoGetEgresoLote(loteId) {
+  const id = String(loteId || '').trim();
+  const db = await load();
+  const movs = db.movimientos.filter((m) => m.tipo === 'egreso' && m.egreso_lote_id === id);
+  if (!movs.length) throw Object.assign(new Error('Lote de egreso no encontrado'), { status: 404 });
+
+  const first = movs[0];
+  const cont = db.contenedores.find((c) => c.id === first.contenedor_id);
+  const lineas = movs.map((m) => {
+    const mapped = demoMapMovimiento(
+      db,
+      m,
+      db.movimientos.find((i) => i.tipo === 'ingreso' && i.egreso_movimiento_id === m.id)
+    );
+    return {
+      ...mapped,
+      pendiente: mapped.estadoHistorial === 'pendiente_devolucion',
+    };
+  });
+  const pendientes = lineas.filter((l) => l.pendiente);
+  return {
+    id,
+    contenedorId: first.contenedor_id,
+    contenedorCodigo: cont?.codigo || null,
+    usuario: first.usuario,
+    fecha: first.fecha,
+    totalItems: lineas.length,
+    totalUnidades: lineas.reduce((s, l) => s + Number(l.cantidad || 0), 0),
+    pendientesCount: pendientes.length,
+    completoDevuelto: lineas.length > 0 && pendientes.length === 0,
+    lineas,
+    pendientes,
+    qrPayload: `inventario://devolucion/${id}`,
+  };
+}
+
+export async function demoRegistrarIngresoLote({ egresoLoteId, usuario, offlineId }) {
+  const lote = await demoGetEgresoLote(egresoLoteId);
+  if (!lote.pendientes?.length) {
+    throw Object.assign(new Error('Este lote ya fue devuelto o no tiene egresos pendientes'), {
+      status: 409,
+    });
+  }
+  const resultados = [];
+  for (const line of lote.pendientes) {
+    const result = await demoRegistrarIngreso({
+      movimientoId: line.id,
+      usuario: usuario || 'Sistema',
+      offlineId: offlineId ? `${offlineId}:${line.id}` : null,
+    });
+    resultados.push({
+      movimientoId: line.id,
+      itemId: line.itemId,
+      nombre: line.nombreHerramienta,
+      result,
+    });
+  }
+  return {
+    ok: true,
+    egresoLoteId: lote.id,
+    totalDevueltos: resultados.length,
+    resultados,
+  };
+}
+
 export async function demoRegistrarIngreso({ movimientoId, egresoMovimientoId, usuario, offlineId }) {
   const egresoId = egresoMovimientoId || movimientoId;
   const db = await load();

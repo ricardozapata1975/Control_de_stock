@@ -115,6 +115,14 @@ export const api = {
   adminAssignAlmacenSede: (body) =>
     request('/api/admin/catalogo/almacen-sede', { method: 'PATCH', body: JSON.stringify(body) }),
   egreso: (body) => request('/api/egreso', { method: 'POST', body: JSON.stringify(body) }),
+  egresoContenedor: (body) =>
+    request('/api/egreso/contenedor', { method: 'POST', body: JSON.stringify(body) }),
+  egresoLote: (loteId) => request(`/api/egreso/lotes/${encodeURIComponent(loteId)}`),
+  devolverEgresoLote: (loteId, body = {}) =>
+    request(`/api/egreso/lotes/${encodeURIComponent(loteId)}/devolver`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   ingreso: (body) => request('/api/ingreso', { method: 'POST', body: JSON.stringify(body) }),
   sync: (actions) => request('/api/sync', { method: 'POST', body: JSON.stringify(actions) }),
   adminItems: () => request('/api/admin/items'),

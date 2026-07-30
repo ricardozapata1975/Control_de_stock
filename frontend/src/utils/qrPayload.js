@@ -6,12 +6,16 @@ export const QR_TYPES = {
   ESTANTE: 'estante',
   CONTENEDOR: 'contenedor',
   ITEM: 'item',
+  DEVOLUCION: 'devolucion',
 };
 
-export function buildQrPayload({ type, codigo, itemId }) {
+export function buildQrPayload({ type, codigo, itemId, loteId }) {
   const t = type || QR_TYPES.CONTENEDOR;
   if (t === QR_TYPES.ITEM && itemId) {
     return `inventario://item/${encodeURIComponent(itemId)}`;
+  }
+  if (t === QR_TYPES.DEVOLUCION && (loteId || codigo)) {
+    return `inventario://devolucion/${encodeURIComponent(loteId || codigo)}`;
   }
   const code = String(codigo || '')
     .trim()
@@ -28,13 +32,16 @@ export function parseQrScan(text) {
   if (!s) return null;
 
   const deepLink = s.match(
-    /inventario:\/\/(sede|almacen|armario|estante|contenedor|item)\/([^?\s#]+)/i
+    /inventario:\/\/(sede|almacen|armario|estante|contenedor|item|devolucion)\/([^?\s#]+)/i
   );
   if (deepLink) {
     const type = deepLink[1].toLowerCase();
     const raw = decodeURIComponent(deepLink[2]);
     if (type === QR_TYPES.ITEM) {
       return { type: QR_TYPES.ITEM, itemId: raw };
+    }
+    if (type === QR_TYPES.DEVOLUCION) {
+      return { type: QR_TYPES.DEVOLUCION, loteId: raw };
     }
     return { type, codigo: raw.toUpperCase() };
   }
@@ -180,6 +187,8 @@ export function qrTypeLabel(type) {
       return 'Contenedor';
     case QR_TYPES.ITEM:
       return 'Artículo';
+    case QR_TYPES.DEVOLUCION:
+      return 'Devolución kit';
     default:
       return 'Ubicación';
   }
