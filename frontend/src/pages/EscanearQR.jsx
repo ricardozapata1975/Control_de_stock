@@ -75,7 +75,8 @@ export default function EscanearQR() {
       <h2 className="page-title mb-2 text-center sm:text-left">ESCANEAR QR</h2>
       <p className="mb-6 text-center text-muted sm:text-left">
         Escaneá QR de ubicación, código de fabricante, ítem o el{' '}
-        <strong className="text-content">QR de devolución</strong> del remito de kit.
+        <strong className="text-content">QR de devolución</strong> del remito de kit. Si el celular
+        no lee el QR desde la pantalla, pegá el UUID del remito en código manual.
       </p>
 
       {!result && !devolucionLoteId && (
@@ -124,6 +125,7 @@ export default function EscanearQR() {
         <QrScanner
           mode="raw"
           title="Escanear QR / código"
+          manualPlaceholder="UUID del remito, inv://d/… o ubicación"
           onClose={() => setScanning(false)}
           onScan={handleScan}
         />

@@ -42,8 +42,8 @@ export default function Contenedor() {
 
   return (
     <div>
-      <button type="button" className="btn-secondary mb-4 text-base" onClick={() => navigate('/escanear')}>
-        ← Escanear otro
+      <button type="button" className="btn-secondary mb-4 text-base" onClick={() => navigate(-1)}>
+        ← Volver
       </button>
       <ScanResultPanel
         parsed={parsedFromCodigoParam(codigo)}

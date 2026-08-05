@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { useSync } from '../context/SyncContext';
 import { useStore } from '../store/useStore';
-import { QR_TYPES, qrTypeLabel } from '../utils/qrPayload';
+import { QR_TYPES, buildQrPayload, qrTypeLabel } from '../utils/qrPayload';
 import {
   buildEgresoUrlForItem,
   buildIngresoUrlForItem,
@@ -115,7 +115,7 @@ export default function ScanResultPanel({ parsed, contenedor, items = [], onScan
             totalItems: snapshotLineas.length,
             totalUnidades,
             egresos: snapshotLineas,
-            qrPayload: `inventario://devolucion/${egresoLoteId}`,
+            qrPayload: buildQrPayload({ type: QR_TYPES.DEVOLUCION, loteId: egresoLoteId }),
           };
       setPrintLote(lote);
       setShowPrint(true);

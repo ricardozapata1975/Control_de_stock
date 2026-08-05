@@ -329,7 +329,7 @@ async function egresarStockRows(stockRows, contenedorId, cont, usuario, offlineI
     totalItems: egresos.length,
     totalUnidades: egresos.reduce((s, e) => s + e.cantidad, 0),
     egresos,
-    qrPayload: `inventario://devolucion/${loteId}`,
+    qrPayload: `inv://d/${loteId}`,
   };
 }
 
@@ -400,7 +400,7 @@ export async function getEgresoLote(loteId) {
     completoDevuelto: lineas.length > 0 && pendientes.length === 0,
     lineas,
     pendientes,
-    qrPayload: `inventario://devolucion/${lote.id}`,
+    qrPayload: `inv://d/${lote.id}`,
   };
 }
 

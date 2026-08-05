@@ -4,6 +4,7 @@ import { useSync } from '../context/SyncContext';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
 import { formatUbicacionLabel } from '../utils/contenedor';
+import { buildQrPayload, QR_TYPES } from '../utils/qrPayload';
 import RemitoEgresoLotePrintModal from './RemitoEgresoLotePrintModal';
 
 function canRetirarContenedorCompleto(contenedor, items) {
@@ -99,7 +100,7 @@ export default function ContenedorPanel({ data, onRefresh }) {
             totalItems: snapshotLineas.length,
             totalUnidades,
             egresos: snapshotLineas,
-            qrPayload: `inventario://devolucion/${egresoLoteId}`,
+            qrPayload: buildQrPayload({ type: QR_TYPES.DEVOLUCION, loteId: egresoLoteId }),
           };
       setPrintLote(lote);
       setShowPrint(true);

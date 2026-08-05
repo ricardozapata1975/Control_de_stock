@@ -7,9 +7,14 @@ import RemitoRecibir from '../components/RemitoRecibir';
 import RemitoScanLoader from '../components/RemitoScanLoader';
 import SearchFilters from '../components/SearchFilters';
 import ItemThumb from '../components/ItemThumb';
-import UbicacionSelector from '../components/UbicacionSelector';
 import { formatUbicacionLabel } from '../utils/contenedor';
-import { ALMACEN_DEFAULT, buildCedeLabel, getAlmacenNombreFromCatalog, resolveAduanaUbicacion, SEDE_DEFAULT } from '../utils/ubicacion';
+import {
+  ALMACEN_DEFAULT,
+  getSedeNombreFromCatalog,
+  getSedesFromCatalog,
+  resolveAduanaUbicacion,
+  SEDE_DEFAULT,
+} from '../utils/ubicacion';
 import { todayIsoDate } from '../utils/remitoStorage';
 
 const EMPTY_FORM = {
@@ -79,8 +84,16 @@ export default function RemitoSalida() {
   const [tipoRemito, setTipoRemito] = useState('venta');
   const [inventario, setInventario] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({ q: '', almacen: '', armario: '', tipo: '', sede: '' });
+  const [filters, setFilters] = useState({
+    q: '',
+    almacen: '',
+    armario: '',
+    contenedor: '',
+    tipo: '',
+    sede: '',
+  });
   const [catalogo, setCatalogo] = useState({ almacenes: [], armariosPorAlmacen: {}, sedes: [], aduanasPorSede: {} });
+  const [contenedoresCatalogo, setContenedoresCatalogo] = useState([]);
   const [tipos, setTipos] = useState([]);
   const [cart, setCart] = useState(() => new Map());
   const [showPreview, setShowPreview] = useState(false);
@@ -88,6 +101,7 @@ export default function RemitoSalida() {
   const [form, setForm] = useState(EMPTY_FORM);
   const [empresas, setEmpresas] = useState([]);
   const [empresaId, setEmpresaId] = useState('');
+  const [empresaDestinoId, setEmpresaDestinoId] = useState('');
   const [confirmado, setConfirmado] = useState(false);
   const [remitoId, setRemitoId] = useState(null);
   const [submitting, setSubmitting] = useState(false);
@@ -107,6 +121,23 @@ export default function RemitoSalida() {
     [empresas, empresaId]
   );
 
+  const empresaDestino = useMemo(
+    () => empresas.find((e) => e.id === empresaDestinoId) || null,
+    [empresas, empresaDestinoId]
+  );
+
+  const sedesCatalogo = useMemo(() => getSedesFromCatalog(catalogo), [catalogo]);
+
+  const sedeOrigenNombre = useMemo(
+    () =>
+      sedeNombre ||
+      getSedeNombreFromCatalog(catalogo, sessionSede || sedeOrigen) ||
+      sessionSede ||
+      sedeOrigen ||
+      '',
+    [sedeNombre, catalogo, sessionSede, sedeOrigen]
+  );
+
   useEffect(() => {
     if (sessionSede) {
       setFilters((prev) => ({ ...prev, sede: sessionSede }));
@@ -121,15 +152,16 @@ export default function RemitoSalida() {
       .inventario(filters)
       .then((data) => setInventario(data.items || []))
       .finally(() => setLoading(false));
-  }, [filters.q, filters.almacen, filters.armario, filters.tipo, filters.sede]);
+  }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.sede]);
 
   useEffect(() => {
     Promise.all([
       api.catalogoUbicacion(sessionSede ? { sede: sessionSede } : {}),
       api.tipos(),
       api.empresasEmisoras(),
+      api.contenedores().catch(() => ({ contenedores: [] })),
     ])
-      .then(([cat, tiposData, empresasData]) => {
+      .then(([cat, tiposData, empresasData, cnt]) => {
         setCatalogo({
           almacenes: cat.almacenes || [],
           armariosPorAlmacen: cat.armariosPorAlmacen || {},
@@ -137,6 +169,7 @@ export default function RemitoSalida() {
           aduanasPorSede: cat.aduanasPorSede || {},
         });
         setTipos(tiposData.tipos || []);
+        setContenedoresCatalogo(cnt.contenedores || []);
         const list = empresasData.empresas || [];
         setEmpresas(list);
         if (list.length && !empresaId) {
@@ -172,17 +205,10 @@ export default function RemitoSalida() {
     }
   }, [cartCount, almacenesOrigenCart]);
 
-  const almacenesDestino = useMemo(
-    () => (catalogo.almacenes || []).filter((a) => a.codigo !== almacenOrigen),
-    [catalogo.almacenes, almacenOrigen]
-  );
-
   useEffect(() => {
     if (tipoRemito !== 'transferencia') return;
-    if (!almacenDestino && almacenesDestino.length) {
-      setAlmacenDestino(almacenesDestino[0].codigo);
-    }
-  }, [tipoRemito, almacenDestino, almacenesDestino]);
+    if (sessionSede) setSedeOrigen(sessionSede);
+  }, [tipoRemito, sessionSede]);
 
   const isInCart = useCallback((stockId) => cart.has(stockId), [cart]);
 
@@ -297,42 +323,38 @@ export default function RemitoSalida() {
       setDestArmario(aduana.armario);
       setDestEstante(aduana.estante);
       setDestContenedor(aduana.contenedor || '');
+    } else {
+      setAlmacenDestino('');
+      setDestArmario('A00');
+      setDestEstante('E01');
+      setDestContenedor('C01');
     }
-  }, [tipoRemito, sedeDestino, catalogo.aduanasPorSede]);
+  }, [tipoRemito, sedeDestino, catalogo]);
 
   useEffect(() => {
-    if (tipoRemito !== 'transferencia' || !almacenDestino) return;
-    const nombreAlm = getAlmacenNombreFromCatalog(catalogo, almacenDestino);
-    const cedeDestino = buildCedeLabel(catalogo, {
-      sede: sedeDestino,
-      almacen: almacenDestino,
-      armario: destArmario,
-      estante: destEstante,
-      contenedor: destContenedor,
-    });
+    if (tipoRemito !== 'transferencia') return;
     setForm((f) => ({
       ...f,
-      destinatario: nombreAlm || almacenDestino,
-      domicilio: `Almacén ${almacenDestino}`,
-      iva: 'Transferencia interna',
-      cedeDestino,
+      cedeOrigen: sedeOrigenNombre,
+      iva: 'Transferencia intercompany',
     }));
-  }, [tipoRemito, almacenDestino, sedeDestino, destArmario, destEstante, destContenedor, catalogo]);
+  }, [tipoRemito, sedeOrigenNombre]);
 
   useEffect(() => {
-    if (tipoRemito !== 'transferencia' || !cartCount) return;
-    const primera = cartList[0];
-    if (!primera) return;
-    const cedeOrigen = buildCedeLabel(catalogo, {
-      sede: primera.sede || sedeOrigen,
-      almacen: primera.almacen || almacenOrigen,
-      armario: primera.armario,
-      estante: primera.estante,
-      contenedor: primera.contenedor,
-    }) || primera.ubicacion || getAlmacenNombreFromCatalog(catalogo, almacenOrigen);
-    setForm((f) => ({ ...f, cedeOrigen }));
-    if (primera.sede) setSedeOrigen(primera.sede);
-  }, [tipoRemito, cartCount, cartList, almacenOrigen, sedeOrigen, catalogo]);
+    if (tipoRemito !== 'transferencia') return;
+    const cedeDestino =
+      getSedeNombreFromCatalog(catalogo, sedeDestino) || sedeDestino || '';
+    const emp = empresaDestino;
+    setForm((f) => ({
+      ...f,
+      cedeDestino,
+      iva: 'Transferencia intercompany',
+      destinatario: emp ? emp.razonSocial || emp.nombre || '' : f.destinatario,
+      domicilio: emp ? emp.domicilio || '' : f.domicilio,
+      localidad: emp ? emp.localidad || '' : f.localidad,
+      cuit: emp ? emp.cuit || '' : f.cuit,
+    }));
+  }, [tipoRemito, sedeDestino, empresaDestino, catalogo]);
 
   const handleClienteSelect = (cliente) => {
     patchForm({
@@ -362,16 +384,28 @@ export default function RemitoSalida() {
     }
 
     if (tipoRemito === 'transferencia') {
-      if (!almacenOrigen?.trim() || !almacenDestino?.trim()) {
-        setError('Completá almacén origen y destino.');
+      if (!sessionSede && !sedeOrigen) {
+        setError('No hay sede de origen en la sesión.');
+        return;
+      }
+      if (!sedeDestino?.trim()) {
+        setError('Seleccioná la sede destino.');
+        return;
+      }
+      if (!empresaDestinoId) {
+        setError('Seleccioná la razón social destino.');
+        return;
+      }
+      if (!almacenDestino?.trim() || !destArmario || !destEstante) {
+        setError('La sede destino no tiene aduana (recepción tránsito) configurada.');
+        return;
+      }
+      if (!almacenOrigen?.trim()) {
+        setError('No se pudo determinar el almacén origen de los ítems.');
         return;
       }
       if (almacenOrigen === almacenDestino) {
-        setError('El almacén destino debe ser distinto del origen.');
-        return;
-      }
-      if (!destArmario || !destEstante) {
-        setError('Completá armario y estante destino.');
+        setError('El stock destino (aduana) no puede ser el mismo almacén de origen.');
         return;
       }
       if (almacenesOrigenCart.length > 1) {
@@ -422,6 +456,7 @@ export default function RemitoSalida() {
           ? {
               almacenOrigen,
               almacenDestino,
+              empresaDestinoId: empresaDestinoId || undefined,
               ubicacionDestino: {
                 sede: sedeDestino,
                 almacen: almacenDestino,
@@ -606,8 +641,8 @@ export default function RemitoSalida() {
         </div>
         {tipoRemito === 'transferencia' && (
           <p className="mt-2 text-xs text-muted">
-            Transferencia interna: el stock sale del almacén origen y queda en tránsito hasta la
-            recepción en destino.
+            Transferencia entre sedes (intercompany): elegí sede y razón social destino. El stock
+            queda en aduana de esa sede hasta la recepción.
           </p>
         )}
       </div>
@@ -619,6 +654,7 @@ export default function RemitoSalida() {
           onChange={(f) => setFilters((prev) => ({ ...prev, ...f }))}
           almacenes={catalogo.almacenes}
           armariosPorAlmacen={catalogo.armariosPorAlmacen}
+          contenedores={contenedoresCatalogo}
           tipos={tipos}
         />
       </div>
@@ -783,7 +819,7 @@ export default function RemitoSalida() {
               <h4 className="font-bold text-content">Datos del remito</h4>
 
               <div>
-                <label className="text-label">Empresa emisora</label>
+                <label className="text-label">Razón social emisora (rótulo / numeración)</label>
                 <select
                   className="input-field text-base"
                   value={empresaId}
@@ -792,7 +828,7 @@ export default function RemitoSalida() {
                 >
                   {empresas.map((e) => (
                     <option key={e.id} value={e.id}>
-                      {e.nombre}
+                      {e.razonSocial || e.nombre}
                     </option>
                   ))}
                 </select>
@@ -823,94 +859,75 @@ export default function RemitoSalida() {
               {tipoRemito === 'transferencia' ? (
                 <>
                   <hr className="border-border" />
-                  <h4 className="font-bold text-content">Transferencia entre almacenes</h4>
+                  <h4 className="font-bold text-content">Transferencia entre sedes</h4>
                   <p className="text-xs text-muted">
-                    El destino por defecto es la <strong>aduana</strong> de la sede (recepción tránsito).
-                    El responsable en destino reubicará el stock luego.
+                    Intercompany: el stock llega a la <strong>aduana</strong> (recepción tránsito) de
+                    la sede destino. El detalle de almacén/armario no se muestra en el remito.
                   </p>
-                  <div>
-                    <label className="text-label">Almacén origen</label>
-                    <select
-                      className="input-field text-base"
-                      value={almacenOrigen}
-                      disabled={confirmado}
-                      onChange={(e) => setAlmacenOrigen(e.target.value)}
-                    >
-                      {(catalogo.almacenes || []).map((a) => (
-                        <option key={a.codigo} value={a.codigo}>
-                          {a.codigo} — {a.nombre || a.codigo}
-                        </option>
-                      ))}
-                    </select>
-                    {almacenesOrigenCart.length > 1 && (
-                      <p className="mt-1 text-xs text-amber-700 dark:text-amber-300">
-                        Hay ítems de distintos almacenes en el carrito.
-                      </p>
-                    )}
-                  </div>
-                  <div>
-                    <label className="text-label">Almacén destino</label>
-                    <select
-                      className="input-field text-base"
-                      value={almacenDestino}
-                      disabled={confirmado}
-                      onChange={(e) => setAlmacenDestino(e.target.value)}
-                    >
-                      {almacenesDestino.map((a) => (
-                        <option key={a.codigo} value={a.codigo}>
-                          {a.codigo} — {a.nombre || a.codigo}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                  <UbicacionSelector
-                    catalogo={catalogo}
-                    sede={sedeDestino}
-                    almacen={almacenDestino || ALMACEN_DEFAULT}
-                    armario={destArmario}
-                    estante={destEstante}
-                    contenedor={destContenedor}
-                    almacenDisabled
-                    compact
-                    labelPrefix="destino"
-                    onSedeChange={setSedeDestino}
-                    onAlmacenChange={setAlmacenDestino}
-                    onArmarioChange={setDestArmario}
-                    onEstanteChange={setDestEstante}
-                    onContenedorChange={setDestContenedor}
-                  />
+
                   <div>
                     <label className="text-label">Cede origen</label>
                     <input
                       className="input-field text-base"
-                      value={form.cedeOrigen}
-                      disabled={confirmado}
-                      placeholder="Ej. Oficina Ballester — Armario Herramientas — E01"
-                      onChange={(e) => patchForm({ cedeOrigen: e.target.value })}
-                    />
-                  </div>
-                  <div>
-                    <label className="text-label">Cede destino</label>
-                    <input
-                      className="input-field text-base"
-                      value={form.cedeDestino}
-                      disabled={confirmado}
-                      placeholder="Ej. Oficina Santa Fe — contenedor obrador C05"
-                      onChange={(e) => patchForm({ cedeDestino: e.target.value })}
+                      value={form.cedeOrigen || sedeOrigenNombre}
+                      disabled
+                      readOnly
                     />
                     <p className="mt-1 text-xs text-muted">
-                      Sede o ubicación física (oficina, depósito, contenedor, etc.). Se completa al elegir almacén y ubicación.
+                      Fija según la sede de tu sesión
+                      {sessionSede ? ` (${sessionSede})` : ''}.
                     </p>
                   </div>
+
                   <div>
-                    <label className="text-label">Destinatario (Señor/es)</label>
-                    <input
+                    <label className="text-label">Cede destino (sede)</label>
+                    <select
                       className="input-field text-base"
-                      value={form.destinatario}
+                      value={sedeDestino}
                       disabled={confirmado}
-                      onChange={(e) => patchForm({ destinatario: e.target.value })}
-                    />
+                      onChange={(e) => {
+                        setSedeDestino(e.target.value);
+                        setConfirmado(false);
+                        setRemitoId(null);
+                      }}
+                    >
+                      {sedesCatalogo.map((s) => (
+                        <option key={s.codigo} value={s.codigo}>
+                          {s.codigo} — {s.nombre || s.codigo}
+                        </option>
+                      ))}
+                    </select>
                   </div>
+
+                  <div>
+                    <label className="text-label">Razón social destino (Señor/es)</label>
+                    <select
+                      className="input-field text-base"
+                      value={empresaDestinoId}
+                      disabled={confirmado}
+                      onChange={(e) => {
+                        setEmpresaDestinoId(e.target.value);
+                        setConfirmado(false);
+                        setRemitoId(null);
+                      }}
+                    >
+                      <option value="">Elegí razón social…</option>
+                      {empresas.map((e) => (
+                        <option key={e.id} value={e.id}>
+                          {e.razonSocial || e.nombre}
+                          {e.sedeCodigo ? ` (${e.sedeCodigo})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  {(form.domicilio || form.localidad || form.cuit) && (
+                    <div className="rounded-lg border border-border bg-surface-muted/40 p-3 text-sm text-muted">
+                      {form.domicilio && <p>Domicilio: {form.domicilio}</p>}
+                      {form.localidad && <p>Localidad: {form.localidad}</p>}
+                      {form.cuit && <p>CUIT: {form.cuit}</p>}
+                    </div>
+                  )}
                 </>
               ) : (
               <>

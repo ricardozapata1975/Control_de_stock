@@ -15,7 +15,8 @@ export function buildQrPayload({ type, codigo, itemId, loteId }) {
     return `inventario://item/${encodeURIComponent(itemId)}`;
   }
   if (t === QR_TYPES.DEVOLUCION && (loteId || codigo)) {
-    return `inventario://devolucion/${encodeURIComponent(loteId || codigo)}`;
+    // Prefijo corto: QR menos denso y más legible con el celular (pantalla/papel).
+    return `inv://d/${encodeURIComponent(loteId || codigo)}`;
   }
   const code = String(codigo || '')
     .trim()
@@ -32,10 +33,11 @@ export function parseQrScan(text) {
   if (!s) return null;
 
   const deepLink = s.match(
-    /inventario:\/\/(sede|almacen|armario|estante|contenedor|item|devolucion)\/([^?\s#]+)/i
+    /(?:inventario|inv):\/\/(sede|almacen|armario|estante|contenedor|item|devolucion|d)\/([^?\s#]+)/i
   );
   if (deepLink) {
-    const type = deepLink[1].toLowerCase();
+    let type = deepLink[1].toLowerCase();
+    if (type === 'd') type = QR_TYPES.DEVOLUCION;
     const raw = decodeURIComponent(deepLink[2]);
     if (type === QR_TYPES.ITEM) {
       return { type: QR_TYPES.ITEM, itemId: raw };
@@ -44,6 +46,11 @@ export function parseQrScan(text) {
       return { type: QR_TYPES.DEVOLUCION, loteId: raw };
     }
     return { type, codigo: raw.toUpperCase() };
+  }
+
+  // UUID pegado desde el remito (debajo del QR) → devolución de lote
+  if (/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(s)) {
+    return { type: QR_TYPES.DEVOLUCION, loteId: s.toLowerCase() };
   }
 
   const itemParam = s.match(/(?:item[_-]?id|itemId)[=:]([a-zA-Z0-9._-]+)/i);

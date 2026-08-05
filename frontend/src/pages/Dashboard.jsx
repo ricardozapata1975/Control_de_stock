@@ -11,10 +11,26 @@ import ItemEditModal from '../components/ItemEditModal';
 import ItemDetailModal from '../components/ItemDetailModal';
 import AssignBarcodeModal from '../components/AssignBarcodeModal';
 import CaptureItemPhotoModal from '../components/CaptureItemPhotoModal';
+import ContenedorPanel from '../components/ContenedorPanel';
 import { buildEgresoUrlForItem, getUbicacionScanLabel, parsedFromCodigoParam } from '../utils/scanMatch';
 
 const PAGE_SIZE_OPTIONS = [10, 25, 50, 100];
 const DEFAULT_PAGE_SIZE = 25;
+
+function resolveCodigoContenedorFiltrado({ filters, inventario, contenedoresCatalogo }) {
+  const short = String(filters.contenedor || '').trim().toUpperCase();
+  if (!short || short === 'SC') return null;
+  const fromInv = (inventario || []).find(
+    (i) => String(i.contenedor || '').toUpperCase() === short
+  );
+  const fromCat = (contenedoresCatalogo || []).find(
+    (c) =>
+      String(c.contenedor || '').toUpperCase() === short &&
+      (!filters.almacen || c.almacen === filters.almacen) &&
+      (!filters.armario || c.armario === filters.armario)
+  );
+  return fromInv?.contenedorCodigo || fromInv?.codigo || fromCat?.codigo || null;
+}
 
 export default function Dashboard() {
   const navigate = useNavigate();
@@ -45,6 +61,9 @@ export default function Dashboard() {
   const [armariosPorAlmacen, setArmariosPorAlmacen] = useState({});
   const [contenedoresCatalogo, setContenedoresCatalogo] = useState([]);
   const [tipos, setTipos] = useState([]);
+  const [kitData, setKitData] = useState(null);
+  const [kitLoading, setKitLoading] = useState(false);
+  const [kitError, setKitError] = useState('');
 
   useEffect(() => {
     cleanupLegacyFilterStorage();
@@ -129,6 +148,48 @@ export default function Dashboard() {
   useEffect(() => {
     fetchInventario();
   }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.codigo, filters.sede]);
+
+  useEffect(() => {
+    const codigo = resolveCodigoContenedorFiltrado({
+      filters,
+      inventario,
+      contenedoresCatalogo,
+    });
+    if (!codigo) {
+      setKitData(null);
+      setKitError('');
+      setKitLoading(false);
+      return undefined;
+    }
+
+    let cancelled = false;
+    setKitLoading(true);
+    setKitError('');
+    api
+      .contenedor(codigo)
+      .then((data) => {
+        if (!cancelled) setKitData(data);
+      })
+      .catch((e) => {
+        if (!cancelled) {
+          setKitData(null);
+          setKitError(e.message || 'No se pudo cargar el contenedor');
+        }
+      })
+      .finally(() => {
+        if (!cancelled) setKitLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    filters.contenedor,
+    filters.almacen,
+    filters.armario,
+    inventario,
+    contenedoresCatalogo,
+  ]);
 
   const scanLabel = useMemo(() => {
     if (!filters.codigo) return null;
@@ -273,6 +334,40 @@ export default function Dashboard() {
         contenedores={contenedoresCatalogo}
         tipos={tipos}
       />
+
+      {filters.contenedor && filters.contenedor !== 'SC' && (
+        <div className="mb-4 space-y-3">
+          <div className="card border-2 border-accent bg-accent/10">
+            <p className="text-lg font-bold text-content">
+              Retiro de kit · Contenedor{' '}
+              <span className="font-mono text-accent">{filters.contenedor}</span>
+            </p>
+            <p className="mt-1 text-sm text-muted">
+              Usá el botón de abajo para retirar todo el contenido (genera remito interno + QR de
+              devolución). No uses la sección Remito de venta para esto.
+            </p>
+            {kitLoading && <p className="mt-2 text-sm text-muted">Cargando contenedor…</p>}
+            {kitError && <div className="alert-error mt-2">{kitError}</div>}
+          </div>
+          {kitData && (
+            <ContenedorPanel
+              data={kitData}
+              onRefresh={() => {
+                fetchInventario();
+                const codigo = resolveCodigoContenedorFiltrado({
+                  filters,
+                  inventario,
+                  contenedoresCatalogo,
+                });
+                if (codigo) {
+                  api.contenedor(codigo).then(setKitData).catch(() => {});
+                }
+              }}
+            />
+          )}
+        </div>
+      )}
+
       {inventario.length > 0 && (
         <PaginationBar
           page={page}

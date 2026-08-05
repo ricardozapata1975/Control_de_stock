@@ -21,25 +21,28 @@ function formatFechaHora(iso) {
  */
 export default function RemitoEgresoLoteDocument({ lote }) {
   const canvasRef = useRef(null);
-  const qrPayload =
-    lote?.qrPayload ||
-    (lote?.egresoLoteId || lote?.id
-      ? buildQrPayload({ type: QR_TYPES.DEVOLUCION, loteId: lote.egresoLoteId || lote.id })
-      : '');
+  const loteId = lote?.egresoLoteId || lote?.id;
+  const qrPayload = loteId
+    ? buildQrPayload({ type: QR_TYPES.DEVOLUCION, loteId })
+    : lote?.qrPayload || '';
 
   const lineas = lote?.egresos || lote?.lineas || [];
 
   useEffect(() => {
     if (!qrPayload || !canvasRef.current) return;
-    QRCode.toCanvas(canvasRef.current, qrPayload, { width: 120, margin: 1 });
+    QRCode.toCanvas(canvasRef.current, qrPayload, {
+      width: 200,
+      margin: 2,
+      errorCorrectionLevel: 'H',
+    });
   }, [qrPayload]);
 
   if (!lote) return null;
 
   return (
     <div className="remito-doc mx-auto w-full max-w-[210mm] bg-white px-4 pb-4 font-serif text-[11px] leading-tight text-black print:px-4 print:pb-4">
-      <div className="mb-2 flex border-2 border-black">
-        <div className="flex-1 border-r border-black p-3">
+      <div className="mb-2 flex flex-col border-2 border-black sm:flex-row">
+        <div className="flex-1 border-b border-black p-3 sm:border-b-0 sm:border-r">
           <p className="text-base font-bold uppercase tracking-wide">Retiro de contenedor</p>
           <p className="mt-1 text-[10px]">Documento interno de préstamo / kit</p>
           <p className="mt-3">
@@ -59,18 +62,19 @@ export default function RemitoEgresoLoteDocument({ lote }) {
               lineas.reduce((s, l) => s + Number(l.cantidad || 0), 0)}
           </p>
         </div>
-        <div className="flex w-[38%] flex-col items-center justify-center p-2 text-center">
-          <p className="mb-1 text-[9px] font-bold uppercase">QR devolución</p>
+        <div className="flex w-full flex-col items-center justify-center p-3 text-center sm:w-[42%]">
+          <p className="mb-1 text-[10px] font-bold uppercase">QR devolución</p>
           {qrPayload ? (
             <canvas ref={canvasRef} className="border border-black/20" />
           ) : (
-            <div className="flex h-[120px] w-[120px] items-center justify-center border border-dashed border-black/40 text-[9px] text-black/50">
+            <div className="flex h-[200px] w-[200px] items-center justify-center border border-dashed border-black/40 text-[9px] text-black/50">
               Sin QR
             </div>
           )}
-          <p className="mt-1 break-all font-mono text-[7px] text-black/60">
-            {lote.egresoLoteId || lote.id}
+          <p className="mt-2 text-[8px] leading-snug text-black/70">
+            Si el celular no lee el QR, pegá este código en Escanear → Código manual:
           </p>
+          <p className="mt-1 break-all font-mono text-[9px] font-bold">{loteId}</p>
         </div>
       </div>
 

@@ -40,13 +40,13 @@ function pickPreferredCamera(cameras) {
 function qrBoxConfig({ wide = false } = {}) {
   const el = document.getElementById(SCANNER_ID);
   const w = el?.clientWidth || 280;
+  // Cuadro cuadrado: el modo "wide" fallaba al leer QR de remitos desde pantalla/papel.
   if (wide) {
-    const boxW = Math.min(320, Math.max(220, Math.floor(w * 0.9)));
-    const boxH = Math.min(140, Math.max(90, Math.floor(boxW * 0.4)));
-    return { fps: 10, qrbox: { width: boxW, height: boxH }, aspectRatio: 1.777 };
+    const size = Math.min(300, Math.max(200, Math.floor(w * 0.88)));
+    return { fps: 15, qrbox: { width: size, height: size }, disableFlip: false };
   }
-  const size = Math.min(280, Math.max(180, Math.floor(w * 0.82)));
-  return { fps: 10, qrbox: { width: size, height: size } };
+  const size = Math.min(300, Math.max(200, Math.floor(w * 0.88)));
+  return { fps: 15, qrbox: { width: size, height: size } };
 }
 
 function mapCameraError(err) {
@@ -84,7 +84,7 @@ export default function QrScanner({
   onClose,
   mode = 'ubicacion',
   title = 'Escanear QR',
-  manualPlaceholder = 'A01-E01-C01 o item_id',
+  manualPlaceholder = 'QR, UUID de remito o A01-E01-C01',
 }) {
   const scannerRef = useRef(null);
   const onScanRef = useRef(onScan);
