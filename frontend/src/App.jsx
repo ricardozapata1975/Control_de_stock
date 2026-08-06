@@ -26,6 +26,7 @@ import {
   ReservasPage,
   FaltantesPage,
   PrioridadesPage,
+  RecepcionesPage,
   ProyectosPlaceholder,
 } from './modules/proyectos';
 import ForgotPassword from './pages/ForgotPassword';
@@ -79,15 +80,7 @@ export default function App() {
                 <Route path="reservados" element={<ReservasPage />} />
                 <Route path="faltantes" element={<FaltantesPage />} />
                 <Route path="prioridades" element={<PrioridadesPage />} />
-                <Route
-                  path="recepciones"
-                  element={
-                    <ProyectosPlaceholder
-                      title="Recepciones"
-                      description="Ingreso por remito, OC o carga manual con sugerencias de asignación."
-                    />
-                  }
-                />
+                <Route path="recepciones" element={<RecepcionesPage />} />
                 <Route
                   path="transito"
                   element={

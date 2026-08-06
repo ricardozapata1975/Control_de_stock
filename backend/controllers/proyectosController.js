@@ -159,3 +159,77 @@ export async function getAlertas(req, res) {
     handle(err, res);
   }
 }
+
+export async function getRecepciones(req, res) {
+  try {
+    const { listRecepciones } = await import('../services/proyectosRecepcionesService.js');
+    const recepciones = await listRecepciones({
+      sede: sedeFromReq(req),
+      estado: req.query.estado,
+    });
+    res.json({ recepciones });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getRecepcionById(req, res) {
+  try {
+    const { getRecepcion } = await import('../services/proyectosRecepcionesService.js');
+    const data = await getRecepcion(req.params.id);
+    res.json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postRecepcion(req, res) {
+  try {
+    const { crearRecepcion } = await import('../services/proyectosRecepcionesService.js');
+    const body = req.body || {};
+    const result = await crearRecepcion({
+      ...body,
+      sede: body.sede || req.user?.sede,
+      operador: body.operador || req.user?.name || req.user?.email,
+    });
+    res.status(201).json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postAceptarSugerencia(req, res) {
+  try {
+    const { aceptarSugerencia } = await import('../services/proyectosRecepcionesService.js');
+    const sugerencia = await aceptarSugerencia(req.params.id, {
+      usuario: req.user?.name || req.user?.email,
+    });
+    res.json({ sugerencia });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postRechazarSugerencia(req, res) {
+  try {
+    const { rechazarSugerencia } = await import('../services/proyectosRecepcionesService.js');
+    const sugerencia = await rechazarSugerencia(req.params.id);
+    res.json({ sugerencia });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postSugerenciasPorItems(req, res) {
+  try {
+    const { sugerirPorItems } = await import('../services/proyectosRecepcionesService.js');
+    const sugerencias = await sugerirPorItems({
+      itemIds: req.body?.itemIds || [],
+      cantidades: req.body?.cantidades || {},
+      sede: req.body?.sede || req.user?.sede,
+    });
+    res.json({ sugerencias });
+  } catch (err) {
+    handle(err, res);
+  }
+}

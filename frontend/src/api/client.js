@@ -307,6 +307,28 @@ export const api = {
     const q = new URLSearchParams(params).toString();
     return request(`/api/proyectos/alertas${q ? `?${q}` : ''}`);
   },
+  proyectosRecepciones: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/recepciones${q ? `?${q}` : ''}`);
+  },
+  proyectoRecepcion: (id) => request(`/api/proyectos/recepciones/${encodeURIComponent(id)}`),
+  crearRecepcionProyecto: (body) =>
+    request('/api/proyectos/recepciones', { method: 'POST', body: JSON.stringify(body) }),
+  aceptarSugerenciaProyecto: (id) =>
+    request(`/api/proyectos/sugerencias/${encodeURIComponent(id)}/aceptar`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  rechazarSugerenciaProyecto: (id) =>
+    request(`/api/proyectos/sugerencias/${encodeURIComponent(id)}/rechazar`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  sugerenciasPorItemsProyecto: (body) =>
+    request('/api/proyectos/sugerencias/por-items', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
   downloadPlantilla: async () => {
     const token = getToken();

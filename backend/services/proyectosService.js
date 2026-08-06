@@ -1,6 +1,7 @@
 import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
 import * as pdemo from './proyectosDemo.js';
+import { countRecepcionesPendientes } from './proyectosRecepcionesService.js';
 
 function isDemo() {
   return demo.isDemoMode();
@@ -365,13 +366,20 @@ export async function getDashboardKpis({ sede } = {}) {
     alertasActivas = ac || 0;
   }
 
+  let recepcionesPendientes = 0;
+  try {
+    recepcionesPendientes = await countRecepcionesPendientes(sede);
+  } catch {
+    recepcionesPendientes = 0;
+  }
+
   return {
     totalProyectosActivos: activos.length,
     proyectosCriticos: criticos.length,
     faltantesPendientes,
     materialesReservados,
     materialesEnTransito: 0,
-    recepcionesPendientes: 0,
+    recepcionesPendientes,
     devolucionesPendientes: 0,
     herramientasAsignadas: 0,
     alertasActivas,

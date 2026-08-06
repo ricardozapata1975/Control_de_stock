@@ -22,6 +22,9 @@ const db = {
   pedidos: [],
   pedidoLineas: [],
   alertas: [],
+  recepciones: [],
+  recepcionLineas: [],
+  sugerencias: [],
 };
 
 export function proyectosDemoReset() {
@@ -34,6 +37,9 @@ export function proyectosDemoReset() {
   db.pedidos = [];
   db.pedidoLineas = [];
   db.alertas = [];
+  db.recepciones = [];
+  db.recepcionLineas = [];
+  db.sugerencias = [];
 }
 
 export function proyectosDemoDb() {
@@ -279,6 +285,11 @@ export async function demoDashboardKpis({ sede } = {}) {
   );
   const reservas = db.reservas.filter((r) => ids.has(r.proyecto_id) && r.estado === 'activa');
   const alertas = db.alertas.filter((a) => !a.leida && (!a.proyecto_id || ids.has(a.proyecto_id)));
+  const recepcionesPend = db.recepciones.filter(
+    (r) =>
+      (!sede || r.sede === sede) &&
+      (r.estado === 'pendiente_asignacion' || r.estado === 'parcial' || r.estado === 'borrador')
+  );
 
   return {
     totalProyectosActivos: activos.length,
@@ -286,7 +297,7 @@ export async function demoDashboardKpis({ sede } = {}) {
     faltantesPendientes: faltantes.length,
     materialesReservados: reservas.reduce((s, r) => s + Number(r.cantidad || 0), 0),
     materialesEnTransito: 0,
-    recepcionesPendientes: 0,
+    recepcionesPendientes: recepcionesPend.length,
     devolucionesPendientes: 0,
     herramientasAsignadas: 0,
     alertasActivas: alertas.length,
@@ -629,4 +640,356 @@ export async function demoListAlertas({ sede, soloNoLeidas = true } = {}) {
     meta: a.meta,
     createdAt: a.created_at,
   }));
+}
+
+const PRIORIDAD_RANK = { critica: 0, alta: 1, media: 2, baja: 3 };
+
+function mapRecepcion(row) {
+  return {
+    id: row.id,
+    sede: row.sede,
+    tipo: row.tipo,
+    proveedor: row.proveedor,
+    documento: row.documento,
+    fecha: row.fecha,
+    operador: row.operador,
+    estado: row.estado,
+    notas: row.notas,
+    createdAt: row.created_at,
+    updatedAt: row.updated_at,
+  };
+}
+
+function mapRecepcionLinea(row) {
+  return {
+    id: row.id,
+    recepcionId: row.recepcion_id,
+    itemId: row.item_id,
+    codigoArticulo: row.codigo_articulo,
+    descripcion: row.descripcion,
+    cantidad: Number(row.cantidad || 0),
+    cantidadAsignada: Number(row.cantidad_asignada || 0),
+    contenedorId: row.contenedor_id,
+    validado: row.validado,
+    error: row.error,
+  };
+}
+
+function mapSugerencia(row) {
+  const proyecto = db.proyectos.find((p) => p.id === row.proyecto_id);
+  const faltante = db.faltantes.find((f) => f.id === row.faltante_id);
+  return {
+    id: row.id,
+    recepcionId: row.recepcion_id,
+    lineaId: row.linea_id,
+    faltanteId: row.faltante_id,
+    proyectoId: row.proyecto_id,
+    tableroId: row.tablero_id,
+    materialId: row.material_id,
+    itemId: row.item_id,
+    cantidadSugerida: Number(row.cantidad_sugerida || 0),
+    estado: row.estado,
+    proyectoNombre: proyecto?.nombre || null,
+    proyectoPrioridad: proyecto?.prioridad || faltante?.prioridad || null,
+    codigoArticulo: faltante?.codigo_articulo || null,
+    fechaLimite: faltante?.fecha_limite || null,
+    createdAt: row.created_at,
+  };
+}
+
+function buildSugerenciasForLinea(recepcionId, linea, sede) {
+  if (!linea.item_id || !linea.validado) return [];
+  let restante = Number(linea.cantidad || 0);
+  const faltantes = db.faltantes
+    .filter(
+      (f) =>
+        f.item_id === linea.item_id &&
+        (f.estado === 'pendiente' || f.estado === 'parcial') &&
+        Number(f.cantidad) - Number(f.cantidad_cubierta || 0) > 0
+    )
+    .filter((f) => {
+      const p = db.proyectos.find((x) => x.id === f.proyecto_id);
+      return !sede || !p || p.sede === sede;
+    })
+    .sort((a, b) => {
+      const ra = PRIORIDAD_RANK[a.prioridad] ?? 9;
+      const rb = PRIORIDAD_RANK[b.prioridad] ?? 9;
+      if (ra !== rb) return ra - rb;
+      return String(a.fecha_limite || '9999').localeCompare(String(b.fecha_limite || '9999'));
+    });
+
+  const created = [];
+  for (const f of faltantes) {
+    if (restante <= 0) break;
+    const pendiente = Number(f.cantidad) - Number(f.cantidad_cubierta || 0);
+    const qty = Math.min(restante, pendiente);
+    if (qty <= 0) continue;
+    const sug = {
+      id: uuid(),
+      recepcion_id: recepcionId,
+      linea_id: linea.id,
+      faltante_id: f.id,
+      proyecto_id: f.proyecto_id,
+      tablero_id: f.tablero_id,
+      material_id: f.material_id,
+      item_id: f.item_id || linea.item_id,
+      cantidad_sugerida: qty,
+      estado: 'pendiente',
+      created_at: nowIso(),
+      updated_at: nowIso(),
+    };
+    db.sugerencias.push(sug);
+    created.push(sug);
+    restante -= qty;
+
+    const proy = db.proyectos.find((p) => p.id === f.proyecto_id);
+    if (proy && (proy.prioridad === 'critica' || proy.prioridad === 'alta')) {
+      db.alertas.unshift({
+        id: uuid(),
+        proyecto_id: f.proyecto_id,
+        tipo: 'material_recibido',
+        severidad: proy.prioridad === 'critica' ? 'critical' : 'warning',
+        mensaje: `Material recibido (${linea.codigo_articulo}): se sugieren ${qty} u. para ${proy.nombre}`,
+        leida: false,
+        meta: { recepcionId, sugerenciaId: sug.id, cantidad: qty },
+        created_at: nowIso(),
+      });
+    }
+  }
+  return created;
+}
+
+function refreshRecepcionEstado(recepcionId) {
+  const rec = db.recepciones.find((r) => r.id === recepcionId);
+  if (!rec || rec.estado === 'cancelada') return;
+  const sugs = db.sugerencias.filter((s) => s.recepcion_id === recepcionId);
+  const pend = sugs.filter((s) => s.estado === 'pendiente').length;
+  const acept = sugs.filter((s) => s.estado === 'aceptada').length;
+  if (!sugs.length || pend === 0) rec.estado = 'cerrada';
+  else if (acept > 0) rec.estado = 'parcial';
+  else rec.estado = 'pendiente_asignacion';
+  rec.updated_at = nowIso();
+}
+
+export async function demoListRecepciones({ sede, estado } = {}) {
+  let rows = [...db.recepciones];
+  if (sede) rows = rows.filter((r) => r.sede === sede);
+  if (estado) rows = rows.filter((r) => r.estado === estado);
+  rows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  return rows.map((r) => ({
+    ...mapRecepcion(r),
+    lineasCount: db.recepcionLineas.filter((l) => l.recepcion_id === r.id).length,
+    sugerenciasPendientes: db.sugerencias.filter(
+      (s) => s.recepcion_id === r.id && s.estado === 'pendiente'
+    ).length,
+  }));
+}
+
+export async function demoGetRecepcion(id) {
+  const row = db.recepciones.find((r) => r.id === id);
+  if (!row) throw Object.assign(new Error('Recepción no encontrada'), { status: 404 });
+  return {
+    recepcion: mapRecepcion(row),
+    lineas: db.recepcionLineas.filter((l) => l.recepcion_id === id).map(mapRecepcionLinea),
+    sugerencias: db.sugerencias.filter((s) => s.recepcion_id === id).map(mapSugerencia),
+  };
+}
+
+export async function demoCrearRecepcion({
+  sede,
+  tipo,
+  proveedor,
+  documento,
+  fecha,
+  operador,
+  notas,
+  lineas,
+  itemsByCodigo,
+}) {
+  if (!sede) throw Object.assign(new Error('Sede requerida'), { status: 400 });
+  if (!Array.isArray(lineas) || !lineas.length) {
+    throw Object.assign(new Error('Se requieren líneas de recepción'), { status: 400 });
+  }
+
+  const recepcion = {
+    id: uuid(),
+    sede,
+    tipo: tipo || 'manual',
+    proveedor: proveedor || null,
+    documento: documento || null,
+    fecha: fecha || nowIso().slice(0, 10),
+    operador: operador || null,
+    estado: 'pendiente_asignacion',
+    notas: notas || null,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+  db.recepciones.unshift(recepcion);
+
+  const allSugs = [];
+  const mappedLineas = [];
+
+  for (const line of lineas) {
+    const codigo = String(line.codigo || '').trim();
+    const cantidad = Number(line.cantidad || 0);
+    const item = codigo ? itemsByCodigo?.get(codigo.toUpperCase()) : null;
+    const ln = {
+      id: uuid(),
+      recepcion_id: recepcion.id,
+      item_id: item?.id || null,
+      codigo_articulo: codigo || null,
+      descripcion: item?.nombre || line.descripcion || null,
+      cantidad,
+      cantidad_asignada: 0,
+      contenedor_id: line.contenedorId || null,
+      validado: Boolean(item) && cantidad > 0,
+      error: !codigo || cantidad <= 0 ? 'Código o cantidad inválidos' : !item ? 'Artículo no encontrado' : null,
+      created_at: nowIso(),
+    };
+    db.recepcionLineas.push(ln);
+    mappedLineas.push(ln);
+    if (ln.validado) allSugs.push(...buildSugerenciasForLinea(recepcion.id, ln, sede));
+  }
+
+  if (!allSugs.length) {
+    recepcion.estado = 'cerrada';
+  }
+
+  pushMovimiento({
+    tipo: 'recepcion',
+    cantidad: mappedLineas.reduce((s, l) => s + Number(l.cantidad || 0), 0),
+    estado_material: 'Disponible',
+    usuario: operador,
+    notas: `Recepción ${documento || recepcion.id}`,
+    meta: { recepcion_id: recepcion.id },
+  });
+
+  return {
+    recepcion: mapRecepcion(recepcion),
+    lineas: mappedLineas.map(mapRecepcionLinea),
+    sugerencias: allSugs.map(mapSugerencia),
+  };
+}
+
+export async function demoAceptarSugerencia(id, { usuario } = {}) {
+  const sug = db.sugerencias.find((s) => s.id === id);
+  if (!sug) throw Object.assign(new Error('Sugerencia no encontrada'), { status: 404 });
+  if (sug.estado !== 'pendiente') {
+    throw Object.assign(new Error('La sugerencia ya fue resuelta'), { status: 409 });
+  }
+
+  const qty = Number(sug.cantidad_sugerida);
+  const faltante = db.faltantes.find((f) => f.id === sug.faltante_id);
+  const proyecto = db.proyectos.find((p) => p.id === sug.proyecto_id);
+  const linea = db.recepcionLineas.find((l) => l.id === sug.linea_id);
+  const recepcion = db.recepciones.find((r) => r.id === sug.recepcion_id);
+
+  db.reservas.push({
+    id: uuid(),
+    proyecto_id: sug.proyecto_id,
+    tablero_id: sug.tablero_id,
+    material_id: sug.material_id,
+    item_id: sug.item_id,
+    stock_id: null,
+    contenedor_id: linea?.contenedor_id || null,
+    cantidad: qty,
+    estado: 'activa',
+    sede: proyecto?.sede || recepcion?.sede,
+    notas: `Asignado desde recepción ${recepcion?.documento || sug.recepcion_id}`,
+    created_by: usuario || null,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  });
+
+  if (sug.material_id) {
+    const mat = db.materiales.find((m) => m.id === sug.material_id);
+    if (mat) {
+      mat.cantidad_reservada = Number(mat.cantidad_reservada || 0) + qty;
+      mat.cantidad_faltante = Math.max(0, Number(mat.cantidad_faltante || 0) - qty);
+      mat.estado =
+        mat.cantidad_faltante === 0 ? 'completo' : mat.cantidad_reservada > 0 ? 'parcial' : 'pendiente';
+      mat.updated_at = nowIso();
+    }
+  }
+
+  if (faltante) {
+    faltante.cantidad_cubierta = Number(faltante.cantidad_cubierta || 0) + qty;
+    const pend = Number(faltante.cantidad) - Number(faltante.cantidad_cubierta);
+    faltante.estado = pend <= 0 ? 'cubierto' : 'parcial';
+    faltante.updated_at = nowIso();
+  }
+
+  if (linea) linea.cantidad_asignada = Number(linea.cantidad_asignada || 0) + qty;
+
+  sug.estado = 'aceptada';
+  sug.updated_at = nowIso();
+
+  pushMovimiento({
+    proyecto_id: sug.proyecto_id,
+    tablero_id: sug.tablero_id,
+    material_id: sug.material_id,
+    item_id: sug.item_id,
+    tipo: 'reserva',
+    cantidad: qty,
+    estado_material: 'Reservado',
+    usuario,
+    notas: 'Asignación desde recepción',
+    meta: { sugerencia_id: sug.id, recepcion_id: sug.recepcion_id },
+  });
+
+  refreshRecepcionEstado(sug.recepcion_id);
+  return mapSugerencia(sug);
+}
+
+export async function demoRechazarSugerencia(id) {
+  const sug = db.sugerencias.find((s) => s.id === id);
+  if (!sug) throw Object.assign(new Error('Sugerencia no encontrada'), { status: 404 });
+  if (sug.estado !== 'pendiente') {
+    throw Object.assign(new Error('La sugerencia ya fue resuelta'), { status: 409 });
+  }
+  sug.estado = 'rechazada';
+  sug.updated_at = nowIso();
+  refreshRecepcionEstado(sug.recepcion_id);
+  return mapSugerencia(sug);
+}
+
+export async function demoSugerirPorItems({ itemIds, sede, cantidadPorItem } = {}) {
+  const ids = [...new Set((itemIds || []).filter(Boolean))];
+  const out = [];
+  for (const itemId of ids) {
+    const dispon = Number(cantidadPorItem?.get?.(itemId) ?? cantidadPorItem?.[itemId] ?? 0);
+    let restante = dispon > 0 ? dispon : Number.POSITIVE_INFINITY;
+    const faltantes = db.faltantes
+      .filter(
+        (f) =>
+          f.item_id === itemId &&
+          (f.estado === 'pendiente' || f.estado === 'parcial') &&
+          Number(f.cantidad) - Number(f.cantidad_cubierta || 0) > 0
+      )
+      .filter((f) => {
+        const p = db.proyectos.find((x) => x.id === f.proyecto_id);
+        return !sede || !p || p.sede === sede;
+      })
+      .sort((a, b) => (PRIORIDAD_RANK[a.prioridad] ?? 9) - (PRIORIDAD_RANK[b.prioridad] ?? 9));
+
+    for (const f of faltantes) {
+      if (restante <= 0) break;
+      const pend = Number(f.cantidad) - Number(f.cantidad_cubierta || 0);
+      const qty = Number.isFinite(restante) ? Math.min(restante, pend) : pend;
+      out.push({
+        faltanteId: f.id,
+        proyectoId: f.proyecto_id,
+        tableroId: f.tablero_id,
+        materialId: f.material_id,
+        itemId,
+        codigoArticulo: f.codigo_articulo,
+        cantidadSugerida: qty,
+        proyectoNombre: db.proyectos.find((p) => p.id === f.proyecto_id)?.nombre || null,
+        proyectoPrioridad: f.prioridad,
+        fechaLimite: f.fecha_limite,
+      });
+      if (Number.isFinite(restante)) restante -= qty;
+    }
+  }
+  return out;
 }

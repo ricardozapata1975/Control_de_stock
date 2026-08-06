@@ -6,5 +6,6 @@ export { default as PedidosMasivos } from './pages/PedidosMasivos';
 export { default as ReservasPage } from './pages/ReservasPage';
 export { default as FaltantesPage } from './pages/FaltantesPage';
 export { default as PrioridadesPage } from './pages/PrioridadesPage';
+export { default as RecepcionesPage } from './pages/RecepcionesPage';
 export { default as ProyectosPlaceholder } from './pages/ProyectosPlaceholder';
 export * from './constants';

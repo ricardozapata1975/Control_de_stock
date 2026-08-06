@@ -59,6 +59,12 @@ import {
   postReasignarReserva,
   postPedidoMasivo,
   getAlertas,
+  getRecepciones,
+  getRecepcionById,
+  postRecepcion,
+  postAceptarSugerencia,
+  postRechazarSugerencia,
+  postSugerenciasPorItems,
 } from './controllers/proyectosController.js';
 import { loadCatalogo } from './services/catalogoService.js';
 import { applyCatalogo } from './services/ubicacionUtils.js';
@@ -197,6 +203,12 @@ app.get('/api/proyectos/dashboard', requireAuth, getProyectosDashboard);
 app.get('/api/proyectos/reservas', requireAuth, getReservas);
 app.get('/api/proyectos/faltantes', requireAuth, getFaltantes);
 app.get('/api/proyectos/alertas', requireAuth, getAlertas);
+app.get('/api/proyectos/recepciones', requireAuth, getRecepciones);
+app.post('/api/proyectos/recepciones', requireAuth, postRecepcion);
+app.get('/api/proyectos/recepciones/:id', requireAuth, getRecepcionById);
+app.post('/api/proyectos/sugerencias/:id/aceptar', requireAuth, postAceptarSugerencia);
+app.post('/api/proyectos/sugerencias/:id/rechazar', requireAuth, postRechazarSugerencia);
+app.post('/api/proyectos/sugerencias/por-items', requireAuth, postSugerenciasPorItems);
 app.get('/api/proyectos', requireAuth, getProyectos);
 app.post('/api/proyectos', requireAuth, postProyecto);
 app.get('/api/proyectos/:id', requireAuth, getProyectoById);
