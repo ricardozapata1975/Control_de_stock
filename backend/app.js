@@ -45,6 +45,21 @@ import {
   postRemito,
 } from './controllers/remitosController.js';
 import { postSolicitudEnvio } from './controllers/solicitudEnvioController.js';
+import {
+  getProyectosDashboard,
+  getProyectos,
+  getProyectoById,
+  postProyecto,
+  putProyecto,
+  postTablero,
+  putTablero,
+  getReservas,
+  getFaltantes,
+  postLiberarReserva,
+  postReasignarReserva,
+  postPedidoMasivo,
+  getAlertas,
+} from './controllers/proyectosController.js';
 import { loadCatalogo } from './services/catalogoService.js';
 import { applyCatalogo } from './services/ubicacionUtils.js';
 import path from 'path';
@@ -176,6 +191,21 @@ app.post('/api/remitos/:id/recibir', requireAuth, postRecibirTransferencia);
 app.get('/api/remitos/:id', requireAuth, getRemito);
 
 app.post('/api/solicitudes-envio', requireAuth, postSolicitudEnvio);
+
+// Módulo Proyectos (desacoplado)
+app.get('/api/proyectos/dashboard', requireAuth, getProyectosDashboard);
+app.get('/api/proyectos/reservas', requireAuth, getReservas);
+app.get('/api/proyectos/faltantes', requireAuth, getFaltantes);
+app.get('/api/proyectos/alertas', requireAuth, getAlertas);
+app.get('/api/proyectos', requireAuth, getProyectos);
+app.post('/api/proyectos', requireAuth, postProyecto);
+app.get('/api/proyectos/:id', requireAuth, getProyectoById);
+app.put('/api/proyectos/:id', requireAuth, putProyecto);
+app.post('/api/proyectos/:id/tableros', requireAuth, postTablero);
+app.put('/api/proyectos/tableros/:tableroId', requireAuth, putTablero);
+app.post('/api/proyectos/reservas/:id/liberar', requireAuth, postLiberarReserva);
+app.post('/api/proyectos/reservas/:id/reasignar', requireAuth, postReasignarReserva);
+app.post('/api/proyectos/pedidos-masivos', requireAuth, postPedidoMasivo);
 
 app.post('/api/sync', postSync);
 app.post('/sync', postSync);

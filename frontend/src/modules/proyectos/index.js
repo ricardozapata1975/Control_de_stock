@@ -1,0 +1,10 @@
+export { default as ProyectosLayout } from './pages/ProyectosLayout';
+export { default as ProyectosDashboard } from './pages/ProyectosDashboard';
+export { default as ProyectosLista } from './pages/ProyectosLista';
+export { default as ProyectoDetail } from './pages/ProyectoDetail';
+export { default as PedidosMasivos } from './pages/PedidosMasivos';
+export { default as ReservasPage } from './pages/ReservasPage';
+export { default as FaltantesPage } from './pages/FaltantesPage';
+export { default as PrioridadesPage } from './pages/PrioridadesPage';
+export { default as ProyectosPlaceholder } from './pages/ProyectosPlaceholder';
+export * from './constants';

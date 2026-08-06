@@ -17,6 +17,17 @@ import ImportarCSV from './pages/ImportarCSV';
 import AdminUsers from './pages/AdminUsers';
 import ConsultaSucursales from './pages/ConsultaSucursales';
 import Agenda from './pages/Agenda';
+import {
+  ProyectosLayout,
+  ProyectosDashboard,
+  ProyectosLista,
+  ProyectoDetail,
+  PedidosMasivos,
+  ReservasPage,
+  FaltantesPage,
+  PrioridadesPage,
+  ProyectosPlaceholder,
+} from './modules/proyectos';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 
@@ -58,6 +69,99 @@ export default function App() {
               <Route path="historial" element={<Historial />} />
               <Route path="consulta-sucursales" element={<ConsultaSucursales />} />
               <Route path="agenda" element={<Agenda />} />
+              <Route path="proyectos" element={<ProyectosLayout />}>
+                <Route index element={<ProyectosDashboard />} />
+                <Route path="lista" element={<ProyectosLista />} />
+                <Route path="tableros" element={<ProyectosLista />} />
+                <Route path="materiales" element={<ProyectosLista />} />
+                <Route path="pedidos" element={<PedidosMasivos />} />
+                <Route path="reservas" element={<ReservasPage />} />
+                <Route path="reservados" element={<ReservasPage />} />
+                <Route path="faltantes" element={<FaltantesPage />} />
+                <Route path="prioridades" element={<PrioridadesPage />} />
+                <Route
+                  path="recepciones"
+                  element={
+                    <ProyectosPlaceholder
+                      title="Recepciones"
+                      description="Ingreso por remito, OC o carga manual con sugerencias de asignación."
+                    />
+                  }
+                />
+                <Route
+                  path="transito"
+                  element={
+                    <ProyectosPlaceholder
+                      title="Materiales en tránsito"
+                      description="Estado EN TRÁNSITO entre depósitos hasta confirmación de recepción."
+                    />
+                  }
+                />
+                <Route
+                  path="disponibles"
+                  element={
+                    <ProyectosPlaceholder
+                      title="Materiales disponibles"
+                      description="Vista de stock neto (físico − reservas activas) por depósito."
+                    />
+                  }
+                />
+                <Route
+                  path="devoluciones"
+                  element={
+                    <ProyectosPlaceholder
+                      title="Devoluciones"
+                      description="Devolución real a proyecto con trazabilidad (no solo ajuste)."
+                    />
+                  }
+                />
+                <Route
+                  path="auditorias"
+                  element={
+                    <ProyectosPlaceholder
+                      title="Auditorías"
+                      description="Conteo físico vs sistema por depósito/ubicación con escaneo QR."
+                    />
+                  }
+                />
+                <Route
+                  path="herramientas"
+                  element={
+                    <ProyectosPlaceholder
+                      title="Herramientas"
+                      description="Asignación a operarios/cajas con historial de eventos."
+                    />
+                  }
+                />
+                <Route
+                  path="transferencias"
+                  element={
+                    <ProyectosPlaceholder
+                      title="Transferencias entre depósitos"
+                      description="Multidepósito con stock en tránsito."
+                    />
+                  }
+                />
+                <Route
+                  path="reportes"
+                  element={
+                    <ProyectosPlaceholder
+                      title="Reportes"
+                      description="Consumos, reservas, faltantes, costos y tiempos por proyecto."
+                    />
+                  }
+                />
+                <Route
+                  path="configuracion"
+                  element={
+                    <ProyectosPlaceholder
+                      title="Configuración"
+                      description="Roles del módulo (Admin, Supervisor, Depósito, Pañolero, Taller, Compras, Consulta)."
+                    />
+                  }
+                />
+                <Route path=":id" element={<ProyectoDetail />} />
+              </Route>
               <Route path="escanear" element={<EscanearQR />} />
               <Route path="imprimir-qr" element={<ImprimirQR />} />
               <Route path="remito" element={<RemitoSalida />} />

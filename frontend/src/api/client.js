@@ -252,6 +252,62 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+
+  // Módulo Proyectos
+  proyectosDashboard: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/dashboard${q ? `?${q}` : ''}`);
+  },
+  proyectos: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos${q ? `?${q}` : ''}`);
+  },
+  proyecto: (id) => request(`/api/proyectos/${encodeURIComponent(id)}`),
+  crearProyecto: (body) =>
+    request('/api/proyectos', { method: 'POST', body: JSON.stringify(body) }),
+  actualizarProyecto: (id, body) =>
+    request(`/api/proyectos/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  crearTablero: (proyectoId, body) =>
+    request(`/api/proyectos/${encodeURIComponent(proyectoId)}/tableros`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  actualizarTablero: (tableroId, body) =>
+    request(`/api/proyectos/tableros/${encodeURIComponent(tableroId)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  proyectosReservas: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/reservas${q ? `?${q}` : ''}`);
+  },
+  proyectosFaltantes: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/faltantes${q ? `?${q}` : ''}`);
+  },
+  liberarReservaProyecto: (id, body = {}) =>
+    request(`/api/proyectos/reservas/${encodeURIComponent(id)}/liberar`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  reasignarReservaProyecto: (id, body) =>
+    request(`/api/proyectos/reservas/${encodeURIComponent(id)}/reasignar`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  pedidoMasivoProyecto: (body) =>
+    request('/api/proyectos/pedidos-masivos', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  proyectosAlertas: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/alertas${q ? `?${q}` : ''}`);
+  },
+
   downloadPlantilla: async () => {
     const token = getToken();
     const res = await fetch(`${API_URL}/api/admin/import/plantilla.csv`, {
