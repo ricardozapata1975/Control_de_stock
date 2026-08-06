@@ -25,6 +25,11 @@ const db = {
   recepciones: [],
   recepcionLineas: [],
   sugerencias: [],
+  devoluciones: [],
+  auditorias: [],
+  auditoriaLineas: [],
+  herramientas: [],
+  herramientasEventos: [],
 };
 
 export function proyectosDemoReset() {
@@ -40,6 +45,11 @@ export function proyectosDemoReset() {
   db.recepciones = [];
   db.recepcionLineas = [];
   db.sugerencias = [];
+  db.devoluciones = [];
+  db.auditorias = [];
+  db.auditoriaLineas = [];
+  db.herramientas = [];
+  db.herramientasEventos = [];
 }
 
 export function proyectosDemoDb() {
@@ -290,6 +300,12 @@ export async function demoDashboardKpis({ sede } = {}) {
       (!sede || r.sede === sede) &&
       (r.estado === 'pendiente_asignacion' || r.estado === 'parcial' || r.estado === 'borrador')
   );
+  const devolPend = db.devoluciones.filter(
+    (d) => (!sede || d.sede === sede) && d.estado === 'pendiente'
+  );
+  const herrAsig = db.herramientas.filter(
+    (h) => (!sede || h.sede === sede) && h.estado === 'prestada'
+  );
 
   return {
     totalProyectosActivos: activos.length,
@@ -298,8 +314,8 @@ export async function demoDashboardKpis({ sede } = {}) {
     materialesReservados: reservas.reduce((s, r) => s + Number(r.cantidad || 0), 0),
     materialesEnTransito: 0,
     recepcionesPendientes: recepcionesPend.length,
-    devolucionesPendientes: 0,
-    herramientasAsignadas: 0,
+    devolucionesPendientes: devolPend.length,
+    herramientasAsignadas: herrAsig.length,
     alertasActivas: alertas.length,
   };
 }
@@ -992,4 +1008,419 @@ export async function demoSugerirPorItems({ itemIds, sede, cantidadPorItem } = {
     }
   }
   return out;
+}
+
+export async function demoListDevoluciones({ sede, proyectoId, estado } = {}) {
+  let rows = [...db.devoluciones];
+  if (sede) rows = rows.filter((d) => d.sede === sede);
+  if (proyectoId) rows = rows.filter((d) => d.proyecto_id === proyectoId);
+  if (estado) rows = rows.filter((d) => d.estado === estado);
+  rows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  return rows.map((d) => ({
+    id: d.id,
+    proyectoId: d.proyecto_id,
+    tableroId: d.tablero_id,
+    materialId: d.material_id,
+    reservaId: d.reserva_id,
+    itemId: d.item_id,
+    codigoArticulo: d.codigo_articulo,
+    cantidad: Number(d.cantidad || 0),
+    motivo: d.motivo,
+    usuario: d.usuario,
+    sede: d.sede,
+    estado: d.estado,
+    createdAt: d.created_at,
+    proyectoNombre: db.proyectos.find((p) => p.id === d.proyecto_id)?.nombre || null,
+  }));
+}
+
+export async function demoCrearDevolucion(payload) {
+  const proyecto = db.proyectos.find((p) => p.id === payload.proyectoId);
+  if (!proyecto) throw Object.assign(new Error('Proyecto no encontrado'), { status: 404 });
+  const cantidad = Number(payload.cantidad || 0);
+  if (cantidad <= 0) throw Object.assign(new Error('Cantidad inválida'), { status: 400 });
+
+  let reserva = null;
+  if (payload.reservaId) {
+    reserva = db.reservas.find((r) => r.id === payload.reservaId);
+    if (!reserva || reserva.estado !== 'activa') {
+      throw Object.assign(new Error('Reserva no activa'), { status: 409 });
+    }
+    if (cantidad > Number(reserva.cantidad)) {
+      throw Object.assign(new Error('Cantidad mayor a la reserva'), { status: 400 });
+    }
+  }
+
+  const row = {
+    id: uuid(),
+    proyecto_id: payload.proyectoId,
+    tablero_id: payload.tableroId || reserva?.tablero_id || null,
+    material_id: payload.materialId || reserva?.material_id || null,
+    reserva_id: reserva?.id || null,
+    item_id: payload.itemId || reserva?.item_id || null,
+    codigo_articulo: payload.codigoArticulo || null,
+    cantidad,
+    motivo: payload.motivo || null,
+    usuario: payload.usuario || null,
+    sede: payload.sede || proyecto.sede,
+    estado: 'registrada',
+    created_at: nowIso(),
+  };
+  db.devoluciones.unshift(row);
+
+  if (reserva) {
+    if (cantidad >= Number(reserva.cantidad)) {
+      reserva.estado = 'liberada';
+    } else {
+      reserva.cantidad = Number(reserva.cantidad) - cantidad;
+    }
+    reserva.updated_at = nowIso();
+    if (reserva.material_id) {
+      const mat = db.materiales.find((m) => m.id === reserva.material_id);
+      if (mat) {
+        mat.cantidad_reservada = Math.max(0, Number(mat.cantidad_reservada) - cantidad);
+        mat.updated_at = nowIso();
+      }
+    }
+  }
+
+  pushMovimiento({
+    proyecto_id: row.proyecto_id,
+    tablero_id: row.tablero_id,
+    material_id: row.material_id,
+    item_id: row.item_id,
+    tipo: 'devolucion',
+    cantidad,
+    estado_material: 'Devuelto',
+    usuario: payload.usuario,
+    notas: payload.motivo || 'Devolución a disponible (módulo)',
+    meta: { devolucion_id: row.id },
+  });
+
+  return {
+    id: row.id,
+    proyectoId: row.proyecto_id,
+    tableroId: row.tablero_id,
+    materialId: row.material_id,
+    reservaId: row.reserva_id,
+    itemId: row.item_id,
+    codigoArticulo: row.codigo_articulo,
+    cantidad: row.cantidad,
+    motivo: row.motivo,
+    usuario: row.usuario,
+    sede: row.sede,
+    estado: row.estado,
+    createdAt: row.created_at,
+  };
+}
+
+export async function demoListAuditorias({ sede, estado } = {}) {
+  let rows = [...db.auditorias];
+  if (sede) rows = rows.filter((a) => a.sede === sede);
+  if (estado) rows = rows.filter((a) => a.estado === estado);
+  rows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  return rows.map((a) => ({
+    id: a.id,
+    sede: a.sede,
+    almacen: a.almacen,
+    armario: a.armario,
+    estante: a.estante,
+    contenedorCodigo: a.contenedor_codigo,
+    estado: a.estado,
+    operador: a.operador,
+    notas: a.notas,
+    resumen: a.resumen,
+    createdAt: a.created_at,
+    closedAt: a.closed_at,
+    lineasCount: db.auditoriaLineas.filter((l) => l.auditoria_id === a.id).length,
+  }));
+}
+
+export async function demoGetAuditoria(id) {
+  const a = db.auditorias.find((x) => x.id === id);
+  if (!a) throw Object.assign(new Error('Auditoría no encontrada'), { status: 404 });
+  const lineas = db.auditoriaLineas
+    .filter((l) => l.auditoria_id === id)
+    .map((l) => ({
+      id: l.id,
+      itemId: l.item_id,
+      codigo: l.codigo,
+      nombre: l.nombre,
+      cantidadSistema: Number(l.cantidad_sistema || 0),
+      cantidadFisica: l.cantidad_fisica == null ? null : Number(l.cantidad_fisica),
+      diferencia: l.diferencia == null ? null : Number(l.diferencia),
+      scannedAt: l.scanned_at,
+    }));
+  return {
+    auditoria: {
+      id: a.id,
+      sede: a.sede,
+      almacen: a.almacen,
+      armario: a.armario,
+      estante: a.estante,
+      contenedorCodigo: a.contenedor_codigo,
+      estado: a.estado,
+      operador: a.operador,
+      notas: a.notas,
+      resumen: a.resumen,
+      createdAt: a.created_at,
+      closedAt: a.closed_at,
+    },
+    lineas,
+  };
+}
+
+export async function demoCrearAuditoria(payload) {
+  if (!payload.sede) throw Object.assign(new Error('Sede requerida'), { status: 400 });
+  const row = {
+    id: uuid(),
+    sede: payload.sede,
+    almacen: payload.almacen || null,
+    armario: payload.armario || null,
+    estante: payload.estante || null,
+    contenedor_codigo: payload.contenedorCodigo || null,
+    estado: 'abierta',
+    operador: payload.operador || null,
+    notas: payload.notas || null,
+    resumen: null,
+    created_at: nowIso(),
+    closed_at: null,
+  };
+  db.auditorias.unshift(row);
+  return demoGetAuditoria(row.id);
+}
+
+export async function demoAgregarLineaAuditoria(auditoriaId, payload, stockRows = []) {
+  const aud = db.auditorias.find((a) => a.id === auditoriaId);
+  if (!aud) throw Object.assign(new Error('Auditoría no encontrada'), { status: 404 });
+  if (aud.estado !== 'abierta') {
+    throw Object.assign(new Error('La auditoría no está abierta'), { status: 409 });
+  }
+
+  const codigo = String(payload.codigo || '').trim();
+  const cantidadFisica = Number(payload.cantidadFisica);
+  if (!codigo || Number.isNaN(cantidadFisica)) {
+    throw Object.assign(new Error('Código y cantidad física requeridos'), { status: 400 });
+  }
+
+  let match = stockRows.find(
+    (s) =>
+      String(s.codigoFabricante || '').toUpperCase() === codigo.toUpperCase() ||
+      String(s.nombre || '').toUpperCase() === codigo.toUpperCase() ||
+      String(s.itemId || '') === codigo
+  );
+  const cantidadSistema = match ? Number(match.cantidad || 0) : 0;
+  const diferencia = cantidadFisica - cantidadSistema;
+
+  const ln = {
+    id: uuid(),
+    auditoria_id: auditoriaId,
+    item_id: match?.itemId || match?.item_id || null,
+    codigo,
+    nombre: match?.nombre || codigo,
+    cantidad_sistema: cantidadSistema,
+    cantidad_fisica: cantidadFisica,
+    diferencia,
+    scanned_at: nowIso(),
+  };
+  db.auditoriaLineas.push(ln);
+  return {
+    id: ln.id,
+    itemId: ln.item_id,
+    codigo: ln.codigo,
+    nombre: ln.nombre,
+    cantidadSistema,
+    cantidadFisica,
+    diferencia,
+    scannedAt: ln.scanned_at,
+  };
+}
+
+export async function demoCerrarAuditoria(id) {
+  const aud = db.auditorias.find((a) => a.id === id);
+  if (!aud) throw Object.assign(new Error('Auditoría no encontrada'), { status: 404 });
+  const lineas = db.auditoriaLineas.filter((l) => l.auditoria_id === id);
+  const faltantes = lineas.filter((l) => Number(l.diferencia) < 0).length;
+  const sobrantes = lineas.filter((l) => Number(l.diferencia) > 0).length;
+  const ok = lineas.filter((l) => Number(l.diferencia) === 0).length;
+  aud.resumen = { total: lineas.length, faltantes, sobrantes, ok };
+  aud.estado = 'cerrada';
+  aud.closed_at = nowIso();
+  return demoGetAuditoria(id);
+}
+
+export async function demoListHerramientas({ sede, estado } = {}) {
+  let rows = [...db.herramientas];
+  if (sede) rows = rows.filter((h) => h.sede === sede);
+  if (estado) rows = rows.filter((h) => h.estado === estado);
+  rows.sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)));
+  return rows.map((h) => ({
+    id: h.id,
+    itemId: h.item_id,
+    codigo: h.codigo,
+    nombre: h.nombre,
+    operario: h.operario,
+    caja: h.caja,
+    sede: h.sede,
+    estado: h.estado,
+    fechaEntrega: h.fecha_entrega,
+    fechaDevolucion: h.fecha_devolucion,
+    notas: h.notas,
+    createdBy: h.created_by,
+    createdAt: h.created_at,
+  }));
+}
+
+export async function demoAsignarHerramienta(payload) {
+  if (!String(payload.operario || '').trim()) {
+    throw Object.assign(new Error('Operario requerido'), { status: 400 });
+  }
+  const row = {
+    id: uuid(),
+    item_id: payload.itemId || null,
+    codigo: payload.codigo || null,
+    nombre: payload.nombre || payload.codigo || 'Herramienta',
+    operario: String(payload.operario).trim(),
+    caja: payload.caja || null,
+    sede: payload.sede || null,
+    estado: 'prestada',
+    fecha_entrega: nowIso(),
+    fecha_devolucion: null,
+    notas: payload.notas || null,
+    created_by: payload.createdBy || null,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+  db.herramientas.unshift(row);
+  db.herramientasEventos.push({
+    id: uuid(),
+    asignacion_id: row.id,
+    tipo: 'prestada',
+    usuario: payload.createdBy || null,
+    notas: payload.notas || null,
+    created_at: nowIso(),
+  });
+  return {
+    id: row.id,
+    itemId: row.item_id,
+    codigo: row.codigo,
+    nombre: row.nombre,
+    operario: row.operario,
+    caja: row.caja,
+    sede: row.sede,
+    estado: row.estado,
+    fechaEntrega: row.fecha_entrega,
+    fechaDevolucion: row.fecha_devolucion,
+    notas: row.notas,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+  };
+}
+
+export async function demoEventoHerramienta(id, { tipo, usuario, notas } = {}) {
+  const row = db.herramientas.find((h) => h.id === id);
+  if (!row) throw Object.assign(new Error('Asignación no encontrada'), { status: 404 });
+  const allowed = ['prestada', 'devuelta', 'perdida', 'rota', 'reemplazada'];
+  if (!allowed.includes(tipo)) {
+    throw Object.assign(new Error('Tipo de evento inválido'), { status: 400 });
+  }
+  row.estado = tipo;
+  row.updated_at = nowIso();
+  if (tipo === 'devuelta') row.fecha_devolucion = nowIso();
+  db.herramientasEventos.push({
+    id: uuid(),
+    asignacion_id: id,
+    tipo,
+    usuario: usuario || null,
+    notas: notas || null,
+    created_at: nowIso(),
+  });
+  return {
+    id: row.id,
+    itemId: row.item_id,
+    codigo: row.codigo,
+    nombre: row.nombre,
+    operario: row.operario,
+    caja: row.caja,
+    sede: row.sede,
+    estado: row.estado,
+    fechaEntrega: row.fecha_entrega,
+    fechaDevolucion: row.fecha_devolucion,
+    notas: row.notas,
+    createdBy: row.created_by,
+    createdAt: row.created_at,
+  };
+}
+
+export async function demoGetHerramienta(id) {
+  const row = db.herramientas.find((h) => h.id === id);
+  if (!row) throw Object.assign(new Error('Asignación no encontrada'), { status: 404 });
+  const eventos = db.herramientasEventos
+    .filter((e) => e.asignacion_id === id)
+    .sort((a, b) => String(b.created_at).localeCompare(String(a.created_at)))
+    .map((e) => ({
+      id: e.id,
+      tipo: e.tipo,
+      usuario: e.usuario,
+      notas: e.notas,
+      createdAt: e.created_at,
+    }));
+  return {
+    asignacion: {
+      id: row.id,
+      itemId: row.item_id,
+      codigo: row.codigo,
+      nombre: row.nombre,
+      operario: row.operario,
+      caja: row.caja,
+      sede: row.sede,
+      estado: row.estado,
+      fechaEntrega: row.fecha_entrega,
+      fechaDevolucion: row.fecha_devolucion,
+      notas: row.notas,
+      createdBy: row.created_by,
+      createdAt: row.created_at,
+    },
+    eventos,
+  };
+}
+
+export async function demoReporte({ sede, proyectoId, desde, hasta } = {}) {
+  let movs = [...db.movimientos];
+  if (proyectoId) movs = movs.filter((m) => m.proyecto_id === proyectoId);
+  if (sede) {
+    const ids = new Set(db.proyectos.filter((p) => p.sede === sede).map((p) => p.id));
+    movs = movs.filter((m) => !m.proyecto_id || ids.has(m.proyecto_id));
+  }
+  if (desde) movs = movs.filter((m) => String(m.created_at) >= desde);
+  if (hasta) movs = movs.filter((m) => String(m.created_at) <= hasta + 'T23:59:59');
+
+  const byTipo = {};
+  for (const m of movs) {
+    byTipo[m.tipo] = (byTipo[m.tipo] || 0) + Number(m.cantidad || 0);
+  }
+
+  const proyectos = sede ? db.proyectos.filter((p) => p.sede === sede) : db.proyectos;
+  return {
+    resumen: {
+      movimientos: movs.length,
+      reservasActivas: db.reservas.filter((r) => r.estado === 'activa').length,
+      faltantesPendientes: db.faltantes.filter((f) => f.estado === 'pendiente' || f.estado === 'parcial').length,
+      devoluciones: db.devoluciones.length,
+      herramientasPrestadas: db.herramientas.filter((h) => h.estado === 'prestada').length,
+      proyectosActivos: proyectos.filter((p) => p.estado === 'activo').length,
+    },
+    porTipo: byTipo,
+    recientes: movs.slice(0, 50).map((m) => ({
+      id: m.id,
+      tipo: m.tipo,
+      cantidad: m.cantidad,
+      proyectoId: m.proyecto_id,
+      itemId: m.item_id,
+      estadoMaterial: m.estado_material,
+      usuario: m.usuario,
+      notas: m.notas,
+      createdAt: m.created_at,
+    })),
+  };
 }

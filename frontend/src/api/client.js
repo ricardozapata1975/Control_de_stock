@@ -329,6 +329,45 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  proyectosDevoluciones: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/devoluciones${q ? `?${q}` : ''}`);
+  },
+  crearDevolucionProyecto: (body) =>
+    request('/api/proyectos/devoluciones', { method: 'POST', body: JSON.stringify(body) }),
+  proyectosAuditorias: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/auditorias${q ? `?${q}` : ''}`);
+  },
+  proyectoAuditoria: (id) => request(`/api/proyectos/auditorias/${encodeURIComponent(id)}`),
+  crearAuditoriaProyecto: (body) =>
+    request('/api/proyectos/auditorias', { method: 'POST', body: JSON.stringify(body) }),
+  agregarLineaAuditoriaProyecto: (id, body) =>
+    request(`/api/proyectos/auditorias/${encodeURIComponent(id)}/lineas`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  cerrarAuditoriaProyecto: (id) =>
+    request(`/api/proyectos/auditorias/${encodeURIComponent(id)}/cerrar`, {
+      method: 'POST',
+      body: JSON.stringify({}),
+    }),
+  proyectosHerramientas: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/herramientas${q ? `?${q}` : ''}`);
+  },
+  proyectoHerramienta: (id) => request(`/api/proyectos/herramientas/${encodeURIComponent(id)}`),
+  asignarHerramientaProyecto: (body) =>
+    request('/api/proyectos/herramientas', { method: 'POST', body: JSON.stringify(body) }),
+  eventoHerramientaProyecto: (id, body) =>
+    request(`/api/proyectos/herramientas/${encodeURIComponent(id)}/evento`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  proyectosReportes: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/reportes${q ? `?${q}` : ''}`);
+  },
 
   downloadPlantilla: async () => {
     const token = getToken();

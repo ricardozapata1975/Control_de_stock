@@ -2,6 +2,10 @@ import { getSupabase } from '../db/supabase.js';
 import * as demo from './demoService.js';
 import * as pdemo from './proyectosDemo.js';
 import { countRecepcionesPendientes } from './proyectosRecepcionesService.js';
+import {
+  countDevolucionesPendientes,
+  countHerramientasAsignadas,
+} from './proyectosFase3Service.js';
 
 function isDemo() {
   return demo.isDemoMode();
@@ -367,10 +371,22 @@ export async function getDashboardKpis({ sede } = {}) {
   }
 
   let recepcionesPendientes = 0;
+  let devolucionesPendientes = 0;
+  let herramientasAsignadas = 0;
   try {
     recepcionesPendientes = await countRecepcionesPendientes(sede);
   } catch {
     recepcionesPendientes = 0;
+  }
+  try {
+    devolucionesPendientes = await countDevolucionesPendientes(sede);
+  } catch {
+    devolucionesPendientes = 0;
+  }
+  try {
+    herramientasAsignadas = await countHerramientasAsignadas(sede);
+  } catch {
+    herramientasAsignadas = 0;
   }
 
   return {
@@ -380,8 +396,8 @@ export async function getDashboardKpis({ sede } = {}) {
     materialesReservados,
     materialesEnTransito: 0,
     recepcionesPendientes,
-    devolucionesPendientes: 0,
-    herramientasAsignadas: 0,
+    devolucionesPendientes,
+    herramientasAsignadas,
     alertasActivas,
   };
 }

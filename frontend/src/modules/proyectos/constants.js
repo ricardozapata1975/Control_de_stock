@@ -44,15 +44,42 @@ export const PROYECTOS_NAV = [
   { to: '/proyectos/faltantes', label: 'Faltantes', desc: 'Compras pendientes', icon: '⚠️' },
   { to: '/proyectos/recepciones', label: 'Recepciones', desc: 'Remito / OC / manual', icon: '📦' },
   { to: '/proyectos/transito', label: 'Materiales en tránsito', desc: 'Próximamente', icon: '🚚', soon: true },
-  { to: '/proyectos/disponibles', label: 'Materiales disponibles', desc: 'Stock neto', icon: '✅', soon: true },
+  { to: '/proyectos/disponibles', label: 'Materiales disponibles', desc: 'Próximamente', icon: '✅', soon: true },
   { to: '/proyectos/reservados', label: 'Materiales reservados', desc: 'Vista de limbo', icon: '🏷️' },
-  { to: '/proyectos/devoluciones', label: 'Devoluciones', desc: 'Próximamente', icon: '↩️', soon: true },
-  { to: '/proyectos/auditorias', label: 'Auditorías', desc: 'Próximamente', icon: '🔎', soon: true },
-  { to: '/proyectos/herramientas', label: 'Herramientas', desc: 'Próximamente', icon: '🛠️', soon: true },
+  { to: '/proyectos/devoluciones', label: 'Devoluciones', desc: 'Desde proyecto / reserva', icon: '↩️' },
+  { to: '/proyectos/auditorias', label: 'Auditorías', desc: 'Físico vs sistema', icon: '🔎' },
+  { to: '/proyectos/herramientas', label: 'Herramientas', desc: 'Préstamos a operarios', icon: '🛠️' },
   { to: '/proyectos/prioridades', label: 'Prioridades', desc: 'Criticidad', icon: '🎯' },
   { to: '/proyectos/transferencias', label: 'Transferencias depósitos', desc: 'Próximamente', icon: '🔄', soon: true },
-  { to: '/proyectos/reportes', label: 'Reportes', desc: 'Próximamente', icon: '📊', soon: true },
-  { to: '/proyectos/configuracion', label: 'Configuración', desc: 'Roles y params', icon: '⚙️', soon: true },
+  { to: '/proyectos/reportes', label: 'Reportes', desc: 'Indicadores y movimientos', icon: '📊' },
+  { to: '/proyectos/configuracion', label: 'Configuración', desc: 'Roles del módulo', icon: '⚙️' },
+];
+
+/** Diseño de roles (no altera auth global aún) */
+const PERM_LABELS = [
+  'Ver dashboard',
+  'CRUD proyectos',
+  'Pedidos / reservas',
+  'Recepciones',
+  'Devoluciones',
+  'Auditorías',
+  'Herramientas',
+  'Reportes',
+  'Configuración',
+];
+
+function perms(...flags) {
+  return PERM_LABELS.map((label, i) => ({ label, ok: Boolean(flags[i]) }));
+}
+
+export const ROLES_MODULO = [
+  { id: 'admin', label: 'Administrador', permisos: perms(1, 1, 1, 1, 1, 1, 1, 1, 1) },
+  { id: 'supervisor', label: 'Supervisor', permisos: perms(1, 1, 1, 1, 1, 1, 1, 1, 0) },
+  { id: 'deposito', label: 'Depósito', permisos: perms(1, 0, 1, 1, 1, 1, 0, 1, 0) },
+  { id: 'panolero', label: 'Pañolero', permisos: perms(1, 0, 1, 0, 0, 0, 1, 0, 0) },
+  { id: 'taller', label: 'Taller', permisos: perms(1, 0, 0, 0, 1, 0, 1, 0, 0) },
+  { id: 'compras', label: 'Compras', permisos: perms(1, 0, 0, 1, 0, 0, 0, 1, 0) },
+  { id: 'consulta', label: 'Consulta', permisos: perms(1, 0, 0, 0, 0, 0, 0, 1, 0) },
 ];
 
 export const KPI_DEFS = [

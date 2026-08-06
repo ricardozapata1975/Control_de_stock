@@ -27,6 +27,11 @@ import {
   FaltantesPage,
   PrioridadesPage,
   RecepcionesPage,
+  DevolucionesPage,
+  AuditoriasPage,
+  HerramientasPage,
+  ReportesPage,
+  ConfiguracionPage,
   ProyectosPlaceholder,
 } from './modules/proyectos';
 import ForgotPassword from './pages/ForgotPassword';
@@ -81,6 +86,11 @@ export default function App() {
                 <Route path="faltantes" element={<FaltantesPage />} />
                 <Route path="prioridades" element={<PrioridadesPage />} />
                 <Route path="recepciones" element={<RecepcionesPage />} />
+                <Route path="devoluciones" element={<DevolucionesPage />} />
+                <Route path="auditorias" element={<AuditoriasPage />} />
+                <Route path="herramientas" element={<HerramientasPage />} />
+                <Route path="reportes" element={<ReportesPage />} />
+                <Route path="configuracion" element={<ConfiguracionPage />} />
                 <Route
                   path="transito"
                   element={
@@ -100,56 +110,11 @@ export default function App() {
                   }
                 />
                 <Route
-                  path="devoluciones"
-                  element={
-                    <ProyectosPlaceholder
-                      title="Devoluciones"
-                      description="Devolución real a proyecto con trazabilidad (no solo ajuste)."
-                    />
-                  }
-                />
-                <Route
-                  path="auditorias"
-                  element={
-                    <ProyectosPlaceholder
-                      title="Auditorías"
-                      description="Conteo físico vs sistema por depósito/ubicación con escaneo QR."
-                    />
-                  }
-                />
-                <Route
-                  path="herramientas"
-                  element={
-                    <ProyectosPlaceholder
-                      title="Herramientas"
-                      description="Asignación a operarios/cajas con historial de eventos."
-                    />
-                  }
-                />
-                <Route
                   path="transferencias"
                   element={
                     <ProyectosPlaceholder
                       title="Transferencias entre depósitos"
                       description="Multidepósito con stock en tránsito."
-                    />
-                  }
-                />
-                <Route
-                  path="reportes"
-                  element={
-                    <ProyectosPlaceholder
-                      title="Reportes"
-                      description="Consumos, reservas, faltantes, costos y tiempos por proyecto."
-                    />
-                  }
-                />
-                <Route
-                  path="configuracion"
-                  element={
-                    <ProyectosPlaceholder
-                      title="Configuración"
-                      description="Roles del módulo (Admin, Supervisor, Depósito, Pañolero, Taller, Compras, Consulta)."
                     />
                   }
                 />

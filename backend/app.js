@@ -65,6 +65,18 @@ import {
   postAceptarSugerencia,
   postRechazarSugerencia,
   postSugerenciasPorItems,
+  getDevoluciones,
+  postDevolucion,
+  getAuditorias,
+  getAuditoriaById,
+  postAuditoria,
+  postAuditoriaLinea,
+  postCerrarAuditoria,
+  getHerramientas,
+  getHerramientaById,
+  postHerramienta,
+  postHerramientaEvento,
+  getReporteProyectos,
 } from './controllers/proyectosController.js';
 import { loadCatalogo } from './services/catalogoService.js';
 import { applyCatalogo } from './services/ubicacionUtils.js';
@@ -209,6 +221,18 @@ app.get('/api/proyectos/recepciones/:id', requireAuth, getRecepcionById);
 app.post('/api/proyectos/sugerencias/:id/aceptar', requireAuth, postAceptarSugerencia);
 app.post('/api/proyectos/sugerencias/:id/rechazar', requireAuth, postRechazarSugerencia);
 app.post('/api/proyectos/sugerencias/por-items', requireAuth, postSugerenciasPorItems);
+app.get('/api/proyectos/devoluciones', requireAuth, getDevoluciones);
+app.post('/api/proyectos/devoluciones', requireAuth, postDevolucion);
+app.get('/api/proyectos/auditorias', requireAuth, getAuditorias);
+app.post('/api/proyectos/auditorias', requireAuth, postAuditoria);
+app.get('/api/proyectos/auditorias/:id', requireAuth, getAuditoriaById);
+app.post('/api/proyectos/auditorias/:id/lineas', requireAuth, postAuditoriaLinea);
+app.post('/api/proyectos/auditorias/:id/cerrar', requireAuth, postCerrarAuditoria);
+app.get('/api/proyectos/herramientas', requireAuth, getHerramientas);
+app.post('/api/proyectos/herramientas', requireAuth, postHerramienta);
+app.get('/api/proyectos/herramientas/:id', requireAuth, getHerramientaById);
+app.post('/api/proyectos/herramientas/:id/evento', requireAuth, postHerramientaEvento);
+app.get('/api/proyectos/reportes', requireAuth, getReporteProyectos);
 app.get('/api/proyectos', requireAuth, getProyectos);
 app.post('/api/proyectos', requireAuth, postProyecto);
 app.get('/api/proyectos/:id', requireAuth, getProyectoById);

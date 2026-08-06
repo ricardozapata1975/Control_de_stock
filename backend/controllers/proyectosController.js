@@ -233,3 +233,161 @@ export async function postSugerenciasPorItems(req, res) {
     handle(err, res);
   }
 }
+
+async function f3() {
+  return import('../services/proyectosFase3Service.js');
+}
+
+export async function getDevoluciones(req, res) {
+  try {
+    const s = await f3();
+    const devoluciones = await s.listDevoluciones({
+      sede: sedeFromReq(req),
+      proyectoId: req.query.proyectoId,
+      estado: req.query.estado,
+    });
+    res.json({ devoluciones });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postDevolucion(req, res) {
+  try {
+    const s = await f3();
+    const body = req.body || {};
+    const devolucion = await s.crearDevolucion({
+      ...body,
+      sede: body.sede || req.user?.sede,
+      usuario: body.usuario || req.user?.name || req.user?.email,
+    });
+    res.status(201).json({ devolucion });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getAuditorias(req, res) {
+  try {
+    const s = await f3();
+    const auditorias = await s.listAuditorias({
+      sede: sedeFromReq(req),
+      estado: req.query.estado,
+    });
+    res.json({ auditorias });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getAuditoriaById(req, res) {
+  try {
+    const s = await f3();
+    const data = await s.getAuditoria(req.params.id);
+    res.json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postAuditoria(req, res) {
+  try {
+    const s = await f3();
+    const body = req.body || {};
+    const data = await s.crearAuditoria({
+      ...body,
+      sede: body.sede || req.user?.sede,
+      operador: body.operador || req.user?.name || req.user?.email,
+    });
+    res.status(201).json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postAuditoriaLinea(req, res) {
+  try {
+    const s = await f3();
+    const linea = await s.agregarLineaAuditoria(req.params.id, req.body || {});
+    res.status(201).json({ linea });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postCerrarAuditoria(req, res) {
+  try {
+    const s = await f3();
+    const data = await s.cerrarAuditoria(req.params.id);
+    res.json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getHerramientas(req, res) {
+  try {
+    const s = await f3();
+    const herramientas = await s.listHerramientas({
+      sede: sedeFromReq(req),
+      estado: req.query.estado,
+    });
+    res.json({ herramientas });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getHerramientaById(req, res) {
+  try {
+    const s = await f3();
+    const data = await s.getHerramienta(req.params.id);
+    res.json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postHerramienta(req, res) {
+  try {
+    const s = await f3();
+    const body = req.body || {};
+    const herramienta = await s.asignarHerramienta({
+      ...body,
+      sede: body.sede || req.user?.sede,
+      createdBy: req.user?.name || req.user?.email,
+    });
+    res.status(201).json({ herramienta });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postHerramientaEvento(req, res) {
+  try {
+    const s = await f3();
+    const herramienta = await s.eventoHerramienta(req.params.id, {
+      tipo: req.body?.tipo,
+      notas: req.body?.notas,
+      usuario: req.user?.name || req.user?.email,
+    });
+    res.json({ herramienta });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getReporteProyectos(req, res) {
+  try {
+    const s = await f3();
+    const reporte = await s.getReporte({
+      sede: sedeFromReq(req),
+      proyectoId: req.query.proyectoId,
+      desde: req.query.desde,
+      hasta: req.query.hasta,
+    });
+    res.json(reporte);
+  } catch (err) {
+    handle(err, res);
+  }
+}
