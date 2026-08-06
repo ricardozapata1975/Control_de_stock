@@ -150,6 +150,8 @@ export const api = {
       method: 'DELETE',
     }),
   importEspecificacion: () => request('/api/admin/import/especificacion'),
+  importPreview: (body) =>
+    request('/api/admin/import/preview', { method: 'POST', body: JSON.stringify(body) }),
   importCsv: (body) =>
     request('/api/admin/import/csv', { method: 'POST', body: JSON.stringify(body) }),
   adminDbSchema: () => request('/api/admin/db/schema'),

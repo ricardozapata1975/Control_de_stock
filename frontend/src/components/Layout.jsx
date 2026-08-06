@@ -19,9 +19,9 @@ const links = [
 ];
 
 const adminLinks = [
-  { to: '/admin', label: 'Admin' },
+  { to: '/admin/locaciones', label: 'Locaciones' },
+  { to: '/admin/editor-stock', label: 'Editor de Stock' },
   { to: '/admin/usuarios', label: 'Usuarios' },
-  { to: '/admin/importar', label: 'Importar' },
 ];
 
 function NavItems({ items, onNavigate }) {

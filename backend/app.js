@@ -28,6 +28,7 @@ import {
   getEspecificacion,
   getPlantilla,
   postImportCsv,
+  postImportPreview,
 } from './controllers/importController.js';
 import {
   deleteDbRow,
@@ -276,6 +277,7 @@ app.post('/api/admin/items/:itemId/imagen', requireAuth, postItemImagen);
 app.delete('/api/admin/items/:itemId/imagen', requireAuth, deleteItemImagen);
 app.get('/api/admin/import/especificacion', requireAdmin, getEspecificacion);
 app.get('/api/admin/import/plantilla.csv', requireAdmin, getPlantilla);
+app.post('/api/admin/import/preview', requireAdmin, postImportPreview);
 app.post('/api/admin/import/csv', requireAdmin, postImportCsv);
 
 // Editor de tablas (admin)

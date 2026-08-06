@@ -3,6 +3,7 @@ import {
   buildTemplateCsv,
   getImportSpec,
   importCsv,
+  previewCsv,
 } from '../services/csvImportService.js';
 
 export function getEspecificacion(_req, res) {
@@ -20,11 +21,25 @@ export function getPlantilla(_req, res) {
   res.send('\uFEFF' + csv);
 }
 
-export async function postImportCsv(req, res) {
-  const { csv, modo = 'agregar' } = req.body;
+export async function postImportPreview(req, res) {
+  const { csv, sede } = req.body || {};
   if (!csv?.trim()) {
     return res.status(400).json({ error: 'Enviá el contenido CSV en el campo "csv"' });
   }
-  const resultado = await importCsv(csv, { modo });
+  const resultado = previewCsv(csv, {
+    sede: sede || req.user?.sede,
+  });
+  res.json({ ok: true, ...resultado });
+}
+
+export async function postImportCsv(req, res) {
+  const { csv, modo = 'agregar', sede } = req.body || {};
+  if (!csv?.trim()) {
+    return res.status(400).json({ error: 'Enviá el contenido CSV en el campo "csv"' });
+  }
+  const resultado = await importCsv(csv, {
+    modo,
+    sede: sede || req.user?.sede,
+  });
   res.json({ ok: true, ...resultado });
 }

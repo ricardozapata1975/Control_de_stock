@@ -12,7 +12,8 @@ import Contenedor from './pages/Contenedor';
 import ImprimirQR from './pages/ImprimirQR';
 import RemitoSalida from './pages/RemitoSalida';
 import Item from './pages/Item';
-import AdminStock from './pages/AdminStock';
+import AdminLocaciones from './pages/AdminLocaciones';
+import AdminEditorStock from './pages/AdminEditorStock';
 import ImportarCSV from './pages/ImportarCSV';
 import AdminUsers from './pages/AdminUsers';
 import ConsultaSucursales from './pages/ConsultaSucursales';
@@ -107,9 +108,21 @@ export default function App() {
               <Route path="item/:itemId" element={<Item />} />
               <Route
                 path="admin"
+                element={<Navigate to="/admin/editor-stock" replace />}
+              />
+              <Route
+                path="admin/locaciones"
                 element={
                   <AdminRoute>
-                    <AdminStock />
+                    <AdminLocaciones />
+                  </AdminRoute>
+                }
+              />
+              <Route
+                path="admin/editor-stock"
+                element={
+                  <AdminRoute>
+                    <AdminEditorStock />
                   </AdminRoute>
                 }
               />
