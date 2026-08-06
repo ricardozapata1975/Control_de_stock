@@ -17,3 +17,11 @@ backend/data/inventario.seed.sqlite
 users_*.csv
 *.csv
 !backend/docs/**/*.csv
+!ejemplos/plantilla-inventario-ejemplo.csv
+ejemplos/*
+!ejemplos/plantilla-inventario-ejemplo.csv
+!ejemplos/plantilla-inventario-ejemplo.xlsx
+~$*
+PDF/
+*.7z
+backend/.env
