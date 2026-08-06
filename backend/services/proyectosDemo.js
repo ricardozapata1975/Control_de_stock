@@ -307,12 +307,20 @@ export async function demoDashboardKpis({ sede } = {}) {
     (h) => (!sede || h.sede === sede) && h.estado === 'prestada'
   );
 
+  let materialesEnTransito = 0;
+  try {
+    const enTransito = await demoListMaterialesEnTransito({ sede });
+    materialesEnTransito = enTransito.reduce((s, r) => s + (r.cantidadPendienteTotal || 0), 0);
+  } catch {
+    materialesEnTransito = 0;
+  }
+
   return {
     totalProyectosActivos: activos.length,
     proyectosCriticos: criticos.length,
     faltantesPendientes: faltantes.length,
     materialesReservados: reservas.reduce((s, r) => s + Number(r.cantidad || 0), 0),
-    materialesEnTransito: 0,
+    materialesEnTransito,
     recepcionesPendientes: recepcionesPend.length,
     devolucionesPendientes: devolPend.length,
     herramientasAsignadas: herrAsig.length,
@@ -1423,4 +1431,177 @@ export async function demoReporte({ sede, proyectoId, desde, hasta } = {}) {
       createdAt: m.created_at,
     })),
   };
+}
+
+/* ─── Fase 4: disponibles netos / tránsito / recepción ítem a ítem ─── */
+
+function mapLineaDemo(ri) {
+  const cantidad = Number(ri.cantidad || 0);
+  const recibida = Number(ri.cantidad_recibida || 0);
+  return {
+    id: ri.id,
+    stockId: ri.stock_id,
+    itemId: ri.item_id,
+    contenedorId: ri.contenedor_id,
+    cantidad,
+    cantidadRecibida: recibida,
+    cantidadPendiente: Math.max(0, cantidad - recibida),
+    descripcion: ri.descripcion,
+    nombre: ri.nombre,
+    codigoFabricante: ri.codigo_fabricante || null,
+  };
+}
+
+function mapRemitoDemo(r) {
+  const items = (r.items || []).map(mapLineaDemo);
+  const pendiente = items.reduce((s, l) => s + l.cantidadPendiente, 0);
+  const recibido = items.reduce((s, l) => s + l.cantidadRecibida, 0);
+  return {
+    id: r.id,
+    numero: r.numero,
+    fecha: r.fecha,
+    tipo: r.tipo,
+    estado: r.estado,
+    almacenOrigen: r.almacen_origen,
+    almacenDestino: r.almacen_destino,
+    sedeOrigen: null,
+    sedeDestino: r.ubicacion_destino?.sede || null,
+    ubicacionDestino: r.ubicacion_destino || null,
+    creadoPor: r.created_by,
+    createdAt: r.created_at,
+    recibidoPor: r.recibido_por,
+    recibidoAt: r.recibido_at,
+    recepcionInforme: r.recepcion_informe || null,
+    recepcionAbiertaAt: r.recepcion_abierta_at || null,
+    items,
+    itemsCount: items.length,
+    cantidadPendienteTotal: pendiente,
+    cantidadRecibidaTotal: recibido,
+    completo: pendiente <= 0 && items.length > 0,
+  };
+}
+
+export async function demoListDisponiblesNetos(filters = {}) {
+  const { demoListInventario } = await import('./demoService.js');
+  const items = await demoListInventario({ sede: filters.sede, q: filters.q });
+  const sede = filters.sede || null;
+  let reservas = db.reservas.filter((r) => r.estado === 'activa');
+  if (sede) {
+    const ids = new Set(db.proyectos.filter((p) => p.sede === sede).map((p) => p.id));
+    reservas = reservas.filter((r) => ids.has(r.proyecto_id) || r.sede === sede);
+  }
+  const reservadoByItem = {};
+  for (const r of reservas) {
+    if (!r.item_id) continue;
+    reservadoByItem[r.item_id] = (reservadoByItem[r.item_id] || 0) + Number(r.cantidad || 0);
+  }
+  const byItem = {};
+  for (const row of items) {
+    const id = row.itemId;
+    if (!id) continue;
+    if (!byItem[id]) {
+      byItem[id] = {
+        itemId: id,
+        nombre: row.nombre,
+        marca: row.marca,
+        modelo: row.modelo,
+        tipo: row.tipo,
+        codigoFabricante: row.codigoFabricante || '',
+        sede: sede || row.sede || null,
+        cantidadFisica: 0,
+        cantidadReservada: reservadoByItem[id] || 0,
+        ubicaciones: [],
+      };
+    }
+    byItem[id].cantidadFisica += Number(row.cantidad || 0);
+    byItem[id].ubicaciones.push({
+      stockId: row.stockId || row.id,
+      contenedorCodigo: row.contenedorCodigo || row.codigo,
+      almacen: row.almacen,
+      armario: row.armario,
+      estante: row.estante,
+      contenedor: row.contenedor,
+      cantidad: Number(row.cantidad || 0),
+    });
+  }
+  for (const [itemId, qty] of Object.entries(reservadoByItem)) {
+    if (!byItem[itemId]) {
+      byItem[itemId] = {
+        itemId,
+        nombre: null,
+        marca: null,
+        modelo: null,
+        tipo: null,
+        codigoFabricante: '',
+        sede,
+        cantidadFisica: 0,
+        cantidadReservada: qty,
+        ubicaciones: [],
+      };
+    } else byItem[itemId].cantidadReservada = qty;
+  }
+  let list = Object.values(byItem).map((r) => ({
+    ...r,
+    cantidadDisponibleNeta: Number(r.cantidadFisica) - Number(r.cantidadReservada),
+  }));
+  if (filters.q) {
+    const term = String(filters.q).toLowerCase();
+    list = list.filter(
+      (r) =>
+        String(r.nombre || '').toLowerCase().includes(term) ||
+        String(r.codigoFabricante || '').toLowerCase().includes(term)
+    );
+  }
+  list.sort((a, b) => String(a.nombre || '').localeCompare(String(b.nombre || ''), 'es'));
+  return list;
+}
+
+export async function demoListMaterialesEnTransito(filters = {}) {
+  const demo = await import('./demoService.js');
+  const map = demo.getDemoRemitosMap();
+  let list = [];
+  for (const r of map.values()) {
+    if (r.tipo !== 'transferencia') continue;
+    if (!['en_transito', 'parcial'].includes(r.estado)) continue;
+    list.push(mapRemitoDemo(r));
+  }
+  if (filters.estado) list = list.filter((r) => r.estado === filters.estado);
+  if (filters.almacenDestino) {
+    const alm = String(filters.almacenDestino).toUpperCase();
+    list = list.filter((r) => String(r.almacenDestino || '').toUpperCase() === alm);
+  }
+  return list.sort((a, b) => String(b.createdAt || '').localeCompare(String(a.createdAt || '')));
+}
+
+export async function demoListRemitosPendientesCierre(filters = {}) {
+  const all = await demoListMaterialesEnTransito(filters);
+  return all.filter(
+    (r) =>
+      r.estado === 'parcial' ||
+      (r.estado === 'en_transito' && r.cantidadRecibidaTotal > 0) ||
+      (r.recepcionAbiertaAt && !r.completo)
+  );
+}
+
+export async function demoGetRemitoRecepcion(remitoId) {
+  const demo = await import('./demoService.js');
+  const remito = demo.demoPeekRemito(remitoId);
+  if (!remito) throw Object.assign(new Error('Remito no encontrado'), { status: 404 });
+  if (remito.tipo !== 'transferencia') {
+    throw Object.assign(new Error('El remito no es una transferencia'), { status: 400 });
+  }
+  return {
+    remito: mapRemitoDemo(remito),
+    eventos: remito.recepcion_eventos || [],
+  };
+}
+
+export async function demoValidarItemRecepcion(remitoId, payload = {}) {
+  const demo = await import('./demoService.js');
+  return demo.demoValidarItemRecepcionTransferencia(remitoId, payload);
+}
+
+export async function demoCerrarRecepcionParcial(remitoId, payload = {}) {
+  const demo = await import('./demoService.js');
+  return demo.demoCerrarRecepcionParcialTransferencia(remitoId, payload);
 }

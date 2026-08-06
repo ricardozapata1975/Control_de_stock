@@ -368,6 +368,30 @@ export const api = {
     const q = new URLSearchParams(params).toString();
     return request(`/api/proyectos/reportes${q ? `?${q}` : ''}`);
   },
+  proyectosDisponiblesNetos: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/disponibles-netos${q ? `?${q}` : ''}`);
+  },
+  proyectosTransito: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/transito${q ? `?${q}` : ''}`);
+  },
+  proyectosRemitosPendientesCierre: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/remitos-pendientes-cierre${q ? `?${q}` : ''}`);
+  },
+  proyectoTransferencia: (id) =>
+    request(`/api/proyectos/transferencias/${encodeURIComponent(id)}`),
+  validarItemTransferencia: (id, body) =>
+    request(`/api/proyectos/transferencias/${encodeURIComponent(id)}/validar-item`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  cerrarRecepcionParcialTransferencia: (id, body) =>
+    request(`/api/proyectos/transferencias/${encodeURIComponent(id)}/cerrar-parcial`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
 
   downloadPlantilla: async () => {
     const token = getToken();

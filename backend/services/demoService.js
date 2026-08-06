@@ -1285,8 +1285,10 @@ export async function demoCrearRemito(payload, createdBy) {
       item_id: it.itemId,
       contenedor_id: it.contenedorId,
       cantidad: qty,
+      cantidad_recibida: 0,
       descripcion: it.descripcion || '',
       nombre: db.items.find((i) => i.id === it.itemId)?.nombre,
+      codigo_fabricante: db.items.find((i) => i.id === it.itemId)?.codigo_fabricante || null,
     });
   }
 
@@ -1360,11 +1362,19 @@ export async function demoGetRemitoById(id) {
   };
 }
 
+export function getDemoRemitosMap() {
+  return demoRemitos;
+}
+
+export function demoPeekRemito(id) {
+  return demoRemitos.get(id) || null;
+}
+
 export async function demoListTransferenciasPendientes(almacenDestino) {
   const term = String(almacenDestino || '').trim().toUpperCase();
   const list = [];
   for (const r of demoRemitos.values()) {
-    if (r.tipo !== 'transferencia' || r.estado !== 'en_transito') continue;
+    if (r.tipo !== 'transferencia' || !['en_transito', 'parcial'].includes(r.estado)) continue;
     if (term && String(r.almacen_destino || '').toUpperCase() !== term) continue;
     const empresa = DEMO_EMPRESAS.find((e) => e.id === r.empresa_emisora_id);
     const cliente = demoClientes.find((c) => c.id === r.cliente_id);
@@ -1392,7 +1402,7 @@ export async function demoRecibirTransferencia(remitoId, payload, recibidoPor) {
   if (remito.tipo !== 'transferencia') {
     throw Object.assign(new Error('El remito no es una transferencia'), { status: 400 });
   }
-  if (remito.estado !== 'en_transito') {
+  if (!['en_transito', 'parcial'].includes(remito.estado)) {
     throw Object.assign(new Error('La transferencia no está pendiente de recepción'), { status: 409 });
   }
 
@@ -1412,6 +1422,9 @@ export async function demoRecibirTransferencia(remitoId, payload, recibidoPor) {
   let itemsRecibidos = 0;
 
   for (const ri of remito.items || []) {
+    const pendiente = Math.max(0, Number(ri.cantidad || 0) - Number(ri.cantidad_recibida || 0));
+    if (pendiente <= 0) continue;
+
     const movEgreso = db.movimientos.find(
       (m) =>
         m.remito_id === remitoId &&
@@ -1420,43 +1433,43 @@ export async function demoRecibirTransferencia(remitoId, payload, recibidoPor) {
         m.tipo === 'egreso' &&
         m.estado === 'en_transito'
     );
-    if (!movEgreso) {
-      throw Object.assign(new Error('Movimiento en tránsito no encontrado'), { status: 404 });
-    }
 
     let stockDest = db.stock.find(
       (s) => s.item_id === ri.item_id && s.contenedor_id === contDest.id
     );
     if (stockDest) {
-      stockDest.cantidad += ri.cantidad;
+      stockDest.cantidad += pendiente;
     } else {
       stockDest = {
         id: `stock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
         item_id: ri.item_id,
         contenedor_id: contDest.id,
-        cantidad: ri.cantidad,
+        cantidad: pendiente,
       };
       db.stock.push(stockDest);
     }
 
-    movEgreso.estado = 'transferido';
-    movEgreso.motivo = `Transferencia recibida en ${remito.almacen_destino}`;
+    if (movEgreso) {
+      movEgreso.estado = 'transferido';
+      movEgreso.motivo = `Transferencia recibida en ${remito.almacen_destino}`;
+    }
 
     db.movimientos.push({
       id: `mov-ing-trans-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
       item_id: ri.item_id,
       contenedor_id: contDest.id,
       tipo: 'ingreso',
-      cantidad: ri.cantidad,
+      cantidad: pendiente,
       usuario: recibidoPor || 'Sistema',
       fecha: new Date().toISOString(),
       offline_id: null,
       estado: 'transferido',
       motivo: 'Ingreso por transferencia',
       remito_id: remitoId,
-      egreso_movimiento_id: movEgreso.id,
+      egreso_movimiento_id: movEgreso?.id || null,
     });
 
+    ri.cantidad_recibida = Number(ri.cantidad || 0);
     itemsRecibidos += 1;
   }
 
@@ -1466,6 +1479,11 @@ export async function demoRecibirTransferencia(remitoId, payload, recibidoPor) {
   remito.recibido_por = recibidoPor || 'Sistema';
   remito.recibido_at = new Date().toISOString();
   remito.ubicacion_destino = ubicacion;
+  remito.recepcion_informe = {
+    ...(remito.recepcion_informe || {}),
+    cierre: 'completo',
+    cerrado_at: new Date().toISOString(),
+  };
 
   return {
     ok: true,
@@ -1474,5 +1492,274 @@ export async function demoRecibirTransferencia(remitoId, payload, recibidoPor) {
     contenedor_destino_id: contDest.id,
     estado: 'recibido',
     demo: true,
+  };
+}
+
+function pushRecepcionEvento(remito, ev) {
+  if (!remito.recepcion_eventos) remito.recepcion_eventos = [];
+  const row = {
+    id: `rev-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+    createdAt: new Date().toISOString(),
+    ...ev,
+  };
+  remito.recepcion_eventos.unshift(row);
+  return row;
+}
+
+export async function demoValidarItemRecepcionTransferencia(remitoId, payload = {}) {
+  const remito = demoRemitos.get(remitoId);
+  if (!remito) throw Object.assign(new Error('Remito no encontrado'), { status: 404 });
+  if (remito.tipo !== 'transferencia') {
+    throw Object.assign(new Error('El remito no es una transferencia'), { status: 400 });
+  }
+  if (!['en_transito', 'parcial'].includes(remito.estado)) {
+    throw Object.assign(new Error('El remito no admite recepción'), { status: 409 });
+  }
+
+  const cantidad = Math.max(1, Number(payload.cantidad || 1));
+  const usuario = payload.usuario || 'Sistema';
+  const scan = String(payload.scan || payload.codigo || '').trim();
+  let targetItemId = payload.itemId || null;
+
+  const db = await load();
+  if (!targetItemId && scan) {
+    if (/^[0-9a-f-]{36}$/i.test(scan) || scan.startsWith('demo-') || scan.startsWith('item-')) {
+      targetItemId = scan;
+    } else {
+      const found = db.items.find(
+        (i) => String(i.codigo_fabricante || '').toUpperCase() === scan.toUpperCase()
+      );
+      if (found) targetItemId = found.id;
+    }
+  }
+
+  const mapRemito = () => {
+    const items = (remito.items || []).map((ri) => {
+      const cant = Number(ri.cantidad || 0);
+      const rec = Number(ri.cantidad_recibida || 0);
+      return {
+        id: ri.id,
+        itemId: ri.item_id,
+        cantidad: cant,
+        cantidadRecibida: rec,
+        cantidadPendiente: Math.max(0, cant - rec),
+        nombre: ri.nombre,
+        codigoFabricante: ri.codigo_fabricante,
+      };
+    });
+    const pendiente = items.reduce((s, l) => s + l.cantidadPendiente, 0);
+    const recibido = items.reduce((s, l) => s + l.cantidadRecibida, 0);
+    return {
+      id: remito.id,
+      numero: remito.numero,
+      estado: remito.estado,
+      almacenOrigen: remito.almacen_origen,
+      almacenDestino: remito.almacen_destino,
+      ubicacionDestino: remito.ubicacion_destino,
+      items,
+      itemsCount: items.length,
+      cantidadPendienteTotal: pendiente,
+      cantidadRecibidaTotal: recibido,
+      completo: pendiente <= 0 && items.length > 0,
+      recepcionInforme: remito.recepcion_informe,
+      recepcionAbiertaAt: remito.recepcion_abierta_at,
+    };
+  };
+
+  if (!targetItemId) {
+    pushRecepcionEvento(remito, {
+      tipo: 'extra_no_listado',
+      codigo: scan,
+      cantidad,
+      notas: 'Ítem escaneado no pertenece al remito',
+      usuario,
+    });
+    if (!remito.recepcion_abierta_at) remito.recepcion_abierta_at = new Date().toISOString();
+    remito.estado = 'parcial';
+    return { ok: false, tipo: 'extra_no_listado', mensaje: 'El ítem no figura en el remito', remito: mapRemito() };
+  }
+
+  const linea = (remito.items || []).find(
+    (ri) =>
+      ri.item_id === targetItemId &&
+      Number(ri.cantidad || 0) - Number(ri.cantidad_recibida || 0) > 0
+  );
+  if (!linea) {
+    const ya = (remito.items || []).some((ri) => ri.item_id === targetItemId);
+    pushRecepcionEvento(remito, {
+      tipo: ya ? 'exceso' : 'extra_no_listado',
+      itemId: targetItemId,
+      codigo: scan,
+      cantidad,
+      usuario,
+    });
+    return {
+      ok: false,
+      tipo: ya ? 'exceso' : 'extra_no_listado',
+      mensaje: ya ? 'Ese ítem ya está completo' : 'El ítem no figura en el remito',
+      remito: mapRemito(),
+    };
+  }
+
+  const pendiente = Number(linea.cantidad) - Number(linea.cantidad_recibida || 0);
+  const aplicar = Math.min(cantidad, pendiente);
+
+  const ubi = payload.ubicacionDestino || remito.ubicacion_destino || {};
+  if (!ubi.armario || !ubi.estante) {
+    throw Object.assign(new Error('Ubicación destino requerida (armario y estante)'), { status: 400 });
+  }
+  const contDest = await demoResolveUbicacion({
+    almacen: remito.almacen_destino,
+    armario: ubi.armario,
+    estante: ubi.estante,
+    contenedor: ubi.contenedor || null,
+  });
+
+  let stockDest = db.stock.find((s) => s.item_id === linea.item_id && s.contenedor_id === contDest.id);
+  if (stockDest) stockDest.cantidad += aplicar;
+  else {
+    db.stock.push({
+      id: `stock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+      item_id: linea.item_id,
+      contenedor_id: contDest.id,
+      cantidad: aplicar,
+    });
+  }
+
+  linea.cantidad_recibida = Number(linea.cantidad_recibida || 0) + aplicar;
+
+  if (linea.cantidad_recibida >= Number(linea.cantidad)) {
+    const movEgreso = db.movimientos.find(
+      (m) =>
+        m.remito_id === remitoId &&
+        m.item_id === linea.item_id &&
+        m.contenedor_id === linea.contenedor_id &&
+        m.tipo === 'egreso' &&
+        m.estado === 'en_transito'
+    );
+    if (movEgreso) {
+      movEgreso.estado = 'transferido';
+      movEgreso.motivo = 'Transferencia — recibido ítem a ítem';
+    }
+  }
+
+  db.movimientos.push({
+    id: `mov-ing-item-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+    item_id: linea.item_id,
+    contenedor_id: contDest.id,
+    tipo: 'ingreso',
+    cantidad: aplicar,
+    usuario,
+    fecha: new Date().toISOString(),
+    offline_id: null,
+    estado: 'transferido',
+    motivo: 'Recepción transferencia (ítem)',
+    remito_id: remitoId,
+  });
+  await save(db);
+
+  pushRecepcionEvento(remito, {
+    tipo: 'validado',
+    remitoItemId: linea.id,
+    itemId: linea.item_id,
+    codigo: scan,
+    cantidad: aplicar,
+    usuario,
+  });
+
+  if (!remito.recepcion_abierta_at) remito.recepcion_abierta_at = new Date().toISOString();
+  const todos = (remito.items || []).every(
+    (ri) => Number(ri.cantidad_recibida || 0) >= Number(ri.cantidad || 0)
+  );
+  if (todos) {
+    remito.estado = 'recibido';
+    remito.recibido_por = usuario;
+    remito.recibido_at = new Date().toISOString();
+    remito.recepcion_informe = { cierre: 'completo', modo: 'item_a_item', cerrado_at: new Date().toISOString() };
+  } else {
+    remito.estado = 'parcial';
+  }
+  remito.ubicacion_destino = { ...remito.ubicacion_destino, ...ubi };
+
+  return {
+    ok: true,
+    tipo: 'validado',
+    cantidadAplicada: aplicar,
+    lineaId: linea.id,
+    remito: mapRemito(),
+    cerradoCompleto: todos,
+  };
+}
+
+export async function demoCerrarRecepcionParcialTransferencia(remitoId, payload = {}) {
+  const remito = demoRemitos.get(remitoId);
+  if (!remito) throw Object.assign(new Error('Remito no encontrado'), { status: 404 });
+  if (!['en_transito', 'parcial'].includes(remito.estado)) {
+    throw Object.assign(new Error('El remito no está abierto'), { status: 409 });
+  }
+
+  const faltantes = (remito.items || [])
+    .map((ri) => {
+      const cant = Number(ri.cantidad || 0);
+      const rec = Number(ri.cantidad_recibida || 0);
+      return {
+        remitoItemId: ri.id,
+        itemId: ri.item_id,
+        nombre: ri.nombre,
+        cantidad: cant,
+        cantidadRecibida: rec,
+        cantidadPendiente: Math.max(0, cant - rec),
+      };
+    })
+    .filter((f) => f.cantidadPendiente > 0);
+
+  const informe = {
+    cierre: faltantes.length ? 'parcial' : 'completo',
+    cerrado_at: new Date().toISOString(),
+    notas: payload.notas || null,
+    usuario: payload.usuario || 'Sistema',
+    faltantes,
+    extras: (remito.recepcion_eventos || []).filter(
+      (e) => e.tipo === 'extra_no_listado' || e.tipo === 'exceso'
+    ),
+  };
+
+  remito.estado = faltantes.length ? 'parcial' : 'recibido';
+  remito.recepcion_informe = informe;
+  if (!faltantes.length) {
+    remito.recibido_por = payload.usuario || 'Sistema';
+    remito.recibido_at = new Date().toISOString();
+  }
+  pushRecepcionEvento(remito, {
+    tipo: 'cierre_parcial',
+    notas: payload.notas || null,
+    usuario: payload.usuario || 'Sistema',
+    meta: informe,
+  });
+
+  const items = (remito.items || []).map((ri) => {
+    const cant = Number(ri.cantidad || 0);
+    const rec = Number(ri.cantidad_recibida || 0);
+    return {
+      id: ri.id,
+      itemId: ri.item_id,
+      cantidad: cant,
+      cantidadRecibida: rec,
+      cantidadPendiente: Math.max(0, cant - rec),
+      nombre: ri.nombre,
+    };
+  });
+  return {
+    remito: {
+      id: remito.id,
+      numero: remito.numero,
+      estado: remito.estado,
+      items,
+      cantidadPendienteTotal: items.reduce((s, i) => s + i.cantidadPendiente, 0),
+      cantidadRecibidaTotal: items.reduce((s, i) => s + i.cantidadRecibida, 0),
+      completo: faltantes.length === 0,
+      recepcionInforme: informe,
+    },
+    eventos: remito.recepcion_eventos || [],
   };
 }

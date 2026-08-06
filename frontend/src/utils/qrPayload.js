@@ -7,9 +7,10 @@ export const QR_TYPES = {
   CONTENEDOR: 'contenedor',
   ITEM: 'item',
   DEVOLUCION: 'devolucion',
+  REMITO: 'remito',
 };
 
-export function buildQrPayload({ type, codigo, itemId, loteId }) {
+export function buildQrPayload({ type, codigo, itemId, loteId, remitoId }) {
   const t = type || QR_TYPES.CONTENEDOR;
   if (t === QR_TYPES.ITEM && itemId) {
     return `inventario://item/${encodeURIComponent(itemId)}`;
@@ -17,6 +18,9 @@ export function buildQrPayload({ type, codigo, itemId, loteId }) {
   if (t === QR_TYPES.DEVOLUCION && (loteId || codigo)) {
     // Prefijo corto: QR menos denso y más legible con el celular (pantalla/papel).
     return `inv://d/${encodeURIComponent(loteId || codigo)}`;
+  }
+  if (t === QR_TYPES.REMITO && (remitoId || codigo)) {
+    return `inv://r/${encodeURIComponent(remitoId || codigo)}`;
   }
   const code = String(codigo || '')
     .trim()
@@ -33,17 +37,21 @@ export function parseQrScan(text) {
   if (!s) return null;
 
   const deepLink = s.match(
-    /(?:inventario|inv):\/\/(sede|almacen|armario|estante|contenedor|item|devolucion|d)\/([^?\s#]+)/i
+    /(?:inventario|inv):\/\/(sede|almacen|armario|estante|contenedor|item|devolucion|d|remito|r)\/([^?\s#]+)/i
   );
   if (deepLink) {
     let type = deepLink[1].toLowerCase();
     if (type === 'd') type = QR_TYPES.DEVOLUCION;
+    if (type === 'r') type = QR_TYPES.REMITO;
     const raw = decodeURIComponent(deepLink[2]);
     if (type === QR_TYPES.ITEM) {
       return { type: QR_TYPES.ITEM, itemId: raw };
     }
     if (type === QR_TYPES.DEVOLUCION) {
       return { type: QR_TYPES.DEVOLUCION, loteId: raw };
+    }
+    if (type === QR_TYPES.REMITO) {
+      return { type: QR_TYPES.REMITO, remitoId: raw };
     }
     return { type, codigo: raw.toUpperCase() };
   }
@@ -196,6 +204,8 @@ export function qrTypeLabel(type) {
       return 'Artículo';
     case QR_TYPES.DEVOLUCION:
       return 'Devolución kit';
+    case QR_TYPES.REMITO:
+      return 'Remito transferencia';
     default:
       return 'Ubicación';
   }

@@ -238,6 +238,88 @@ async function f3() {
   return import('../services/proyectosFase3Service.js');
 }
 
+async function f4() {
+  return import('../services/proyectosFase4Service.js');
+}
+
+export async function getDisponiblesNetos(req, res) {
+  try {
+    const s = await f4();
+    const items = await s.listDisponiblesNetos({
+      sede: sedeFromReq(req),
+      q: req.query.q,
+    });
+    res.json({ items });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getMaterialesEnTransito(req, res) {
+  try {
+    const s = await f4();
+    const remitos = await s.listMaterialesEnTransito({
+      sede: sedeFromReq(req),
+      almacenDestino: req.query.almacenDestino,
+      estado: req.query.estado,
+    });
+    res.json({ remitos });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getRemitosPendientesCierre(req, res) {
+  try {
+    const s = await f4();
+    const remitos = await s.listRemitosPendientesCierre({
+      sede: sedeFromReq(req),
+      almacenDestino: req.query.almacenDestino,
+    });
+    res.json({ remitos });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getRemitoRecepcion(req, res) {
+  try {
+    const s = await f4();
+    const data = await s.getRemitoRecepcion(req.params.id);
+    res.json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postValidarItemRecepcion(req, res) {
+  try {
+    const s = await f4();
+    const body = req.body || {};
+    const result = await s.validarItemRecepcion(req.params.id, {
+      ...body,
+      usuario: body.usuario || req.user?.name || req.user?.email,
+    });
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postCerrarRecepcionParcial(req, res) {
+  try {
+    const s = await f4();
+    const body = req.body || {};
+    const data = await s.cerrarRecepcionParcial(req.params.id, {
+      ...body,
+      usuario: body.usuario || req.user?.name || req.user?.email,
+    });
+    res.json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
 export async function getDevoluciones(req, res) {
   try {
     const s = await f3();

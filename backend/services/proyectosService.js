@@ -389,12 +389,20 @@ export async function getDashboardKpis({ sede } = {}) {
     herramientasAsignadas = 0;
   }
 
+  let materialesEnTransito = 0;
+  try {
+    const { countMaterialesEnTransito } = await import('./proyectosFase4Service.js');
+    materialesEnTransito = await countMaterialesEnTransito({ sede });
+  } catch {
+    materialesEnTransito = 0;
+  }
+
   return {
     totalProyectosActivos: activos.length,
     proyectosCriticos: criticos.length,
     faltantesPendientes,
     materialesReservados,
-    materialesEnTransito: 0,
+    materialesEnTransito,
     recepcionesPendientes,
     devolucionesPendientes,
     herramientasAsignadas,

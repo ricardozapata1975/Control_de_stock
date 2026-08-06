@@ -9,6 +9,7 @@ function mapRemitoItem(row) {
     itemId: row.item_id || row.itemId,
     contenedorId: row.contenedor_id || row.contenedorId,
     cantidad: row.cantidad,
+    cantidadRecibida: Number(row.cantidad_recibida ?? row.cantidadRecibida ?? 0),
     descripcion: row.descripcion,
     nombre: row.nombre || row.items?.nombre,
   };
@@ -38,6 +39,8 @@ function mapRemitoDetalle(row, empresa, cliente, items) {
     ubicacionDestino: mapUbicacionDestino(row.ubicacion_destino || row.ubicacionDestino),
     recibidoPor: row.recibido_por || row.recibidoPor || null,
     recibidoAt: row.recibido_at || row.recibidoAt || null,
+    recepcionInforme: row.recepcion_informe || row.recepcionInforme || null,
+    recepcionAbiertaAt: row.recepcion_abierta_at || row.recepcionAbiertaAt || null,
     empresa,
     cliente: cliente
       ? {
@@ -133,7 +136,7 @@ export async function listTransferenciasPendientes(almacenDestino) {
     .from('remitos')
     .select('*')
     .eq('tipo', 'transferencia')
-    .eq('estado', 'en_transito')
+    .in('estado', ['en_transito', 'parcial'])
     .order('created_at', { ascending: false });
 
   if (almacenDestino) {

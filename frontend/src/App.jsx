@@ -32,7 +32,10 @@ import {
   HerramientasPage,
   ReportesPage,
   ConfiguracionPage,
-  ProyectosPlaceholder,
+  DisponiblesPage,
+  TransitoPage,
+  TransferenciasPage,
+  PendientesCierrePage,
 } from './modules/proyectos';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
@@ -91,33 +94,10 @@ export default function App() {
                 <Route path="herramientas" element={<HerramientasPage />} />
                 <Route path="reportes" element={<ReportesPage />} />
                 <Route path="configuracion" element={<ConfiguracionPage />} />
-                <Route
-                  path="transito"
-                  element={
-                    <ProyectosPlaceholder
-                      title="Materiales en tránsito"
-                      description="Estado EN TRÁNSITO entre depósitos hasta confirmación de recepción."
-                    />
-                  }
-                />
-                <Route
-                  path="disponibles"
-                  element={
-                    <ProyectosPlaceholder
-                      title="Materiales disponibles"
-                      description="Vista de stock neto (físico − reservas activas) por depósito."
-                    />
-                  }
-                />
-                <Route
-                  path="transferencias"
-                  element={
-                    <ProyectosPlaceholder
-                      title="Transferencias entre depósitos"
-                      description="Multidepósito con stock en tránsito."
-                    />
-                  }
-                />
+                <Route path="transito" element={<TransitoPage />} />
+                <Route path="disponibles" element={<DisponiblesPage />} />
+                <Route path="transferencias" element={<TransferenciasPage />} />
+                <Route path="pendientes-cierre" element={<PendientesCierrePage />} />
                 <Route path=":id" element={<ProyectoDetail />} />
               </Route>
               <Route path="escanear" element={<EscanearQR />} />

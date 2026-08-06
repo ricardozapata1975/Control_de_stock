@@ -1,4 +1,7 @@
 import { formatRemitoFecha } from '../utils/remitoStorage';
+import { useEffect, useRef } from 'react';
+import QRCode from 'qrcode';
+import { buildQrPayload, QR_TYPES } from '../utils/qrPayload';
 
 function itemDescripcion(linea) {
   const parts = [linea.nombre];
@@ -12,9 +15,29 @@ function formatInicioActividades(fecha) {
   return formatRemitoFecha(String(fecha).slice(0, 10));
 }
 
-export default function RemitoDocument({ form, lineas, empresa, esTransferencia = false }) {
+export default function RemitoDocument({
+  form,
+  lineas,
+  empresa,
+  esTransferencia = false,
+  remitoId = null,
+}) {
+  const canvasRef = useRef(null);
   const fechaLabel = formatRemitoFecha(form.fecha);
   const inicioAct = formatInicioActividades(empresa?.fechaInicioActividades);
+  const qrPayload =
+    esTransferencia && remitoId
+      ? buildQrPayload({ type: QR_TYPES.REMITO, remitoId })
+      : '';
+
+  useEffect(() => {
+    if (!qrPayload || !canvasRef.current) return;
+    QRCode.toCanvas(canvasRef.current, qrPayload, {
+      width: 160,
+      margin: 2,
+      errorCorrectionLevel: 'M',
+    });
+  }, [qrPayload]);
 
   return (
     <div className="remito-doc mx-auto w-full max-w-[210mm] bg-white px-4 pb-4 font-serif text-[11px] leading-tight text-black print:px-4 print:pb-4">
@@ -108,6 +131,33 @@ export default function RemitoDocument({ form, lineas, empresa, esTransferencia 
           </p>
         </div>
       </div>
+
+      {esTransferencia && (
+        <div className="mb-2 flex items-center gap-4 border border-black p-2">
+          <div className="min-w-0 flex-1 text-[10px]">
+            <p className="font-bold uppercase">Transferencia entre depósitos</p>
+            <p className="mt-1">
+              Escaneá el QR al recibir en destino para validar ítem a ítem. Si el celular no lee el
+              QR, usá el código del remito.
+            </p>
+            {remitoId ? (
+              <p className="mt-1 break-all font-mono text-[9px] font-bold">{remitoId}</p>
+            ) : (
+              <p className="mt-1 text-black/60">Confirmá el remito para generar el QR de recepción.</p>
+            )}
+          </div>
+          <div className="flex shrink-0 flex-col items-center">
+            {qrPayload ? (
+              <canvas ref={canvasRef} className="border border-black/20" />
+            ) : (
+              <div className="flex h-[160px] w-[160px] items-center justify-center border border-dashed border-black/40 text-[9px] text-black/50">
+                QR pendiente
+              </div>
+            )}
+            <p className="mt-1 text-[8px] font-bold uppercase">QR recepción</p>
+          </div>
+        </div>
+      )}
 
       {/* Destinatario */}
       <div className="mb-2 border border-black p-2 text-[10px]">

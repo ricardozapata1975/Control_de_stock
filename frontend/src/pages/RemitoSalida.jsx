@@ -1096,6 +1096,7 @@ export default function RemitoSalida() {
                   lineas={cartList}
                   empresa={empresaSeleccionada}
                   esTransferencia={tipoRemito === 'transferencia'}
+                  remitoId={remitoId}
                 />
               </div>
             </div>
@@ -1109,6 +1110,7 @@ export default function RemitoSalida() {
           lineas={cartList}
           empresa={empresaSeleccionada}
           esTransferencia={tipoRemito === 'transferencia'}
+          remitoId={remitoId}
         />
       </div>
 

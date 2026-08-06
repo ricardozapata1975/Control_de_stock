@@ -77,6 +77,12 @@ import {
   postHerramienta,
   postHerramientaEvento,
   getReporteProyectos,
+  getDisponiblesNetos,
+  getMaterialesEnTransito,
+  getRemitosPendientesCierre,
+  getRemitoRecepcion,
+  postValidarItemRecepcion,
+  postCerrarRecepcionParcial,
 } from './controllers/proyectosController.js';
 import { loadCatalogo } from './services/catalogoService.js';
 import { applyCatalogo } from './services/ubicacionUtils.js';
@@ -233,6 +239,12 @@ app.post('/api/proyectos/herramientas', requireAuth, postHerramienta);
 app.get('/api/proyectos/herramientas/:id', requireAuth, getHerramientaById);
 app.post('/api/proyectos/herramientas/:id/evento', requireAuth, postHerramientaEvento);
 app.get('/api/proyectos/reportes', requireAuth, getReporteProyectos);
+app.get('/api/proyectos/disponibles-netos', requireAuth, getDisponiblesNetos);
+app.get('/api/proyectos/transito', requireAuth, getMaterialesEnTransito);
+app.get('/api/proyectos/remitos-pendientes-cierre', requireAuth, getRemitosPendientesCierre);
+app.get('/api/proyectos/transferencias/:id', requireAuth, getRemitoRecepcion);
+app.post('/api/proyectos/transferencias/:id/validar-item', requireAuth, postValidarItemRecepcion);
+app.post('/api/proyectos/transferencias/:id/cerrar-parcial', requireAuth, postCerrarRecepcionParcial);
 app.get('/api/proyectos', requireAuth, getProyectos);
 app.post('/api/proyectos', requireAuth, postProyecto);
 app.get('/api/proyectos/:id', requireAuth, getProyectoById);
