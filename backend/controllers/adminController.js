@@ -1,9 +1,21 @@
-import { altaStock, bajaItem, listItemsAdmin, updateItem } from '../services/adminService.js';
+import { altaStock, bajaItem, listItemsAdmin, listStockByAlmacen, purgeAlmacenStock, updateItem } from '../services/adminService.js';
 import { deleteItemImage, uploadItemImage } from '../services/itemImageService.js';
 
 export async function getAdminItems(req, res) {
   const items = await listItemsAdmin();
   res.json({ items, total: items.length });
+}
+
+export async function getStockByAlmacen(req, res) {
+  const almacen = req.query.almacen || req.params.almacen;
+  if (!almacen) return res.status(400).json({ error: 'Query almacen requerido' });
+  const data = await listStockByAlmacen(almacen);
+  res.json(data);
+}
+
+export async function postPurgeAlmacenStock(req, res) {
+  const result = await purgeAlmacenStock(req.body || {});
+  res.json(result);
 }
 
 export async function postAltaStock(req, res) {

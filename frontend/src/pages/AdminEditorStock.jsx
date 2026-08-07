@@ -100,22 +100,24 @@ export default function AdminEditorStock() {
         api.catalogoUbicacion(sessionSede ? { sede: sessionSede } : {}),
         api.tipos(),
       ]);
+      const nextCat = {
+        almacenes: cat.almacenes || [],
+        armariosPorAlmacen: cat.armariosPorAlmacen || {},
+      };
+      const allowedAlms = new Set(nextCat.almacenes.map((a) => a.codigo));
       setItems(
         (iData.items || [])
           .filter((i) => i.activo)
           .map((item) => {
             if (!sessionSede) return item;
-            const ubicaciones = (item.ubicaciones || []).filter(
-              (u) => !u.sede || u.sede === sessionSede
-            );
+            const ubicaciones = (item.ubicaciones || []).filter((u) => {
+              if (u.almacen && allowedAlms.size) return allowedAlms.has(u.almacen);
+              return u.sede === sessionSede;
+            });
             const totalStock = ubicaciones.reduce((sum, u) => sum + (u.cantidad || 0), 0);
             return { ...item, ubicaciones, totalStock };
           })
       );
-      const nextCat = {
-        almacenes: cat.almacenes || [],
-        armariosPorAlmacen: cat.armariosPorAlmacen || {},
-      };
       setCatalogo(nextCat);
       syncAlmacenDefaults(nextCat.almacenes);
       setTipos(tiposData.tipos?.length ? tiposData.tipos : [DEFAULT_TIPO]);

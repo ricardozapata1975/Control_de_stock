@@ -20,7 +20,7 @@ import { getMe, postFirstLogin, postForgotPassword, postLogin, postResetPassword
 import { getUsers, postUser, putUser, deleteUserHandler, postResetPassword, postSendWelcome, getUsersImportSpecHandler, postUsersImportPreview, postUsersImport } from './controllers/userController.js';
 import { requireAuth, requireAdmin, optionalAuth } from './middleware/auth.js';
 import { ensureSeedAdmin } from './services/userService.js';
-import { getAdminItems, postAltaStock, postBajaItem, putUpdateItem, postItemImagen, deleteItemImagen } from './controllers/adminController.js';
+import { getAdminItems, getStockByAlmacen, postAltaStock, postBajaItem, postPurgeAlmacenStock, putUpdateItem, postItemImagen, deleteItemImagen } from './controllers/adminController.js';
 import { getCatalogo, postAlmacen, postArmario, postSede, patchAlmacenSede } from './controllers/ubicacionController.js';
 import { getTipos } from './controllers/tiposController.js';
 import docsRouter from './routes/docs.js';
@@ -270,6 +270,8 @@ app.post('/api/auth/reset-password', postAuthResetPassword);
 
 // Administración (solo admin)
 app.get('/api/admin/items', requireAdmin, getAdminItems);
+app.get('/api/admin/stock/by-almacen', requireAdmin, getStockByAlmacen);
+app.post('/api/admin/stock/purge', requireAdmin, postPurgeAlmacenStock);
 app.post('/api/admin/stock/alta', requireAdmin, postAltaStock);
 app.put('/api/admin/items/:itemId', requireAdmin, putUpdateItem);
 app.post('/api/admin/items/:itemId/baja', requireAdmin, postBajaItem);

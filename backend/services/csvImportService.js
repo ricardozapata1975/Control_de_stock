@@ -691,6 +691,22 @@ async function importRowSupabase(data, modo) {
   return { itemId, codigo: cont.codigo };
 }
 
+async function prepareImportRow(row, rowOpts, almForced) {
+  const raw = validateRow(row, { ...rowOpts, almacenDestino: almForced });
+  if (!rowOpts.forzarAduana) {
+    raw.almacen = almForced;
+    if (raw._needsNormalize && raw.armario) {
+      await ensureArmarioCodigo({
+        almacen: almForced,
+        codigo: raw.armario,
+        tipo: 'Gabinete',
+        nombre: `Gabinete SISCOM ${String(raw.armario).replace(/^A/i, '')}`,
+      });
+    }
+  }
+  return finalizeUbicacion(raw);
+}
+
 function prepareOptions(options = {}) {
   const sede = String(options.sede || SEDE_DEFAULT).trim().toUpperCase() || SEDE_DEFAULT;
   const forzarAduana = Boolean(options.forzarAduana);
@@ -702,10 +718,17 @@ function prepareOptions(options = {}) {
   }
   let almacenDestino = null;
   if (!forzarAduana) {
+    const requested = String(options.almacen || '').trim().toUpperCase() || null;
+    if (!requested) {
+      throw Object.assign(
+        new Error('Elegí un almacén destino antes de importar (ej. ALM16).'),
+        { status: 400 }
+      );
+    }
     try {
-      almacenDestino = resolveAlmacenDestino(sede, options.almacen || null);
+      almacenDestino = resolveAlmacenDestino(sede, requested);
     } catch {
-      almacenDestino = options.almacen || null;
+      almacenDestino = requested;
     }
   }
   return {
@@ -714,6 +737,8 @@ function prepareOptions(options = {}) {
     modo: options.modo || 'agregar',
     forzarAduana,
     almacenDestino,
+    offset: options.offset != null ? Number(options.offset) : 0,
+    limit: options.limit != null ? Number(options.limit) : null,
   };
 }
 
@@ -735,7 +760,8 @@ function buildUbicacionLabel(u) {
 }
 
 export async function importCsv(csvText, options = {}) {
-  const { sede, ubicacionDefault, modo, forzarAduana, almacenDestino } = prepareOptions(options);
+  const { sede, ubicacionDefault, modo, forzarAduana, almacenDestino, offset, limit } =
+    prepareOptions(options);
 
   if (modo === 'reemplazar' && !config.demoMode) {
     throw Object.assign(
@@ -744,7 +770,13 @@ export async function importCsv(csvText, options = {}) {
     );
   }
 
-  const { rows, formato } = parseCsv(csvText);
+  let { rows, formato } = parseCsv(csvText);
+  const filasTotales = rows.length;
+  if (offset > 0 || limit != null) {
+    const end = limit != null ? offset + limit : undefined;
+    rows = rows.slice(offset, end);
+  }
+
   if (forzarAduana && !ubicacionDefault) {
     throw Object.assign(
       new Error(
@@ -755,12 +787,17 @@ export async function importCsv(csvText, options = {}) {
   }
 
   const ensure = await ensureArmariosFromRows(rows, { sede, almacenDestino, forzarAduana });
-  const almFinal = forzarAduana ? ubicacionDefault?.almacen : ensure.almacen || almacenDestino;
+  const almFinal = forzarAduana ? ubicacionDefault?.almacen : almacenDestino || ensure.almacen;
+  if (!forzarAduana && !almFinal) {
+    throw Object.assign(new Error('Almacén destino obligatorio'), { status: 400 });
+  }
 
   const resultado = {
     ok: 0,
     errores: [],
     filas: rows.length,
+    filasTotales,
+    offset: offset || 0,
     modo,
     formato: forzarAduana && formato === 'nativo' ? 'nativo_aduana' : formato,
     forzarAduana,
@@ -773,7 +810,7 @@ export async function importCsv(csvText, options = {}) {
     codigos: [],
   };
 
-  if (config.demoMode && modo === 'reemplazar') {
+  if (config.demoMode && modo === 'reemplazar' && (!offset || offset === 0)) {
     await demo.demoResetInventario();
   }
 
@@ -783,7 +820,7 @@ export async function importCsv(csvText, options = {}) {
     const db = await demo.demoLoadRaw();
     for (const row of rows) {
       try {
-        const data = finalizeUbicacion(validateRow(row, rowOpts));
+        const data = await prepareImportRow(row, rowOpts, almFinal);
         const r = await importRowDemo(db, data, modo);
         resultado.ok++;
         resultado.codigos.push(r.codigo);
@@ -798,7 +835,10 @@ export async function importCsv(csvText, options = {}) {
 
   for (const row of rows) {
     try {
-      const data = finalizeUbicacion(validateRow(row, rowOpts));
+      const data = await prepareImportRow(row, rowOpts, almFinal);
+      if (data.almacen !== almFinal && !forzarAduana) {
+        data.almacen = almFinal;
+      }
       const r = await importRowSupabase(data, modo);
       resultado.ok++;
       resultado.codigos.push(r.codigo);
@@ -824,8 +864,8 @@ export async function previewCsv(csvText, options = {}) {
     );
   }
 
-  const ensure = await ensureArmariosFromRows(rows, { sede, almacenDestino, forzarAduana });
-  const almFinal = forzarAduana ? ubicacionDefault?.almacen : ensure.almacen || almacenDestino;
+  const almFinal = forzarAduana ? ubicacionDefault?.almacen : almacenDestino;
+  const ensure = await ensureArmariosFromRows(rows, { sede, almacenDestino: almFinal, forzarAduana });
   const rowOpts = { sede, ubicacionDefault, forzarAduana, almacenDestino: almFinal };
 
   const preview = [];
@@ -834,7 +874,7 @@ export async function previewCsv(csvText, options = {}) {
 
   for (const row of rows) {
     try {
-      const data = finalizeUbicacion(validateRow(row, rowOpts));
+      const data = await prepareImportRow(row, rowOpts, almFinal);
       if (data.mapeo) {
         mapeos[data.mapeo] = (mapeos[data.mapeo] || 0) + 1;
       }

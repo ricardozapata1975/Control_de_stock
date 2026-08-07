@@ -55,7 +55,8 @@ export async function listInventario(filters = {}) {
   const sede = String(filters.sede || '').trim().toUpperCase();
 
   if (sede) {
-    query = query.eq('sede', sede);
+    // Filtrar por almacenes de la sede (más confiable que la columna sede suelta)
+    query = applySedeViaAlmacenes(query, sede);
   }
 
   if (filters.codigo) {

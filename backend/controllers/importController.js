@@ -35,7 +35,7 @@ export async function postImportPreview(req, res) {
 }
 
 export async function postImportCsv(req, res) {
-  const { csv, modo = 'agregar', sede, forzarAduana, almacen } = req.body || {};
+  const { csv, modo = 'agregar', sede, forzarAduana, almacen, offset, limit } = req.body || {};
   if (!csv?.trim()) {
     return res.status(400).json({ error: 'Enviá el contenido CSV en el campo "csv"' });
   }
@@ -44,6 +44,8 @@ export async function postImportCsv(req, res) {
     sede: sede || req.user?.sede,
     forzarAduana: Boolean(forzarAduana),
     almacen: almacen || null,
+    offset,
+    limit,
   });
   res.json({ ok: true, ...resultado });
 }

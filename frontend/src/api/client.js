@@ -154,6 +154,10 @@ export const api = {
     request('/api/admin/import/preview', { method: 'POST', body: JSON.stringify(body) }),
   importCsv: (body) =>
     request('/api/admin/import/csv', { method: 'POST', body: JSON.stringify(body) }),
+  adminStockByAlmacen: (almacen) =>
+    request(`/api/admin/stock/by-almacen?almacen=${encodeURIComponent(almacen)}`),
+  adminPurgeAlmacenStock: (body) =>
+    request('/api/admin/stock/purge', { method: 'POST', body: JSON.stringify(body) }),
   adminDbSchema: () => request('/api/admin/db/schema'),
   adminDbTable: (table) => request(`/api/admin/db/${encodeURIComponent(table)}`),
   adminDbCreate: (table, body) =>
