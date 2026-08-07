@@ -44,8 +44,8 @@ INSERT INTO catalogo_config (key, value)
 SELECT v.key, v.value::jsonb
 FROM (VALUES
   ('nextAlmacenNum', '2'),
-  ('estanteMin', '1'),
-  ('estanteMax', '9'),
+  ('estanteMin', '0'),
+  ('estanteMax', '99'),
   ('contenedorReglas', '{"C":{"min":1,"max":99},"B":{"min":0,"max":99},"H":{"min":1,"max":99}}'),
   ('contenedorEspecial', '"SC"')
 ) AS v(key, value)

@@ -22,24 +22,28 @@ export function getPlantilla(_req, res) {
 }
 
 export async function postImportPreview(req, res) {
-  const { csv, sede } = req.body || {};
+  const { csv, sede, forzarAduana, almacen } = req.body || {};
   if (!csv?.trim()) {
     return res.status(400).json({ error: 'Enviá el contenido CSV en el campo "csv"' });
   }
-  const resultado = previewCsv(csv, {
+  const resultado = await previewCsv(csv, {
     sede: sede || req.user?.sede,
+    forzarAduana: Boolean(forzarAduana),
+    almacen: almacen || null,
   });
   res.json({ ok: true, ...resultado });
 }
 
 export async function postImportCsv(req, res) {
-  const { csv, modo = 'agregar', sede } = req.body || {};
+  const { csv, modo = 'agregar', sede, forzarAduana, almacen } = req.body || {};
   if (!csv?.trim()) {
     return res.status(400).json({ error: 'Enviá el contenido CSV en el campo "csv"' });
   }
   const resultado = await importCsv(csv, {
     modo,
     sede: sede || req.user?.sede,
+    forzarAduana: Boolean(forzarAduana),
+    almacen: almacen || null,
   });
   res.json({ ok: true, ...resultado });
 }

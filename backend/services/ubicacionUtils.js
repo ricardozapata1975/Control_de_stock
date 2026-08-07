@@ -118,8 +118,8 @@ export function normalizeSede(sede) {
 
 let almacenesMap = structuredClone(ALMACENES_DEFAULT);
 let catalogRules = {
-  estanteMin: 1,
-  estanteMax: 9,
+  estanteMin: 0,
+  estanteMax: 99,
   contenedorReglas: { ...CONTENEDOR_REGLAS_DEFAULT },
 };
 
@@ -200,8 +200,8 @@ export function applyCatalogo(catalogo) {
   if (migrated.almacenes) almacenesMap = migrated.almacenes;
   if (migrated) {
     catalogRules = {
-      estanteMin: migrated.estanteMin ?? 1,
-      estanteMax: migrated.estanteMax ?? 9,
+      estanteMin: migrated.estanteMin ?? 0,
+      estanteMax: migrated.estanteMax ?? 99,
       contenedorReglas: migrated.contenedorReglas || {
         C: {
           min: migrated.contenedorMin ?? CONTENEDOR_REGLAS_DEFAULT.C.min,

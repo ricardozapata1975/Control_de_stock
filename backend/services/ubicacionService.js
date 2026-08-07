@@ -29,9 +29,9 @@ function isDemoMode() {
 }
 
 export function getCatalogoUbicacion(almacenFilter, sedeFilter) {
-  const estantes = Array.from({ length: 9 }, (_, i) => {
-    const code = `E${String(i + 1).padStart(2, '0')}`;
-    return { codigo: code, nombre: `Estante ${i + 1}` };
+  const estantes = Array.from({ length: 100 }, (_, i) => {
+    const code = `E${String(i).padStart(2, '0')}`;
+    return { codigo: code, nombre: i === 0 ? 'Estante / gaveta 0' : `Estante / gaveta ${i}` };
   });
   const armariosPorAlmacen = listArmariosPorAlmacen();
   const sedes = listSedes();

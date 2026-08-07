@@ -58,8 +58,8 @@ const DEFAULT = {
   },
   nextSedeNum: 2,
   nextAlmacenNum: 3,
-  estanteMin: 1,
-  estanteMax: 9,
+  estanteMin: 0,
+  estanteMax: 99,
   contenedorReglas: {
     C: { min: 1, max: 99 },
     B: { min: 0, max: 99 },
@@ -242,6 +242,71 @@ export async function addArmario({ almacen, tipo, nombre }) {
   }
 
   return { codigo, nombre: nombreNorm, tipo: tipoKey, almacen: almCode };
+}
+
+/**
+ * Asegura un armario con código explícito (ej. A11 desde depósito SISCOM 11.xx).
+ * No pisa si ya existe.
+ */
+export async function ensureArmarioCodigo({
+  almacen,
+  codigo,
+  nombre,
+  tipo = 'Gabinete',
+}) {
+  const almCode = String(almacen || '').trim().toUpperCase();
+  const armCode = String(codigo || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '');
+  if (!/^A\d{1,3}$/.test(armCode)) {
+    throw Object.assign(new Error(`Código de armario inválido: ${codigo}`), { status: 400 });
+  }
+  const padded = `A${String(parseInt(armCode.replace(/^A/i, ''), 10)).padStart(2, '0')}`;
+  // A100 stays A100 (padStart 2 on 100 = "100")
+  const finalCode =
+    parseInt(armCode.replace(/^A/i, ''), 10) > 99
+      ? `A${parseInt(armCode.replace(/^A/i, ''), 10)}`
+      : padded;
+
+  const c = await loadCatalogo();
+  c.almacenes = c.almacenes || {};
+  if (!c.almacenes[almCode]) {
+    throw Object.assign(new Error(`Almacén no registrado: ${almCode}`), { status: 400 });
+  }
+  const alm = c.almacenes[almCode];
+  alm.armarios = alm.armarios || {};
+  if (alm.armarios[finalCode]) {
+    return { codigo: finalCode, nombre: alm.armarios[finalCode].nombre, existed: true, almacen: almCode };
+  }
+
+  const tipoKey = normalizeArmarioTipo(tipo);
+  const nombreNorm =
+    String(nombre || '').trim() || `Gabinete SISCOM ${finalCode.replace(/^A/, '')}`;
+  alm.armarios[finalCode] = { nombre: nombreNorm, tipo: tipoKey };
+  const num = parseInt(finalCode.replace(/^A/i, ''), 10);
+  if (!Number.isNaN(num)) {
+    alm.nextArmarioNum = Math.max(alm.nextArmarioNum || 0, num + 1);
+  }
+
+  if (useSupabaseCatalogo()) {
+    await insertArmarioToDb({
+      almacen: almCode,
+      codigo: finalCode,
+      nombre: nombreNorm,
+      tipo: tipoKey,
+    });
+    await updateNextArmarioNumInDb(almCode, alm.nextArmarioNum);
+    invalidateCatalogoCache();
+    const fresh = await loadCatalogo();
+    applyCatalogo(fresh);
+  } else {
+    await saveCatalogoToFile(c);
+    cache = c;
+    applyCatalogo(c);
+  }
+
+  return { codigo: finalCode, nombre: nombreNorm, existed: false, almacen: almCode };
 }
 
 export function invalidateCatalogoCache() {

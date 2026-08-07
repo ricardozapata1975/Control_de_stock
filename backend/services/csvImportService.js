@@ -1,11 +1,13 @@
 import { config } from '../config.js';
 import * as demo from './demoService.js';
 import { getSupabase } from '../db/supabase.js';
+import { ensureArmarioCodigo } from './catalogoService.js';
 import { resolveUbicacion } from './ubicacionService.js';
 import {
   ALMACEN_DEFAULT,
   getAduanaUbicacion,
   getArmariosMapSync,
+  listAlmacenes,
   normalizeArmario,
   normalizeContenedor,
   normalizeEstante,
@@ -70,14 +72,16 @@ export function getImportSpec() {
       {
         nombre: 'armario',
         obligatorio: false,
-        ejemplo: 'A01',
-        descripcion: `Obligatorio en formato nativo. En SISCOM se usa la aduana de la sede.`,
+        ejemplo: 'A11',
+        descripcion:
+          'Obligatorio en formato nativo (A00–A99). En SISCOM se deriva de DEPOSITO (11.41 → A11).',
       },
       {
         nombre: 'estante',
         obligatorio: false,
-        ejemplo: 'E01',
-        descripcion: 'Obligatorio en formato nativo (E01–E09). En SISCOM: aduana.',
+        ejemplo: 'E41',
+        descripcion:
+          'Obligatorio en formato nativo (E00–E99). En SISCOM se deriva de DEPOSITO (11.41 → E41).',
       },
       {
         nombre: 'contenedor',
@@ -114,7 +118,7 @@ export function getImportSpec() {
     formatosSoportados: {
       nativo: 'nombre + armario + estante + cantidad (plantilla del sistema)',
       siscom:
-        'IDARTICULO, CODART, DESCRIPCIO, DEPOSITO, EXISTENCIA → ingreso a aduana de la sede; reubicá después en Editor de Stock',
+        'IDARTICULO, CODART, DESCRIPCIO, DEPOSITO, EXISTENCIA → DEPOSITO 11.41 se mapea a A11-E41 en el almacén elegido (crea gabinetes si faltan)',
     },
     armarios: getArmariosMapSync(ALMACEN_DEFAULT),
     modos: {
@@ -255,13 +259,65 @@ function buildComentarioSiscom(row, base = '') {
   return parts.join(' · ');
 }
 
+function formatArmarioNum(n) {
+  return `A${String(n).padStart(2, '0')}`;
+}
+
+function formatEstanteNum(n) {
+  return `E${String(n).padStart(2, '0')}`;
+}
+
+/**
+ * SISCOM DEPOSITO "11.41" → gabinete/estantería 11 + estante/gaveta 41 → A11 + E41.
+ * Acepta "11.41", "11,41", "A11-E41".
+ */
+export function parseDepositoSiscom(raw) {
+  const s = String(raw ?? '')
+    .trim()
+    .replace(',', '.')
+    .replace(/\s+/g, '');
+  if (!s || s === '-' || s === '.') return null;
+
+  const dotted = s.match(/^(\d{1,2})\.(\d{1,2})$/);
+  if (dotted) {
+    const arm = parseInt(dotted[1], 10);
+    const est = parseInt(dotted[2], 10);
+    if (arm < 0 || arm > 99 || est < 0 || est > 99) return null;
+    return { armario: formatArmarioNum(arm), estante: formatEstanteNum(est), origen: s };
+  }
+
+  const coded = s.match(/^A(\d{1,2})-E(\d{1,2})$/i);
+  if (coded) {
+    const arm = parseInt(coded[1], 10);
+    const est = parseInt(coded[2], 10);
+    if (arm > 99 || est > 99) return null;
+    return { armario: formatArmarioNum(arm), estante: formatEstanteNum(est), origen: s };
+  }
+
+  const slash = s.match(/^(\d{1,2})[\/_](\d{1,2})$/);
+  if (slash) {
+    const arm = parseInt(slash[1], 10);
+    const est = parseInt(slash[2], 10);
+    if (arm > 99 || est > 99) return null;
+    return { armario: formatArmarioNum(arm), estante: formatEstanteNum(est), origen: s };
+  }
+
+  const onlyInt = s.match(/^(\d{1,2})$/);
+  if (onlyInt) {
+    const arm = parseInt(onlyInt[1], 10);
+    return { armario: formatArmarioNum(arm), estante: 'E00', origen: s };
+  }
+
+  return null;
+}
+
 function resolveAduanaDefaults(sede) {
   const code = String(sede || SEDE_DEFAULT).trim().toUpperCase() || SEDE_DEFAULT;
   const aduana = getAduanaUbicacion(code);
   if (!aduana?.almacen || !aduana?.armario || !aduana?.estante) {
     throw Object.assign(
       new Error(
-        `La sede ${code} no tiene aduana de recepción configurada. Creá la sede/aduana en Locaciones antes de importar SISCOM.`
+        `La sede ${code} no tiene aduana de recepción configurada. Creá la sede/aduana en Locaciones antes de importar.`
       ),
       { status: 400 }
     );
@@ -275,21 +331,88 @@ function resolveAduanaDefaults(sede) {
   };
 }
 
-function validateRow(row, { sede, ubicacionDefault } = {}) {
+/** Almacén de destino: el pedido, o el primero de la sede que no sea aduana. */
+export function resolveAlmacenDestino(sede, almacenOpt) {
+  const sedeCode = String(sede || SEDE_DEFAULT).trim().toUpperCase() || SEDE_DEFAULT;
+  const aduana = getAduanaUbicacion(sedeCode);
+  const alms = listAlmacenes(sedeCode);
+
+  if (almacenOpt) {
+    const code = String(almacenOpt).trim().toUpperCase();
+    const found = alms.find((a) => a.codigo === code) || listAlmacenes().find((a) => a.codigo === code);
+    if (!found) {
+      throw Object.assign(new Error(`Almacén no registrado: ${code}`), { status: 400 });
+    }
+    return code;
+  }
+
+  const noAduana = alms.filter((a) => a.codigo !== aduana?.almacen);
+  if (noAduana.length) return noAduana[0].codigo;
+  if (alms.length) return alms[0].codigo;
+  if (aduana?.almacen) return aduana.almacen;
+  return ALMACEN_DEFAULT;
+}
+
+/**
+ * Extrae Axx/Exx del row: DEPOSITO SISCOM, columnas nativas, o calibración mal mapeada (11.41).
+ */
+function extractArmarioEstanteFromRow(row) {
+  if (row.deposito_origen) {
+    const parsed = parseDepositoSiscom(row.deposito_origen);
+    if (parsed) return parsed;
+  }
+
+  const armRaw = String(row.armario || '').trim();
+  const estRaw = String(row.estante || '').trim();
+  if (armRaw && estRaw) {
+    return { armario: armRaw, estante: estRaw, origen: `${armRaw}/${estRaw}` };
+  }
+
+  // Excel convertido a medias: calibracion = "11.41"
+  const cal = String(row.calibracion || '').trim();
+  if (cal && /^\d{1,2}[.,]\d{1,2}$/.test(cal)) {
+    const parsed = parseDepositoSiscom(cal);
+    if (parsed) return { ...parsed, fromCalibracion: true };
+  }
+
+  if (row.deposito_origen) {
+    throw new Error(
+      `Depósito SISCOM no mapeable: "${row.deposito_origen}". Esperado NN.NN (ej. 11.41 → A11-E41)`
+    );
+  }
+  return null;
+}
+
+function validateRow(row, { sede, ubicacionDefault, forzarAduana = false, almacenDestino = null } = {}) {
   if (!row.nombre?.trim()) throw new Error('nombre vacío');
   const cantidad = parseCantidad(row.cantidad);
   const formato = row._formato || 'nativo';
 
   let ubicacion;
-  if (formato === 'siscom') {
+  let mappedFromDeposito = null;
+  let clearCalibracion = false;
+
+  if (forzarAduana) {
     ubicacion = ubicacionDefault || resolveAduanaDefaults(sede);
   } else {
-    const alm = row.almacen?.trim() || ubicacionDefault?.almacen || ALMACEN_DEFAULT;
+    const extracted = extractArmarioEstanteFromRow(row);
+    if (!extracted?.armario || !extracted?.estante) {
+      throw new Error('Faltan armario/estante (o DEPOSITO SISCOM tipo 11.41)');
+    }
+    mappedFromDeposito = extracted;
+    if (extracted.fromCalibracion) clearCalibracion = true;
+
+    const alm =
+      String(row.almacen || '').trim().toUpperCase() ||
+      almacenDestino ||
+      ubicacionDefault?.almacen ||
+      ALMACEN_DEFAULT;
+
     ubicacion = {
       sede: sede || ubicacionDefault?.sede || null,
       almacen: alm,
-      armario: normalizeArmario(row.armario, alm),
-      estante: normalizeEstante(row.estante),
+      armario: normalizeArmario(extracted.armario, alm),
+      estante: normalizeEstante(extracted.estante),
       contenedor: row.contenedor?.trim() ? normalizeContenedor(row.contenedor) : null,
     };
   }
@@ -301,8 +424,33 @@ function validateRow(row, { sede, ubicacionDefault } = {}) {
     null;
 
   let comentario = campos.comentario || '';
+  let calibracion = clearCalibracion ? '' : campos.calibracion || '';
+
+  // En conversiones a medias, "calibracion" suele traer el depósito (11.41)
+  if (!clearCalibracion && calibracion && /^\d{1,2}([.,]\d{1,2})$/.test(calibracion.trim())) {
+    const tag = `Depósito SISCOM: ${calibracion.trim()}`;
+    comentario = comentario ? `${comentario} · ${tag}` : tag;
+    calibracion = '';
+  }
+
   if (formato === 'siscom') {
     comentario = buildComentarioSiscom(row, comentario);
+  } else if (forzarAduana) {
+    const origenParts = [];
+    if (row.armario) origenParts.push(`armario ${String(row.armario).trim()}`);
+    if (row.estante) origenParts.push(`estante ${String(row.estante).trim()}`);
+    if (row.contenedor) origenParts.push(`cont. ${String(row.contenedor).trim()}`);
+    if (calibracion && /^\d+(\.\d+)?$/.test(calibracion)) {
+      origenParts.push(`depósito origen ${calibracion}`);
+      calibracion = '';
+    }
+    if (origenParts.length) {
+      const tag = `Origen archivo: ${origenParts.join(', ')}`;
+      comentario = comentario ? `${comentario} · ${tag}` : tag;
+    }
+  } else if (mappedFromDeposito?.origen && formato === 'nativo' && clearCalibracion) {
+    const tag = `Depósito SISCOM: ${mappedFromDeposito.origen}`;
+    comentario = comentario ? `${comentario} · ${tag}` : tag;
   }
 
   return {
@@ -318,13 +466,49 @@ function validateRow(row, { sede, ubicacionDefault } = {}) {
     estante: ubicacion.estante,
     contenedor: ubicacion.contenedor,
     cantidad,
-    calibracion: campos.calibracion,
+    calibracion,
     comentario,
     fecha_relevamiento: campos.fecha_relevamiento,
     deposito_origen: row.deposito_origen ? String(row.deposito_origen).trim() : null,
     id_origen: row.id_origen ? String(row.id_origen).trim() : null,
-    formato,
+    formato: forzarAduana && formato === 'nativo' ? 'nativo_aduana' : formato,
+    mapeo: mappedFromDeposito
+      ? `${mappedFromDeposito.origen || ''} → ${ubicacion.armario}-${ubicacion.estante}`
+      : null,
   };
+}
+
+async function ensureArmariosFromRows(rows, { sede, almacenDestino, forzarAduana }) {
+  if (forzarAduana) return { creados: [], almacen: null };
+  const alm = almacenDestino || resolveAlmacenDestino(sede, null);
+  const codes = new Set();
+  for (const row of rows) {
+    try {
+      const extracted = extractArmarioEstanteFromRow(row);
+      if (extracted?.armario) {
+        const code = String(extracted.armario)
+          .trim()
+          .toUpperCase()
+          .replace(/\s+/g, '');
+        const m = code.match(/^A?(\d{1,2})$/i);
+        if (m) codes.add(formatArmarioNum(parseInt(m[1], 10)));
+        else if (/^A\d{2}$/i.test(code)) codes.add(code.toUpperCase());
+      }
+    } catch {
+      // fila inválida: se reporta en validate
+    }
+  }
+  const creados = [];
+  for (const codigo of [...codes].sort()) {
+    const r = await ensureArmarioCodigo({
+      almacen: alm,
+      codigo,
+      tipo: 'Gabinete',
+      nombre: `Gabinete SISCOM ${codigo.replace(/^A/, '')}`,
+    });
+    if (!r.existed) creados.push(codigo);
+  }
+  return { creados, almacen: alm };
 }
 
 async function findOrCreateItemDemo(db, data) {
@@ -477,18 +661,49 @@ async function importRowSupabase(data, modo) {
 
 function prepareOptions(options = {}) {
   const sede = String(options.sede || SEDE_DEFAULT).trim().toUpperCase() || SEDE_DEFAULT;
+  const forzarAduana = Boolean(options.forzarAduana);
   let ubicacionDefault = null;
-  // Siempre resolvemos aduana si hay sede: SISCOM la usa; nativo puede omitir almacén
   try {
     ubicacionDefault = resolveAduanaDefaults(sede);
   } catch {
     ubicacionDefault = null;
   }
-  return { sede, ubicacionDefault, modo: options.modo || 'agregar' };
+  let almacenDestino = null;
+  if (!forzarAduana) {
+    try {
+      almacenDestino = resolveAlmacenDestino(sede, options.almacen || null);
+    } catch {
+      almacenDestino = options.almacen || null;
+    }
+  }
+  return {
+    sede,
+    ubicacionDefault,
+    modo: options.modo || 'agregar',
+    forzarAduana,
+    almacenDestino,
+  };
+}
+
+function aggregateErrores(errores) {
+  const counts = {};
+  for (const e of errores) {
+    const key = e.error || 'Error desconocido';
+    counts[key] = (counts[key] || 0) + 1;
+  }
+  return Object.entries(counts)
+    .map(([error, count]) => ({ error, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 8);
+}
+
+function buildUbicacionLabel(u) {
+  if (!u?.almacen || !u?.armario || !u?.estante) return null;
+  return `${u.almacen}-${u.armario}-${u.estante}${u.contenedor ? `-${u.contenedor}` : ''}`;
 }
 
 export async function importCsv(csvText, options = {}) {
-  const { sede, ubicacionDefault, modo } = prepareOptions(options);
+  const { sede, ubicacionDefault, modo, forzarAduana, almacenDestino } = prepareOptions(options);
 
   if (modo === 'reemplazar' && !config.demoMode) {
     throw Object.assign(
@@ -498,27 +713,31 @@ export async function importCsv(csvText, options = {}) {
   }
 
   const { rows, formato } = parseCsv(csvText);
-  if (formato === 'siscom' && !ubicacionDefault) {
+  if (forzarAduana && !ubicacionDefault) {
     throw Object.assign(
       new Error(
-        `Formato SISCOM detectado: la sede ${sede} necesita aduana de recepción (Locaciones).`
+        `Se requiere aduana de recepción para la sede ${sede}. Configurala en Locaciones.`
       ),
       { status: 400 }
     );
   }
+
+  const ensure = await ensureArmariosFromRows(rows, { sede, almacenDestino, forzarAduana });
+  const almFinal = forzarAduana ? ubicacionDefault?.almacen : ensure.almacen || almacenDestino;
 
   const resultado = {
     ok: 0,
     errores: [],
     filas: rows.length,
     modo,
-    formato,
+    formato: forzarAduana && formato === 'nativo' ? 'nativo_aduana' : formato,
+    forzarAduana,
     sede,
-    ubicacionDestino: ubicacionDefault
-      ? `${ubicacionDefault.almacen}-${ubicacionDefault.armario}-${ubicacionDefault.estante}${
-          ubicacionDefault.contenedor ? `-${ubicacionDefault.contenedor}` : ''
-        }`
-      : null,
+    almacen: almFinal,
+    armariosCreados: ensure.creados,
+    ubicacionDestino: forzarAduana
+      ? buildUbicacionLabel(ubicacionDefault)
+      : `${almFinal}-{Axx}-{Exx} (según DEPOSITO / archivo)`,
     codigos: [],
   };
 
@@ -526,11 +745,13 @@ export async function importCsv(csvText, options = {}) {
     await demo.demoResetInventario();
   }
 
+  const rowOpts = { sede, ubicacionDefault, forzarAduana, almacenDestino: almFinal };
+
   if (config.demoMode) {
     const db = await demo.demoLoadRaw();
     for (const row of rows) {
       try {
-        const data = validateRow(row, { sede, ubicacionDefault });
+        const data = validateRow(row, rowOpts);
         const r = await importRowDemo(db, data, modo);
         resultado.ok++;
         resultado.codigos.push(r.codigo);
@@ -539,12 +760,13 @@ export async function importCsv(csvText, options = {}) {
       }
     }
     await demo.demoSaveRaw(db);
+    resultado.erroresFrecuentes = aggregateErrores(resultado.errores);
     return resultado;
   }
 
   for (const row of rows) {
     try {
-      const data = validateRow(row, { sede, ubicacionDefault });
+      const data = validateRow(row, rowOpts);
       const r = await importRowSupabase(data, modo);
       resultado.ok++;
       resultado.codigos.push(r.codigo);
@@ -552,29 +774,38 @@ export async function importCsv(csvText, options = {}) {
       resultado.errores.push({ linea: row.linea, error: e.message });
     }
   }
+  resultado.erroresFrecuentes = aggregateErrores(resultado.errores);
   return resultado;
 }
 
-/** Analiza el CSV/Excel sin escribir en la base. */
-export function previewCsv(csvText, options = {}) {
-  const { sede, ubicacionDefault } = prepareOptions(options);
+/** Analiza el CSV/Excel sin escribir stock (sí puede crear gabinetes faltantes Axx). */
+export async function previewCsv(csvText, options = {}) {
+  const { sede, ubicacionDefault, forzarAduana, almacenDestino } = prepareOptions(options);
   const { rows, formato } = parseCsv(csvText);
 
-  if (formato === 'siscom' && !ubicacionDefault) {
+  if (forzarAduana && !ubicacionDefault) {
     throw Object.assign(
       new Error(
-        `Formato SISCOM detectado: la sede ${sede} necesita aduana de recepción (Locaciones).`
+        `Se requiere aduana de recepción para la sede ${sede}. Configurala en Locaciones.`
       ),
       { status: 400 }
     );
   }
 
+  const ensure = await ensureArmariosFromRows(rows, { sede, almacenDestino, forzarAduana });
+  const almFinal = forzarAduana ? ubicacionDefault?.almacen : ensure.almacen || almacenDestino;
+  const rowOpts = { sede, ubicacionDefault, forzarAduana, almacenDestino: almFinal };
+
   const preview = [];
   const errores = [];
+  const mapeos = {};
 
   for (const row of rows) {
     try {
-      const data = validateRow(row, { sede, ubicacionDefault });
+      const data = validateRow(row, rowOpts);
+      if (data.mapeo) {
+        mapeos[data.mapeo] = (mapeos[data.mapeo] || 0) + 1;
+      }
       preview.push({
         linea: row.linea,
         ok: true,
@@ -583,11 +814,14 @@ export function previewCsv(csvText, options = {}) {
         marca: data.marca,
         modelo: data.modelo,
         tipo: data.tipo,
+        almacen: data.almacen,
         armario: data.armario,
         estante: data.estante,
         contenedor: data.contenedor || '',
         cantidad: data.cantidad,
         depositoOrigen: data.deposito_origen || '',
+        mapeo: data.mapeo || '',
+        ubicacion: buildUbicacionLabel(data),
         comentario: data.comentario || '',
       });
     } catch (e) {
@@ -598,26 +832,50 @@ export function previewCsv(csvText, options = {}) {
         ok: false,
         nombre: row.nombre || '',
         error: e.message,
+        armarioArchivo: row.armario || '',
+        estanteArchivo: row.estante || '',
+        depositoOrigen: row.deposito_origen || '',
       });
     }
+  }
+
+  const erroresFrecuentes = aggregateErrores(errores);
+  const mapeosFrecuentes = Object.entries(mapeos)
+    .map(([mapeo, count]) => ({ mapeo, count }))
+    .sort((a, b) => b.count - a.count)
+    .slice(0, 12);
+
+  let nota = null;
+  if (forzarAduana) {
+    nota =
+      'Forzaste aduana: el stock entra en la recepción de la sede. El origen queda en el comentario.';
+  } else if (formato === 'siscom') {
+    nota =
+      'DEPOSITO SISCOM (ej. 11.41) se mapea a gabinete A11 + estante/gaveta E41 en el almacén elegido. Se crean gabinetes faltantes automáticamente.';
+  } else if (mapeosFrecuentes.length) {
+    nota =
+      'Se detectaron depósitos tipo NN.NN (o Axx/Exx) y se mapearon a la codificación de la app.';
   }
 
   return {
     filas: rows.length,
     validas: preview.filter((r) => r.ok).length,
     invalidas: errores.length,
-    formato,
+    formato: forzarAduana && formato === 'nativo' ? 'nativo_aduana' : formato,
+    forzarAduana,
     sede,
-    ubicacionDestino: ubicacionDefault
-      ? `${ubicacionDefault.almacen}-${ubicacionDefault.armario}-${ubicacionDefault.estante}${
-          ubicacionDefault.contenedor ? `-${ubicacionDefault.contenedor}` : ''
-        }`
-      : null,
-    nota:
-      formato === 'siscom'
-        ? 'SISCOM: el stock entra en la aduana de recepción de la sede. Después podés reubicarlo con Editor de Stock → Editar existente.'
+    almacen: almFinal,
+    armariosCreados: ensure.creados,
+    ubicacionDestino: forzarAduana
+      ? buildUbicacionLabel(ubicacionDefault)
+      : almFinal
+        ? `${almFinal} (ubicaciones según DEPOSITO / armario-estante)`
         : null,
+    sugerirAduana: false,
+    nota,
     errores,
+    erroresFrecuentes,
+    mapeosFrecuentes,
     preview,
   };
 }

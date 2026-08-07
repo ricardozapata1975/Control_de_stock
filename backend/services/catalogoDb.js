@@ -89,8 +89,8 @@ function buildCatalogoFromRows(sedesRows, almacenesRows, armariosRows, configRow
       almacenes,
       nextAlmacenNum: config.nextAlmacenNum ?? 2,
       nextSedeNum: config.nextSedeNum ?? 2,
-      estanteMin: config.estanteMin ?? 1,
-      estanteMax: config.estanteMax ?? 9,
+      estanteMin: config.estanteMin ?? 0,
+      estanteMax: config.estanteMax ?? 99,
       contenedorReglas: config.contenedorReglas,
       contenedorEspecial: config.contenedorEspecial ?? 'SC',
     })

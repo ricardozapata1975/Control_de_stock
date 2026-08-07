@@ -14,9 +14,9 @@ export const ARMARIOS = {
   A02: 'Armario Electrónica',
 };
 
-export const ESTANTES = Array.from({ length: 9 }, (_, i) => {
-  const codigo = `E${String(i + 1).padStart(2, '0')}`;
-  return { codigo, nombre: `Estante ${i + 1}` };
+export const ESTANTES = Array.from({ length: 100 }, (_, i) => {
+  const codigo = `E${String(i).padStart(2, '0')}`;
+  return { codigo, nombre: i === 0 ? 'Estante / gaveta 0' : `Estante / gaveta ${i}` };
 });
 
 export function getAlmacenNombre(almacen) {
