@@ -10,6 +10,7 @@
     "db:apply-patch": "node scripts/apply-schema-patch.js",
     "db:check-schema": "node scripts/check-schema.js",
     "db:migrate-supabase": "node scripts/migrate-demo-to-supabase.js",
+    "db:purge-almacen": "node scripts/purge-almacen-stock.js",
     "test:ubicacion-almacen": "node scripts/test-ubicacion-almacen.js"
   },
   "dependencies": {
