@@ -365,6 +365,15 @@ function extractArmarioEstanteFromRow(row) {
   const armRaw = String(row.armario || '').trim();
   const estRaw = String(row.estante || '').trim();
   if (armRaw && estRaw) {
+    const am = armRaw.toUpperCase().replace(/\s+/g, '').match(/^A?(\d{1,2})$/i);
+    const em = estRaw.toUpperCase().replace(/\s+/g, '').match(/^E?(\d{1,2})$/i);
+    if (am && em) {
+      return {
+        armario: formatArmarioNum(parseInt(am[1], 10)),
+        estante: formatEstanteNum(parseInt(em[1], 10)),
+        origen: `${armRaw}/${estRaw}`,
+      };
+    }
     return { armario: armRaw, estante: estRaw, origen: `${armRaw}/${estRaw}` };
   }
 
@@ -402,17 +411,21 @@ function validateRow(row, { sede, ubicacionDefault, forzarAduana = false, almace
     mappedFromDeposito = extracted;
     if (extracted.fromCalibracion) clearCalibracion = true;
 
+    // El almacén elegido en la UI manda; en SISCOM se ignora cualquier columna almacen del archivo
+    // (si no, filas con ALM01 residual validan contra A00–A02 y fallan el resto).
+    const almFromFile =
+      formato === 'siscom' ? '' : String(row.almacen || '').trim().toUpperCase();
     const alm =
-      String(row.almacen || '').trim().toUpperCase() ||
-      almacenDestino ||
+      (almacenDestino && String(almacenDestino).trim().toUpperCase()) ||
+      almFromFile ||
       ubicacionDefault?.almacen ||
       ALMACEN_DEFAULT;
 
     ubicacion = {
       sede: sede || ubicacionDefault?.sede || null,
       almacen: alm,
-      armario: normalizeArmario(extracted.armario, alm),
-      estante: normalizeEstante(extracted.estante),
+      armario: extracted.armario,
+      estante: extracted.estante,
       contenedor: row.contenedor?.trim() ? normalizeContenedor(row.contenedor) : null,
     };
   }
@@ -475,6 +488,25 @@ function validateRow(row, { sede, ubicacionDefault, forzarAduana = false, almace
     mapeo: mappedFromDeposito
       ? `${mappedFromDeposito.origen || ''} → ${ubicacion.armario}-${ubicacion.estante}`
       : null,
+    _needsNormalize: !forzarAduana,
+  };
+}
+
+/** Normaliza armario/estante contra el catálogo (tras ensureArmario). */
+function finalizeUbicacion(data) {
+  if (!data._needsNormalize) {
+    const { _needsNormalize, ...rest } = data;
+    return rest;
+  }
+  const armario = normalizeArmario(data.armario, data.almacen);
+  const estante = normalizeEstante(data.estante);
+  const origen = data.mapeo ? String(data.mapeo).split('→')[0].trim() : '';
+  const { _needsNormalize, ...rest } = data;
+  return {
+    ...rest,
+    armario,
+    estante,
+    mapeo: origen ? `${origen} → ${armario}-${estante}` : null,
   };
 }
 
@@ -751,7 +783,7 @@ export async function importCsv(csvText, options = {}) {
     const db = await demo.demoLoadRaw();
     for (const row of rows) {
       try {
-        const data = validateRow(row, rowOpts);
+        const data = finalizeUbicacion(validateRow(row, rowOpts));
         const r = await importRowDemo(db, data, modo);
         resultado.ok++;
         resultado.codigos.push(r.codigo);
@@ -766,7 +798,7 @@ export async function importCsv(csvText, options = {}) {
 
   for (const row of rows) {
     try {
-      const data = validateRow(row, rowOpts);
+      const data = finalizeUbicacion(validateRow(row, rowOpts));
       const r = await importRowSupabase(data, modo);
       resultado.ok++;
       resultado.codigos.push(r.codigo);
@@ -802,7 +834,7 @@ export async function previewCsv(csvText, options = {}) {
 
   for (const row of rows) {
     try {
-      const data = validateRow(row, rowOpts);
+      const data = finalizeUbicacion(validateRow(row, rowOpts));
       if (data.mapeo) {
         mapeos[data.mapeo] = (mapeos[data.mapeo] || 0) + 1;
       }

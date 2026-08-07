@@ -290,15 +290,30 @@ export async function ensureArmarioCodigo({
   }
 
   if (useSupabaseCatalogo()) {
-    await insertArmarioToDb({
-      almacen: almCode,
-      codigo: finalCode,
-      nombre: nombreNorm,
-      tipo: tipoKey,
-    });
-    await updateNextArmarioNumInDb(almCode, alm.nextArmarioNum);
+    // Aplicar en memoria ya, para que el import no dependa del round-trip a DB
+    cache = c;
+    applyCatalogo(c);
+    try {
+      await insertArmarioToDb({
+        almacen: almCode,
+        codigo: finalCode,
+        nombre: nombreNorm,
+        tipo: tipoKey,
+      });
+      await updateNextArmarioNumInDb(almCode, alm.nextArmarioNum);
+    } catch (e) {
+      // Si ya existe en DB (carrera), seguimos con el catálogo en memoria
+      if (e?.status !== 409) throw e;
+    }
     invalidateCatalogoCache();
     const fresh = await loadCatalogo();
+    // Fusionar por si el reload no trae aún el alta
+    if (fresh?.almacenes?.[almCode]) {
+      fresh.almacenes[almCode].armarios = fresh.almacenes[almCode].armarios || {};
+      if (!fresh.almacenes[almCode].armarios[finalCode]) {
+        fresh.almacenes[almCode].armarios[finalCode] = { nombre: nombreNorm, tipo: tipoKey };
+      }
+    }
     applyCatalogo(fresh);
   } else {
     await saveCatalogoToFile(c);
