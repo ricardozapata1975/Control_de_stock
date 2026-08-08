@@ -448,7 +448,8 @@ function armarioExistsInAlmacen(almacen, armarioCode) {
   return Boolean(getArmariosMapForAlmacen(almacen)[armarioCode]);
 }
 
-function buildCodigoSuffix(armario, estante, contenedor, almacen = ALMACEN_DEFAULT, { skipArmarioCheck = false } = {}) {
+function buildCodigoSuffix(armario, estante, contenedor, almacen = ALMACEN_DEFAULT, { skipArmarioCheck = true } = {}) {
+  // Por defecto solo formatea: validar catálogo acá reventaba imports (legacy → ALM01).
   const a = skipArmarioCheck ? formatArmarioCode(armario) : normalizeArmario(armario, almacen);
   const e = normalizeEstante(estante);
   const c = normalizeContenedor(contenedor);
@@ -492,7 +493,7 @@ export function buildCodigoCompleto({
   armario,
   estante,
   contenedor,
-  skipArmarioCheck = false,
+  skipArmarioCheck = true,
 } = {}) {
   const s = normalizeSede(sede || getSedeForAlmacen(almacen));
   const a = normalizeAlmacen(almacen || ALMACEN_DEFAULT);
@@ -724,16 +725,26 @@ export function codigoLookupVariants(parsed) {
   const { armario, estante, contenedor } = parsed;
 
   if (armario && estante) {
-    const legacy = buildCodigo(armario, estante, contenedor);
-    if (alm === ALMACEN_DEFAULT) {
-      variants.add(legacy);
-    } else {
-      variants.add(`${alm}-${legacy}`);
-    }
+    // No validar catálogo: solo armar strings de búsqueda
     try {
-      variants.add(buildCodigoCompleto({ sede, almacen: alm, armario, estante, contenedor }));
+      const legacy = buildCodigo(armario, estante, contenedor);
+      if (alm === ALMACEN_DEFAULT) {
+        variants.add(legacy);
+      } else {
+        variants.add(`${alm}-${legacy}`);
+      }
+      variants.add(
+        buildCodigoCompleto({
+          sede,
+          almacen: alm,
+          armario,
+          estante,
+          contenedor,
+          skipArmarioCheck: true,
+        })
+      );
     } catch {
-      /* sin armario/estante válidos */
+      /* códigos incompletos */
     }
   } else if (armario) {
     if (alm === ALMACEN_DEFAULT) {

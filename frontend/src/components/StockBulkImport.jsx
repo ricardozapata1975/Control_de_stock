@@ -24,7 +24,7 @@ function countDataRows(csvText) {
 }
 
 /**
- * Carga masiva: análisis, aplicación lote a lote (manual) y vaciado de almacén.
+ * Carga masiva: analizar → revisar lote (150) con errores → aplicar → siguiente lote.
  */
 export default function StockBulkImport({ onImported }) {
   const { sede, sedeNombre } = useAuth();
@@ -39,6 +39,7 @@ export default function StockBulkImport({ onImported }) {
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+  const [soloErrores, setSoloErrores] = useState(false);
 
   const [loteActual, setLoteActual] = useState(0);
   const [loteLog, setLoteLog] = useState([]);
@@ -75,11 +76,27 @@ export default function StockBulkImport({ onImported }) {
   }, [sede]);
 
   const totalFilas = preview?.filas || countDataRows(csv);
-  const totalLotes = Math.max(1, Math.ceil(totalFilas / IMPORT_BATCH));
+  const totalLotes = Math.max(1, Math.ceil((totalFilas || 1) / IMPORT_BATCH));
   const loteOffset = loteActual * IMPORT_BATCH;
-  const lotePendiente = loteActual < totalLotes;
-  const loteDesde = loteOffset + 1;
-  const loteHasta = Math.min(loteOffset + IMPORT_BATCH, totalFilas);
+  const lotePendiente = Boolean(preview) && loteActual < totalLotes;
+  const loteDesde = Math.min(loteOffset + 1, totalFilas || 1);
+  const loteHasta = Math.min(loteOffset + IMPORT_BATCH, totalFilas || 0);
+
+  const loteRows = useMemo(() => {
+    const all = preview?.preview || [];
+    return all.slice(loteOffset, loteOffset + IMPORT_BATCH);
+  }, [preview, loteOffset]);
+
+  const loteStats = useMemo(() => {
+    const ok = loteRows.filter((r) => r.ok).length;
+    const bad = loteRows.length - ok;
+    return { ok, bad, total: loteRows.length };
+  }, [loteRows]);
+
+  const loteRowsVisible = useMemo(() => {
+    if (!soloErrores) return loteRows;
+    return loteRows.filter((r) => !r.ok);
+  }, [loteRows, soloErrores]);
 
   const almacenLabel = useMemo(() => {
     const a = almacenes.find((x) => x.codigo === almacen);
@@ -128,6 +145,7 @@ export default function StockBulkImport({ onImported }) {
     }
     setLoading(true);
     setError('');
+    const keepLote = loteActual;
     resetLotes();
     try {
       const data = await api.importPreview({
@@ -137,7 +155,9 @@ export default function StockBulkImport({ onImported }) {
         almacen: forzarAduana ? undefined : almacen,
       });
       setPreview(data);
-      setLoteActual(0);
+      // Si re-analizás a mitad de camino, volvé al lote en curso (acotado)
+      const maxLote = Math.max(0, Math.ceil((data.filas || 1) / IMPORT_BATCH) - 1);
+      setLoteActual(Math.min(keepLote, maxLote));
     } catch (err) {
       setError(err.message);
       setPreview(null);
@@ -147,13 +167,27 @@ export default function StockBulkImport({ onImported }) {
   };
 
   const aplicarLote = async () => {
-    if (!csv.trim()) return;
+    if (!csv.trim() || !preview) return;
     if (!forzarAduana && !almacen) {
       setError('Elegí un almacén destino');
       return;
     }
     if (!lotePendiente) {
-      setError('No hay más lotes pendientes. Analizá de nuevo o cargá otro archivo.');
+      setError('No hay más lotes. Analizá de nuevo si hace falta.');
+      return;
+    }
+    if (loteStats.ok === 0) {
+      setError(
+        'Este lote no tiene filas OK. Corregí el CSV (o el depósito), pulsá Analizar otra vez y reintentá.'
+      );
+      return;
+    }
+    if (
+      loteStats.bad > 0 &&
+      !window.confirm(
+        `Este lote tiene ${loteStats.ok} OK y ${loteStats.bad} con error. ¿Aplicar solo las OK?`
+      )
+    ) {
       return;
     }
 
@@ -172,33 +206,32 @@ export default function StockBulkImport({ onImported }) {
 
       const ok = data.ok || 0;
       const errN = data.errores?.length || 0;
-      const entry = {
-        lote: loteActual + 1,
-        offset: loteOffset,
-        ok,
-        errores: errN,
-        almacen: data.almacen,
-        frecuentes: data.erroresFrecuentes || [],
-      };
-      setLoteLog((prev) => [...prev, entry]);
-      setAcumulado((prev) => ({
-        ok: prev.ok + ok,
-        errores: prev.errores + errN,
-      }));
+      setLoteLog((prev) => [
+        ...prev,
+        {
+          lote: loteActual + 1,
+          ok,
+          errores: errN,
+          frecuentes: data.erroresFrecuentes || [],
+          almacen: data.almacen,
+        },
+      ]);
+      const nextOk = acumulado.ok + ok;
+      const nextErr = acumulado.errores + errN;
+      setAcumulado({ ok: nextOk, errores: nextErr });
 
       const next = loteActual + 1;
       setLoteActual(next);
+      onImported?.(data);
 
       if (next >= totalLotes) {
         setResult({
-          ok: acumulado.ok + ok,
-          erroresCount: acumulado.errores + errN,
+          ok: nextOk,
+          erroresCount: nextErr,
           filasTotales: data.filasTotales || totalFilas,
           lotes: next,
           almacen: data.almacen || almacen,
-          formato: data.formato,
         });
-        onImported?.(data);
       }
     } catch (err) {
       setError(err.message);
@@ -208,10 +241,7 @@ export default function StockBulkImport({ onImported }) {
   };
 
   const loadPurgeList = async () => {
-    if (!almacen) {
-      setError('Elegí un almacén para listar/borrar stock');
-      return;
-    }
+    if (!almacen) return;
     setPurgeLoading(true);
     setPurgeInfo('');
     setError('');
@@ -223,40 +253,26 @@ export default function StockBulkImport({ onImported }) {
     } catch (err) {
       setError(err.message);
       setPurgeRows([]);
-      setPurgeSelected(new Set());
     } finally {
       setPurgeLoading(false);
     }
-  };
-
-  const togglePurge = (id) => {
-    setPurgeSelected((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const toggleAllPurge = (checked) => {
-    if (checked) setPurgeSelected(new Set(purgeRows.map((r) => r.stockId)));
-    else setPurgeSelected(new Set());
   };
 
   const aplicarPurge = async (todoElAlmacen) => {
     if (!almacen) return;
     const ids = todoElAlmacen ? null : [...purgeSelected];
     if (!todoElAlmacen && !ids.length) {
-      setError('Seleccioná al menos una fila, o usá “Vaciar almacén completo”');
+      setError('Seleccioná filas o usá Vaciar almacén completo');
       return;
     }
-    const msg = todoElAlmacen
-      ? `¿Borrar TODO el stock de ${almacen}?`
-      : `¿Borrar ${ids.length} fila(s) de ${almacen}?`;
-    if (!window.confirm(msg)) return;
-
+    if (
+      !window.confirm(
+        todoElAlmacen ? `¿Vaciar todo ${almacen}?` : `¿Borrar ${ids.length} seleccionados?`
+      )
+    ) {
+      return;
+    }
     setPurgeLoading(true);
-    setError('');
     try {
       const r = await api.adminPurgeAlmacenStock({
         almacen,
@@ -283,7 +299,7 @@ export default function StockBulkImport({ onImported }) {
         <div>
           <h3 className="section-title">Carga masiva (CSV / Excel)</h3>
           <p className="text-sm text-muted">
-            Analizá el archivo y aplicá <strong>un lote por vez</strong> ({IMPORT_BATCH} filas).
+            Analizá → revisá el lote ({IMPORT_BATCH} filas) → aplicá solo si está OK → siguiente.
           </p>
         </div>
         <a
@@ -330,7 +346,6 @@ export default function StockBulkImport({ onImported }) {
               setAlmacen(e.target.value);
               setPreview(null);
               resetLotes();
-              setPurgeRows([]);
             }}
             disabled={!almacenes.length || forzarAduana}
           >
@@ -367,9 +382,9 @@ export default function StockBulkImport({ onImported }) {
         </label>
 
         <div>
-          <label className="text-label">Contenido CSV</label>
+          <label className="text-label">Contenido CSV (editá acá si hay que corregir depósitos)</label>
           <textarea
-            className="input-field min-h-[120px] font-mono text-sm"
+            className="input-field min-h-[100px] font-mono text-sm"
             value={csv}
             onChange={(e) => {
               setCsv(e.target.value);
@@ -387,42 +402,106 @@ export default function StockBulkImport({ onImported }) {
             disabled={loading || !csv.trim()}
             onClick={analizar}
           >
-            {loading && !loteLog.length ? 'Analizando…' : '1. Analizar'}
+            {loading && !preview ? 'Analizando…' : '1. Analizar archivo'}
           </button>
           <button
             type="button"
             className="btn-primary flex-1"
-            disabled={loading || !csv.trim() || !preview || !lotePendiente}
+            disabled={loading || !preview || !lotePendiente || loteStats.ok === 0}
             onClick={aplicarLote}
           >
             {loading
               ? `Aplicando lote ${loteActual + 1}…`
               : lotePendiente
-                ? `2. Aplicar lote ${loteActual + 1}/${totalLotes} (filas ${loteDesde}–${loteHasta})`
+                ? `2. Aplicar lote ${loteActual + 1}/${totalLotes} (${loteStats.ok} OK)`
                 : 'Todos los lotes aplicados'}
           </button>
         </div>
+      </div>
 
-        {(preview || loteLog.length > 0) && (
-          <div className="rounded border border-edge bg-surface-muted p-3 text-sm">
-            <p>
-              Progreso: lote <strong>{Math.min(loteActual + (lotePendiente ? 0 : 0), totalLotes)}</strong> /{' '}
-              {totalLotes} · OK acumulados: <strong>{acumulado.ok}</strong> · Errores:{' '}
-              <strong>{acumulado.errores}</strong>
-            </p>
-            {preview && (
-              <p className="mt-1 text-muted">
-                Análisis: {preview.validas} válidas · {preview.invalidas} con error · destino{' '}
+      {preview && (
+        <div className="card space-y-3">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <div>
+              <h4 className="font-medium">
+                Lote {loteActual + 1}/{totalLotes} — filas {loteDesde}–{loteHasta}
+              </h4>
+              <p className="text-sm text-muted">
+                En este lote: <strong className="text-emerald-700 dark:text-emerald-300">{loteStats.ok} OK</strong>
+                {' · '}
+                <strong className="text-red-700 dark:text-red-300">{loteStats.bad} error</strong>
+                {' · '}
+                Acumulado: {acumulado.ok} OK / {acumulado.errores} errores
+              </p>
+              <p className="text-xs text-muted">
+                Archivo: {preview.validas} válidas · {preview.invalidas} con error · destino{' '}
                 <span className="font-mono">{preview.almacen || almacen}</span>
               </p>
-            )}
+            </div>
+            <label className="flex items-center gap-2 text-sm">
+              <input
+                type="checkbox"
+                checked={soloErrores}
+                onChange={(e) => setSoloErrores(e.target.checked)}
+              />
+              Solo ver errores del lote
+            </label>
           </div>
-        )}
 
-        {loteLog.length > 0 && (
-          <div className="max-h-48 overflow-auto rounded border border-edge text-xs">
-            <table className="w-full text-left">
+          {loteStats.bad > 0 && (
+            <p className="rounded border border-amber-400/60 bg-amber-500/10 px-3 py-2 text-sm">
+              Corregí en el CSV los depósitos/filas en rojo (ej. <code>RACK 21</code> →{' '}
+              <code>21.00</code>), pulsá <strong>Analizar</strong> otra vez y recién ahí aplicá el lote.
+            </p>
+          )}
+
+          <div className="max-h-80 overflow-auto rounded border border-edge">
+            <table className="w-full text-left text-xs">
               <thead className="sticky top-0 bg-surface-2">
+                <tr>
+                  <th className="px-2 py-1">Línea</th>
+                  <th className="px-2 py-1">Estado</th>
+                  <th className="px-2 py-1">Código</th>
+                  <th className="px-2 py-1">Nombre</th>
+                  <th className="px-2 py-1">Depósito</th>
+                  <th className="px-2 py-1">Destino</th>
+                  <th className="px-2 py-1">Cant.</th>
+                  <th className="px-2 py-1">Error</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loteRowsVisible.map((r) => (
+                  <tr
+                    key={r.linea}
+                    className={`border-t border-edge ${r.ok ? '' : 'bg-red-500/10'}`}
+                  >
+                    <td className="px-2 py-1 font-mono">{r.linea}</td>
+                    <td className="px-2 py-1">{r.ok ? 'OK' : 'Error'}</td>
+                    <td className="px-2 py-1 font-mono">{r.codigoFabricante || '—'}</td>
+                    <td className="px-2 py-1">{r.nombre || '—'}</td>
+                    <td className="px-2 py-1 font-mono">{r.depositoOrigen || '—'}</td>
+                    <td className="px-2 py-1 font-mono">
+                      {r.ok
+                        ? r.ubicacion ||
+                          `${r.almacen || ''}-${r.armario}-${r.estante}`
+                        : '—'}
+                    </td>
+                    <td className="px-2 py-1">{r.ok ? r.cantidad : '—'}</td>
+                    <td className="px-2 py-1 text-red-700 dark:text-red-300">{r.error || ''}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {loteLog.length > 0 && (
+        <div className="card">
+          <p className="mb-2 text-sm font-medium">Lotes ya aplicados</p>
+          <div className="max-h-40 overflow-auto text-xs">
+            <table className="w-full text-left">
+              <thead>
                 <tr>
                   <th className="px-2 py-1">Lote</th>
                   <th className="px-2 py-1">OK</th>
@@ -446,14 +525,11 @@ export default function StockBulkImport({ onImported }) {
               </tbody>
             </table>
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       <div className="card space-y-3">
         <h4 className="font-medium">Borrar stock del almacén</h4>
-        <p className="text-sm text-muted">
-          Vaciar {almacen || 'ALMxx'} antes de reimportar (desaparece también en otras sedes).
-        </p>
         <div className="flex flex-wrap gap-2">
           <button
             type="button"
@@ -461,7 +537,7 @@ export default function StockBulkImport({ onImported }) {
             disabled={purgeLoading || !almacen}
             onClick={loadPurgeList}
           >
-            Listar stock del almacén
+            Listar stock
           </button>
           <button
             type="button"
@@ -482,15 +558,19 @@ export default function StockBulkImport({ onImported }) {
         </div>
         {purgeInfo && <p className="text-sm text-muted">{purgeInfo}</p>}
         {purgeRows.length > 0 && (
-          <div className="max-h-64 overflow-auto rounded border border-edge">
-            <table className="w-full text-left text-xs">
+          <div className="max-h-48 overflow-auto rounded border border-edge text-xs">
+            <table className="w-full text-left">
               <thead className="sticky top-0 bg-surface-2">
                 <tr>
                   <th className="px-2 py-1">
                     <input
                       type="checkbox"
-                      checked={purgeSelected.size === purgeRows.length && purgeRows.length > 0}
-                      onChange={(e) => toggleAllPurge(e.target.checked)}
+                      checked={purgeSelected.size === purgeRows.length}
+                      onChange={(e) =>
+                        setPurgeSelected(
+                          e.target.checked ? new Set(purgeRows.map((r) => r.stockId)) : new Set()
+                        )
+                      }
                     />
                   </th>
                   <th className="px-2 py-1">Código</th>
@@ -500,20 +580,25 @@ export default function StockBulkImport({ onImported }) {
                 </tr>
               </thead>
               <tbody>
-                {purgeRows.slice(0, 500).map((r) => (
+                {purgeRows.slice(0, 300).map((r) => (
                   <tr key={r.stockId} className="border-t border-edge">
                     <td className="px-2 py-1">
                       <input
                         type="checkbox"
                         checked={purgeSelected.has(r.stockId)}
-                        onChange={() => togglePurge(r.stockId)}
+                        onChange={() => {
+                          setPurgeSelected((prev) => {
+                            const n = new Set(prev);
+                            if (n.has(r.stockId)) n.delete(r.stockId);
+                            else n.add(r.stockId);
+                            return n;
+                          });
+                        }}
                       />
                     </td>
                     <td className="px-2 py-1 font-mono">{r.codigoFabricante || '—'}</td>
                     <td className="px-2 py-1">{r.nombre}</td>
-                    <td className="px-2 py-1 font-mono">
-                      {r.contenedorCodigo || `${r.almacen}-${r.armario}-${r.estante}`}
-                    </td>
+                    <td className="px-2 py-1 font-mono">{r.contenedorCodigo || '—'}</td>
                     <td className="px-2 py-1">{r.cantidad}</td>
                   </tr>
                 ))}
@@ -523,23 +608,10 @@ export default function StockBulkImport({ onImported }) {
         )}
       </div>
 
-      {preview?.erroresFrecuentes?.length > 0 && loteLog.length === 0 && (
-        <div className="card border-amber-400 text-sm">
-          <p className="mb-1 font-medium">Errores del análisis (no bloquean aplicar lote a lote)</p>
-          <ul className="list-inside list-disc">
-            {preview.erroresFrecuentes.map((e) => (
-              <li key={e.error}>
-                {e.error} — {e.count}
-              </li>
-            ))}
-          </ul>
-        </div>
-      )}
-
       {result && (
         <div className="alert-success">
-          Terminado: <strong>{result.ok}</strong> OK de {result.filasTotales} filas en {result.lotes}{' '}
-          lote(s) → {result.almacen}. Errores acumulados: {result.erroresCount}.
+          Terminado: <strong>{result.ok}</strong> OK de {result.filasTotales} en {result.lotes} lote(s)
+          → {result.almacen}. Errores: {result.erroresCount}.
         </div>
       )}
     </div>
