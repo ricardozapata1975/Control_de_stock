@@ -321,10 +321,7 @@ export function listArmariosPorAlmacen() {
 }
 
 export function normalizeArmario(armario, almacen = ALMACEN_DEFAULT) {
-  const code = String(armario || '')
-    .trim()
-    .toUpperCase()
-    .replace(/\s+/g, '');
+  const code = formatArmarioCode(armario);
   const alm = normalizeAlmacen(almacen);
   const map = getArmariosMapForAlmacen(alm);
   if (!map[code]) {
@@ -337,6 +334,46 @@ export function normalizeArmario(armario, almacen = ALMACEN_DEFAULT) {
       ),
       { status: 400 }
     );
+  }
+  return code;
+}
+
+/** Formatea A11 sin validar contra el catálogo (import SISCOM). */
+export function formatArmarioCode(armario) {
+  const code = String(armario || '')
+    .trim()
+    .toUpperCase()
+    .replace(/\s+/g, '');
+  const m = code.match(/^A?(\d{1,2})$/i);
+  if (!m) {
+    throw Object.assign(new Error(`Código de armario inválido: ${armario}`), { status: 400 });
+  }
+  return `A${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+}
+
+/** Registra un armario en el mapa en memoria (sin tocar DB). */
+export function registerArmarioInMemory(almacen, codigo, nombre, tipo = 'gabinete') {
+  const alm = String(almacen || '').trim().toUpperCase();
+  const code = formatArmarioCode(codigo);
+  if (!almacenesMap[alm]) {
+    almacenesMap[alm] = {
+      sede: SEDE_DEFAULT,
+      tipo: 'Depósito',
+      nombre: alm,
+      nextArmarioNum: 0,
+      armarios: {},
+    };
+  }
+  almacenesMap[alm].armarios = almacenesMap[alm].armarios || {};
+  if (!almacenesMap[alm].armarios[code]) {
+    almacenesMap[alm].armarios[code] = {
+      nombre: nombre || `Gabinete ${code.replace(/^A/, '')}`,
+      tipo: tipo || 'gabinete',
+    };
+  }
+  const num = parseInt(code.replace(/^A/i, ''), 10);
+  if (!Number.isNaN(num)) {
+    almacenesMap[alm].nextArmarioNum = Math.max(almacenesMap[alm].nextArmarioNum || 0, num + 1);
   }
   return code;
 }
@@ -411,8 +448,8 @@ function armarioExistsInAlmacen(almacen, armarioCode) {
   return Boolean(getArmariosMapForAlmacen(almacen)[armarioCode]);
 }
 
-function buildCodigoSuffix(armario, estante, contenedor, almacen = ALMACEN_DEFAULT) {
-  const a = normalizeArmario(armario, almacen);
+function buildCodigoSuffix(armario, estante, contenedor, almacen = ALMACEN_DEFAULT, { skipArmarioCheck = false } = {}) {
+  const a = skipArmarioCheck ? formatArmarioCode(armario) : normalizeArmario(armario, almacen);
   const e = normalizeEstante(estante);
   const c = normalizeContenedor(contenedor);
   return c ? `${a}-${e}-${c}` : `${a}-${e}`;
@@ -449,7 +486,14 @@ export function buildCodigo(a1, a2, a3, a4) {
 }
 
 /** Código completo con sede: SED001-ALM01-A01-E01-C01 */
-export function buildCodigoCompleto({ sede, almacen, armario, estante, contenedor } = {}) {
+export function buildCodigoCompleto({
+  sede,
+  almacen,
+  armario,
+  estante,
+  contenedor,
+  skipArmarioCheck = false,
+} = {}) {
   const s = normalizeSede(sede || getSedeForAlmacen(almacen));
   const a = normalizeAlmacen(almacen || ALMACEN_DEFAULT);
   if (!armario || !estante) {
@@ -457,7 +501,7 @@ export function buildCodigoCompleto({ sede, almacen, armario, estante, contenedo
       status: 400,
     });
   }
-  const suffix = buildCodigoSuffix(armario, estante, contenedor, a);
+  const suffix = buildCodigoSuffix(armario, estante, contenedor, a, { skipArmarioCheck });
   return `${s}-${a}-${suffix}`;
 }
 

@@ -22,6 +22,7 @@ import {
   buildCodigo,
   codigoLookupVariants,
   contenedorMatchesParsed,
+  formatArmarioCode,
 } from './ubicacionUtils.js';
 
 function isDemoMode() {
@@ -67,7 +68,15 @@ async function findContenedorByParsed(supabase, parsed) {
   return null;
 }
 
-export async function resolveUbicacion({ sede, almacen, armario, estante, contenedor, codigo }) {
+export async function resolveUbicacion({
+  sede,
+  almacen,
+  armario,
+  estante,
+  contenedor,
+  codigo,
+  skipArmarioCheck = false,
+}) {
   if (isDemoMode()) {
     return demo.demoResolveUbicacion({ sede, almacen, armario, estante, contenedor, codigo });
   }
@@ -75,20 +84,25 @@ export async function resolveUbicacion({ sede, almacen, armario, estante, conten
   const supabase = getSupabase();
   let parsed = codigo ? parseCodigo(codigo) : null;
   if (!parsed && armario && estante) {
-    const alm = almacen ? normalizeAlmacen(almacen) : ALMACEN_DEFAULT;
+    if (!almacen) {
+      throw Object.assign(new Error('Almacén obligatorio para resolver ubicación'), { status: 400 });
+    }
+    const alm = normalizeAlmacen(almacen);
     const sed = normalizeSede(sede || getSedeForAlmacen(alm));
+    const arm = skipArmarioCheck ? formatArmarioCode(armario) : normalizeArmario(armario, alm);
     parsed = {
       sede: sed,
       almacen: alm,
-      armario: normalizeArmario(armario, alm),
+      armario: arm,
       estante: normalizeEstante(estante),
       contenedor: normalizeContenedor(contenedor),
       codigo: buildCodigoCompleto({
         sede: sed,
         almacen: alm,
-        armario,
+        armario: arm,
         estante,
         contenedor,
+        skipArmarioCheck: true,
       }),
     };
   }
@@ -110,13 +124,14 @@ export async function resolveUbicacion({ sede, almacen, armario, estante, conten
           armario: parsed.armario,
           estante: parsed.estante,
           contenedor: parsed.contenedor,
+          skipArmarioCheck: true,
         }),
     sede: sed,
     almacen: alm,
     armario: parsed.armario,
     estante: parsed.estante,
     contenedor: parsed.contenedor,
-    ubicacion: getArmarioNombre(parsed.armario, alm),
+    ubicacion: getArmarioNombre(parsed.armario, alm) || parsed.armario,
   };
 
   const { data: created, error: insErr } = await supabase.from('contenedores').insert(row).select('*').single();

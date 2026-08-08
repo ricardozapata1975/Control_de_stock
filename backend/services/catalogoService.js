@@ -290,7 +290,8 @@ export async function ensureArmarioCodigo({
   }
 
   if (useSupabaseCatalogo()) {
-    // Aplicar en memoria ya, para que el import no dependa del round-trip a DB
+    // Aplicar en memoria y persistir; NO recargar todo el catálogo (evita pisar armarios
+    // recién creados y caer al default ALM01 en workers concurrentes).
     cache = c;
     applyCatalogo(c);
     try {
@@ -302,19 +303,8 @@ export async function ensureArmarioCodigo({
       });
       await updateNextArmarioNumInDb(almCode, alm.nextArmarioNum);
     } catch (e) {
-      // Si ya existe en DB (carrera), seguimos con el catálogo en memoria
       if (e?.status !== 409) throw e;
     }
-    invalidateCatalogoCache();
-    const fresh = await loadCatalogo();
-    // Fusionar por si el reload no trae aún el alta
-    if (fresh?.almacenes?.[almCode]) {
-      fresh.almacenes[almCode].armarios = fresh.almacenes[almCode].armarios || {};
-      if (!fresh.almacenes[almCode].armarios[finalCode]) {
-        fresh.almacenes[almCode].armarios[finalCode] = { nombre: nombreNorm, tipo: tipoKey };
-      }
-    }
-    applyCatalogo(fresh);
   } else {
     await saveCatalogoToFile(c);
     cache = c;

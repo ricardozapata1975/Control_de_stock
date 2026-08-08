@@ -11,6 +11,8 @@ import {
   normalizeArmario,
   normalizeContenedor,
   normalizeEstante,
+  formatArmarioCode,
+  registerArmarioInMemory,
   SEDE_DEFAULT,
 } from './ubicacionUtils.js';
 import { itemCamposFromCsv, normalizeCodigoFabricante } from './itemFields.js';
@@ -492,20 +494,25 @@ function validateRow(row, { sede, ubicacionDefault, forzarAduana = false, almace
   };
 }
 
-/** Normaliza armario/estante contra el catálogo (tras ensureArmario). */
+/** Formatea armario/estante; no exige que el gabinete ya exista en catálogo. */
 function finalizeUbicacion(data) {
   if (!data._needsNormalize) {
     const { _needsNormalize, ...rest } = data;
     return rest;
   }
-  const armario = normalizeArmario(data.armario, data.almacen);
+  if (!data.almacen) {
+    throw Object.assign(new Error('Almacén destino vacío en fila de importación'), { status: 400 });
+  }
+  const armario = formatArmarioCode(data.armario);
   const estante = normalizeEstante(data.estante);
+  registerArmarioInMemory(data.almacen, armario);
   const origen = data.mapeo ? String(data.mapeo).split('→')[0].trim() : '';
   const { _needsNormalize, ...rest } = data;
   return {
     ...rest,
     armario,
     estante,
+    almacen: String(data.almacen).trim().toUpperCase(),
     mapeo: origen ? `${origen} → ${armario}-${estante}` : null,
   };
 }
@@ -532,13 +539,19 @@ async function ensureArmariosFromRows(rows, { sede, almacenDestino, forzarAduana
   }
   const creados = [];
   for (const codigo of [...codes].sort()) {
-    const r = await ensureArmarioCodigo({
-      almacen: alm,
-      codigo,
-      tipo: 'Gabinete',
-      nombre: `Gabinete SISCOM ${codigo.replace(/^A/, '')}`,
-    });
-    if (!r.existed) creados.push(codigo);
+    registerArmarioInMemory(alm, codigo);
+    try {
+      const r = await ensureArmarioCodigo({
+        almacen: alm,
+        codigo,
+        tipo: 'Gabinete',
+        nombre: `Gabinete SISCOM ${codigo.replace(/^A/, '')}`,
+      });
+      if (!r.existed) creados.push(codigo);
+    } catch (e) {
+      if (!/no registrado/i.test(String(e.message || ''))) throw e;
+      creados.push(codigo);
+    }
   }
   return { creados, almacen: alm };
 }
@@ -614,11 +627,11 @@ async function findOrCreateItemSupabase(data) {
   let itemId = null;
 
   if (data.codigo_fabricante) {
+    // Incluye inactivos: el unique de codigo_fabricante los bloquea si no los reactivamos
     const { data: byCode } = await supabase
       .from('items')
-      .select('id')
+      .select('id, activo')
       .eq('codigo_fabricante', data.codigo_fabricante)
-      .eq('activo', true)
       .limit(1);
     itemId = byCode?.[0]?.id || null;
   }
@@ -648,7 +661,23 @@ async function findOrCreateItemSupabase(data) {
 
   if (!itemId) {
     const { data: created, error } = await supabase.from('items').insert(itemRow).select('id').single();
-    if (error) throw new Error(error.message);
+    if (error) {
+      // Carrera / unique: reutilizar el existente
+      if (error.code === '23505' && data.codigo_fabricante) {
+        const { data: again } = await supabase
+          .from('items')
+          .select('id')
+          .eq('codigo_fabricante', data.codigo_fabricante)
+          .limit(1);
+        if (again?.[0]?.id) {
+          itemId = again[0].id;
+          const { error: up } = await supabase.from('items').update(itemRow).eq('id', itemId);
+          if (up) throw new Error(up.message);
+          return itemId;
+        }
+      }
+      throw new Error(error.message);
+    }
     return created.id;
   }
 
@@ -658,12 +687,16 @@ async function findOrCreateItemSupabase(data) {
 }
 
 async function importRowSupabase(data, modo) {
+  const alm = String(data.almacen || '').trim().toUpperCase();
+  if (!alm) throw new Error('Almacén destino vacío');
+  registerArmarioInMemory(alm, data.armario);
   const cont = await resolveUbicacion({
     sede: data.sede,
-    almacen: data.almacen,
+    almacen: alm,
     armario: data.armario,
     estante: data.estante,
     contenedor: data.contenedor,
+    skipArmarioCheck: true,
   });
   const supabase = getSupabase();
   const itemId = await findOrCreateItemSupabase(data);
@@ -692,16 +725,26 @@ async function importRowSupabase(data, modo) {
 }
 
 async function prepareImportRow(row, rowOpts, almForced) {
+  if (!rowOpts.forzarAduana && !almForced) {
+    throw Object.assign(new Error('Almacén destino obligatorio'), { status: 400 });
+  }
   const raw = validateRow(row, { ...rowOpts, almacenDestino: almForced });
   if (!rowOpts.forzarAduana) {
-    raw.almacen = almForced;
+    raw.almacen = String(almForced).trim().toUpperCase();
     if (raw._needsNormalize && raw.armario) {
-      await ensureArmarioCodigo({
-        almacen: almForced,
-        codigo: raw.armario,
-        tipo: 'Gabinete',
-        nombre: `Gabinete SISCOM ${String(raw.armario).replace(/^A/i, '')}`,
-      });
+      const code = formatArmarioCode(raw.armario);
+      registerArmarioInMemory(raw.almacen, code);
+      try {
+        await ensureArmarioCodigo({
+          almacen: raw.almacen,
+          codigo: code,
+          tipo: 'Gabinete',
+          nombre: `Gabinete SISCOM ${code.replace(/^A/, '')}`,
+        });
+      } catch (e) {
+        // Si el almacén no está en catálogo DB, seguimos en memoria (el contenedor se crea igual)
+        if (!/no registrado/i.test(String(e.message || ''))) throw e;
+      }
     }
   }
   return finalizeUbicacion(raw);

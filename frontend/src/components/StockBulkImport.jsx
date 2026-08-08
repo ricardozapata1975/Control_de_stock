@@ -17,14 +17,14 @@ function countDataRows(csvText) {
     .split(/\r?\n/)
     .filter((l) => l.trim());
   if (lines.length < 2) return 0;
-  // título + header (SISCOM) o solo header
   const first = lines[0].toLowerCase();
-  const hasTitle = !first.includes('nombre') && !first.includes('descripcio') && !first.includes('existencia');
+  const hasTitle =
+    !first.includes('nombre') && !first.includes('descripcio') && !first.includes('existencia');
   return Math.max(0, lines.length - (hasTitle ? 2 : 1));
 }
 
 /**
- * Carga masiva CSV/XLS con análisis previo, import por lotes y vaciado de almacén.
+ * Carga masiva: análisis, aplicación lote a lote (manual) y vaciado de almacén.
  */
 export default function StockBulkImport({ onImported }) {
   const { sede, sedeNombre } = useAuth();
@@ -36,10 +36,13 @@ export default function StockBulkImport({ onImported }) {
   const [modo, setModo] = useState('agregar');
   const [forzarAduana, setForzarAduana] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState('');
   const [preview, setPreview] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
+
+  const [loteActual, setLoteActual] = useState(0);
+  const [loteLog, setLoteLog] = useState([]);
+  const [acumulado, setAcumulado] = useState({ ok: 0, errores: 0 });
 
   const [purgeRows, setPurgeRows] = useState([]);
   const [purgeSelected, setPurgeSelected] = useState(() => new Set());
@@ -71,10 +74,24 @@ export default function StockBulkImport({ onImported }) {
     };
   }, [sede]);
 
+  const totalFilas = preview?.filas || countDataRows(csv);
+  const totalLotes = Math.max(1, Math.ceil(totalFilas / IMPORT_BATCH));
+  const loteOffset = loteActual * IMPORT_BATCH;
+  const lotePendiente = loteActual < totalLotes;
+  const loteDesde = loteOffset + 1;
+  const loteHasta = Math.min(loteOffset + IMPORT_BATCH, totalFilas);
+
   const almacenLabel = useMemo(() => {
     const a = almacenes.find((x) => x.codigo === almacen);
     return a ? `${a.codigo} — ${a.nombre}` : almacen || '—';
   }, [almacenes, almacen]);
+
+  const resetLotes = () => {
+    setLoteActual(0);
+    setLoteLog([]);
+    setAcumulado({ ok: 0, errores: 0 });
+    setResult(null);
+  };
 
   const onFile = async (e) => {
     const file = e.target.files?.[0];
@@ -82,7 +99,7 @@ export default function StockBulkImport({ onImported }) {
     if (!file) return;
     setError('');
     setPreview(null);
-    setResult(null);
+    resetLotes();
     setFileName(file.name);
     const lower = file.name.toLowerCase();
     try {
@@ -111,8 +128,7 @@ export default function StockBulkImport({ onImported }) {
     }
     setLoading(true);
     setError('');
-    setResult(null);
-    setProgress('');
+    resetLotes();
     try {
       const data = await api.importPreview({
         csv,
@@ -121,6 +137,7 @@ export default function StockBulkImport({ onImported }) {
         almacen: forzarAduana ? undefined : almacen,
       });
       setPreview(data);
+      setLoteActual(0);
     } catch (err) {
       setError(err.message);
       setPreview(null);
@@ -129,92 +146,64 @@ export default function StockBulkImport({ onImported }) {
     }
   };
 
-  const aplicar = async () => {
+  const aplicarLote = async () => {
     if (!csv.trim()) return;
     if (!forzarAduana && !almacen) {
       setError('Elegí un almacén destino');
       return;
     }
-    if (preview && preview.invalidas > 0 && preview.validas === 0) {
-      setError('No hay filas válidas para importar.');
-      return;
-    }
-    const totalApprox = preview?.filas || countDataRows(csv);
-    if (
-      !window.confirm(
-        `¿Importar ~${totalApprox} filas a ${forzarAduana ? 'aduana' : almacen} en lotes de ${IMPORT_BATCH}?`
-      )
-    ) {
+    if (!lotePendiente) {
+      setError('No hay más lotes pendientes. Analizá de nuevo o cargá otro archivo.');
       return;
     }
 
     setLoading(true);
     setError('');
-    setResult(null);
-
-    const aggregated = {
-      ok: 0,
-      errores: [],
-      filas: 0,
-      filasTotales: totalApprox,
-      modo,
-      formato: preview?.formato || 'siscom',
-      almacen: forzarAduana ? null : almacen,
-      armariosCreados: [],
-      lotes: 0,
-    };
-
     try {
-      let offset = 0;
-      let done = false;
-      while (!done) {
-        setProgress(`Importando lote ${aggregated.lotes + 1} (filas ${offset + 1}–${offset + IMPORT_BATCH})…`);
-        const data = await api.importCsv({
-          csv,
-          modo: offset === 0 ? modo : 'agregar',
-          sede,
-          forzarAduana,
-          almacen: forzarAduana ? undefined : almacen,
-          offset,
-          limit: IMPORT_BATCH,
+      const data = await api.importCsv({
+        csv,
+        modo: loteActual === 0 ? modo : 'agregar',
+        sede,
+        forzarAduana,
+        almacen: forzarAduana ? undefined : almacen,
+        offset: loteOffset,
+        limit: IMPORT_BATCH,
+      });
+
+      const ok = data.ok || 0;
+      const errN = data.errores?.length || 0;
+      const entry = {
+        lote: loteActual + 1,
+        offset: loteOffset,
+        ok,
+        errores: errN,
+        almacen: data.almacen,
+        frecuentes: data.erroresFrecuentes || [],
+      };
+      setLoteLog((prev) => [...prev, entry]);
+      setAcumulado((prev) => ({
+        ok: prev.ok + ok,
+        errores: prev.errores + errN,
+      }));
+
+      const next = loteActual + 1;
+      setLoteActual(next);
+
+      if (next >= totalLotes) {
+        setResult({
+          ok: acumulado.ok + ok,
+          erroresCount: acumulado.errores + errN,
+          filasTotales: data.filasTotales || totalFilas,
+          lotes: next,
+          almacen: data.almacen || almacen,
+          formato: data.formato,
         });
-        aggregated.lotes += 1;
-        aggregated.ok += data.ok || 0;
-        aggregated.filas += data.filas || 0;
-        aggregated.filasTotales = data.filasTotales ?? aggregated.filasTotales;
-        aggregated.formato = data.formato || aggregated.formato;
-        aggregated.almacen = data.almacen || aggregated.almacen;
-        if (data.armariosCreados?.length) {
-          aggregated.armariosCreados = [
-            ...new Set([...aggregated.armariosCreados, ...data.armariosCreados]),
-          ];
-        }
-        if (data.errores?.length) aggregated.errores.push(...data.errores);
-
-        const batchSize = data.filas || 0;
-        offset += IMPORT_BATCH;
-        if (batchSize < IMPORT_BATCH || offset >= (data.filasTotales || 0)) {
-          done = true;
-        }
+        onImported?.(data);
       }
-
-      const counts = {};
-      for (const e of aggregated.errores) {
-        counts[e.error] = (counts[e.error] || 0) + 1;
-      }
-      aggregated.erroresFrecuentes = Object.entries(counts)
-        .map(([error, count]) => ({ error, count }))
-        .sort((a, b) => b.count - a.count)
-        .slice(0, 8);
-
-      setResult(aggregated);
-      setPreview(null);
-      onImported?.(aggregated);
     } catch (err) {
       setError(err.message);
     } finally {
       setLoading(false);
-      setProgress('');
     }
   };
 
@@ -262,13 +251,12 @@ export default function StockBulkImport({ onImported }) {
       return;
     }
     const msg = todoElAlmacen
-      ? `¿Borrar TODO el stock de ${almacen}? Esta acción no se puede deshacer.`
-      : `¿Borrar ${ids.length} fila(s) seleccionada(s) de ${almacen}?`;
+      ? `¿Borrar TODO el stock de ${almacen}?`
+      : `¿Borrar ${ids.length} fila(s) de ${almacen}?`;
     if (!window.confirm(msg)) return;
 
     setPurgeLoading(true);
     setError('');
-    setPurgeInfo('');
     try {
       const r = await api.adminPurgeAlmacenStock({
         almacen,
@@ -277,7 +265,7 @@ export default function StockBulkImport({ onImported }) {
         deleteEmptyContenedores: true,
       });
       setPurgeInfo(
-        `Borrado: ${r.stockDeleted} stock · ${r.itemsDeactivated} ítems desactivados · ${r.contenedoresDeleted} contenedores`
+        `Borrado: ${r.stockDeleted} stock · ${r.itemsDeactivated} ítems · ${r.contenedoresDeleted} contenedores`
       );
       setPurgeRows([]);
       setPurgeSelected(new Set());
@@ -295,8 +283,7 @@ export default function StockBulkImport({ onImported }) {
         <div>
           <h3 className="section-title">Carga masiva (CSV / Excel)</h3>
           <p className="text-sm text-muted">
-            SISCOM <code className="text-xs">11.41</code> → <code className="text-xs">A11-E41</code>. Importa
-            en lotes de {IMPORT_BATCH} filas.
+            Analizá el archivo y aplicá <strong>un lote por vez</strong> ({IMPORT_BATCH} filas).
           </p>
         </div>
         <a
@@ -311,43 +298,11 @@ export default function StockBulkImport({ onImported }) {
 
       <div className="rounded-lg border border-accent/40 bg-surface-muted px-3 py-2 text-sm">
         Sede: <strong className="text-accent">{sedeNombre || sede || '—'}</strong>
-        {forzarAduana ? (
-          <> — aduana de recepción.</>
-        ) : (
-          <>
-            {' '}
-            — almacén: <strong className="font-mono text-accent">{almacenLabel}</strong>
-          </>
-        )}
+        {' · '}
+        Almacén: <strong className="font-mono text-accent">{almacenLabel}</strong>
       </div>
 
       {error && <div className="alert-error">{error}</div>}
-      {progress && <div className="rounded border border-edge bg-surface-muted px-3 py-2 text-sm">{progress}</div>}
-
-      {spec && (
-        <div className="overflow-x-auto rounded-xl border border-edge">
-          <table className="w-full text-left text-sm">
-            <thead className="table-head">
-              <tr>
-                <th className="px-3 py-2">Columna</th>
-                <th className="px-3 py-2">Obligatorio</th>
-                <th className="px-3 py-2">Descripción</th>
-                <th className="px-3 py-2">Ejemplo</th>
-              </tr>
-            </thead>
-            <tbody>
-              {spec.columnas.map((c) => (
-                <tr key={c.nombre} className="table-row">
-                  <td className="px-3 py-2 font-mono text-amber-700 dark:text-amber-300">{c.nombre}</td>
-                  <td className="px-3 py-2">{c.obligatorio ? 'Sí' : 'No'}</td>
-                  <td className="px-3 py-2 table-cell-muted">{c.descripcion}</td>
-                  <td className="px-3 py-2 table-cell-muted">{c.ejemplo}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      )}
 
       <div className="card space-y-4">
         <div className="flex flex-wrap gap-2">
@@ -367,16 +322,6 @@ export default function StockBulkImport({ onImported }) {
         </div>
 
         <div>
-          <label className="text-label">Modo al aplicar</label>
-          <select className="input-field" value={modo} onChange={(e) => setModo(e.target.value)}>
-            <option value="agregar">Agregar / sumar al inventario actual</option>
-            {spec?.demoMode && (
-              <option value="reemplazar">Reemplazar todo (solo demo local)</option>
-            )}
-          </select>
-        </div>
-
-        <div>
           <label className="text-label">Almacén destino</label>
           <select
             className="input-field"
@@ -384,6 +329,7 @@ export default function StockBulkImport({ onImported }) {
             onChange={(e) => {
               setAlmacen(e.target.value);
               setPreview(null);
+              resetLotes();
               setPurgeRows([]);
             }}
             disabled={!almacenes.length || forzarAduana}
@@ -396,6 +342,14 @@ export default function StockBulkImport({ onImported }) {
           </select>
         </div>
 
+        <div>
+          <label className="text-label">Modo (solo primer lote)</label>
+          <select className="input-field" value={modo} onChange={(e) => setModo(e.target.value)}>
+            <option value="agregar">Agregar / sumar</option>
+            {spec?.demoMode && <option value="reemplazar">Reemplazar (demo)</option>}
+          </select>
+        </div>
+
         <label className="flex cursor-pointer items-start gap-2 text-sm">
           <input
             type="checkbox"
@@ -404,6 +358,7 @@ export default function StockBulkImport({ onImported }) {
             onChange={(e) => {
               setForzarAduana(e.target.checked);
               setPreview(null);
+              resetLotes();
             }}
           />
           <span>
@@ -412,14 +367,14 @@ export default function StockBulkImport({ onImported }) {
         </label>
 
         <div>
-          <label className="text-label">Contenido (tabla CSV)</label>
+          <label className="text-label">Contenido CSV</label>
           <textarea
-            className="input-field min-h-[140px] font-mono text-sm"
+            className="input-field min-h-[120px] font-mono text-sm"
             value={csv}
             onChange={(e) => {
               setCsv(e.target.value);
               setPreview(null);
-              setResult(null);
+              resetLotes();
             }}
             placeholder="IDARTICULO,CODART,DESCRIPCIO,DEPOSITO,EXISTENCIA"
           />
@@ -432,25 +387,72 @@ export default function StockBulkImport({ onImported }) {
             disabled={loading || !csv.trim()}
             onClick={analizar}
           >
-            {loading && !result ? 'Analizando…' : 'Analizar'}
+            {loading && !loteLog.length ? 'Analizando…' : '1. Analizar'}
           </button>
           <button
             type="button"
             className="btn-primary flex-1"
-            disabled={loading || !csv.trim() || (preview && preview.validas === 0)}
-            onClick={aplicar}
+            disabled={loading || !csv.trim() || !preview || !lotePendiente}
+            onClick={aplicarLote}
           >
-            {loading && preview ? 'Aplicando…' : `Aplicar por lotes (${IMPORT_BATCH})`}
+            {loading
+              ? `Aplicando lote ${loteActual + 1}…`
+              : lotePendiente
+                ? `2. Aplicar lote ${loteActual + 1}/${totalLotes} (filas ${loteDesde}–${loteHasta})`
+                : 'Todos los lotes aplicados'}
           </button>
         </div>
+
+        {(preview || loteLog.length > 0) && (
+          <div className="rounded border border-edge bg-surface-muted p-3 text-sm">
+            <p>
+              Progreso: lote <strong>{Math.min(loteActual + (lotePendiente ? 0 : 0), totalLotes)}</strong> /{' '}
+              {totalLotes} · OK acumulados: <strong>{acumulado.ok}</strong> · Errores:{' '}
+              <strong>{acumulado.errores}</strong>
+            </p>
+            {preview && (
+              <p className="mt-1 text-muted">
+                Análisis: {preview.validas} válidas · {preview.invalidas} con error · destino{' '}
+                <span className="font-mono">{preview.almacen || almacen}</span>
+              </p>
+            )}
+          </div>
+        )}
+
+        {loteLog.length > 0 && (
+          <div className="max-h-48 overflow-auto rounded border border-edge text-xs">
+            <table className="w-full text-left">
+              <thead className="sticky top-0 bg-surface-2">
+                <tr>
+                  <th className="px-2 py-1">Lote</th>
+                  <th className="px-2 py-1">OK</th>
+                  <th className="px-2 py-1">Errores</th>
+                  <th className="px-2 py-1">Detalle</th>
+                </tr>
+              </thead>
+              <tbody>
+                {loteLog.map((l) => (
+                  <tr key={l.lote} className="border-t border-edge">
+                    <td className="px-2 py-1">{l.lote}</td>
+                    <td className="px-2 py-1">{l.ok}</td>
+                    <td className="px-2 py-1">{l.errores}</td>
+                    <td className="px-2 py-1 text-muted">
+                      {l.frecuentes?.[0]
+                        ? `${l.frecuentes[0].error} (${l.frecuentes[0].count})`
+                        : '—'}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
-      {/* Vaciar stock */}
       <div className="card space-y-3">
         <h4 className="font-medium">Borrar stock del almacén</h4>
         <p className="text-sm text-muted">
-          Para empezar de cero antes de reimportar (ej. Ballester / {almacen || 'ALMxx'}). También
-          desaparece del inventario de otras sedes.
+          Vaciar {almacen || 'ALMxx'} antes de reimportar (desaparece también en otras sedes).
         </p>
         <div className="flex flex-wrap gap-2">
           <button
@@ -459,7 +461,7 @@ export default function StockBulkImport({ onImported }) {
             disabled={purgeLoading || !almacen}
             onClick={loadPurgeList}
           >
-            {purgeLoading ? 'Cargando…' : 'Listar stock del almacén'}
+            Listar stock del almacén
           </button>
           <button
             type="button"
@@ -517,76 +519,27 @@ export default function StockBulkImport({ onImported }) {
                 ))}
               </tbody>
             </table>
-            {purgeRows.length > 500 && (
-              <p className="p-2 text-xs text-muted">Mostrando 500 de {purgeRows.length}. “Vaciar completo” borra todas.</p>
-            )}
           </div>
         )}
       </div>
 
-      {preview && (
-        <div className={`card ${preview.invalidas ? 'border-amber-400' : 'border-emerald-400'}`}>
-          <p className="mb-1 font-medium">
-            Análisis: {preview.validas} válidas · {preview.invalidas} con error · {preview.filas} filas
-          </p>
-          <p className="mb-2 text-sm text-muted">
-            Formato: <strong>{preview.formato}</strong>
-            {preview.almacen ? (
-              <>
-                {' '}
-                · Almacén: <span className="font-mono text-accent">{preview.almacen}</span>
-              </>
-            ) : null}
-          </p>
-          {preview.nota && (
-            <p className="mb-3 text-sm text-amber-800 dark:text-amber-200">{preview.nota}</p>
-          )}
-          {preview.mapeosFrecuentes?.length > 0 && (
-            <div className="mb-3 rounded border border-edge bg-surface-muted p-3 text-sm">
-              <p className="mb-1 font-medium">Mapeo DEPOSITO → ubicación</p>
-              <ul className="list-inside list-disc font-mono text-xs">
-                {preview.mapeosFrecuentes.map((m) => (
-                  <li key={m.mapeo}>
-                    {m.mapeo} <span className="font-sans text-muted">({m.count})</span>
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
-          {preview.erroresFrecuentes?.length > 0 && (
-            <div className="mb-3 rounded border border-edge bg-surface-muted p-3 text-sm">
-              <p className="mb-1 font-medium">Errores frecuentes</p>
-              <ul className="list-inside list-disc">
-                {preview.erroresFrecuentes.map((e) => (
-                  <li key={e.error}>
-                    <span className="text-red-700 dark:text-red-300">{e.error}</span> — {e.count}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          )}
+      {preview?.erroresFrecuentes?.length > 0 && loteLog.length === 0 && (
+        <div className="card border-amber-400 text-sm">
+          <p className="mb-1 font-medium">Errores del análisis (no bloquean aplicar lote a lote)</p>
+          <ul className="list-inside list-disc">
+            {preview.erroresFrecuentes.map((e) => (
+              <li key={e.error}>
+                {e.error} — {e.count}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 
       {result && (
-        <div className={result.errores?.length ? 'alert-warning' : 'alert-success'}>
-          <p>
-            Importadas <strong>{result.ok}</strong> de {result.filasTotales || result.filas} filas
-            {result.lotes ? ` en ${result.lotes} lote(s)` : ''}
-            {result.almacen ? ` → ${result.almacen}` : ''}.
-          </p>
-          {result.armariosCreados?.length > 0 && (
-            <p className="mt-1 text-sm font-mono">Gabinetes: {result.armariosCreados.join(', ')}</p>
-          )}
-          {result.erroresFrecuentes?.length > 0 && (
-            <ul className="mt-2 list-inside list-disc text-sm">
-              {result.erroresFrecuentes.map((e) => (
-                <li key={e.error}>
-                  {e.error} — {e.count}
-                </li>
-              ))}
-            </ul>
-          )}
+        <div className="alert-success">
+          Terminado: <strong>{result.ok}</strong> OK de {result.filasTotales} filas en {result.lotes}{' '}
+          lote(s) → {result.almacen}. Errores acumulados: {result.erroresCount}.
         </div>
       )}
     </div>
