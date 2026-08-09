@@ -11,6 +11,16 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
     comentario: '',
     fechaRelevamiento: '',
     codigoFabricante: '',
+    unidad: '',
+    packing: '',
+    precioLista: '',
+    moneda: '',
+    pesoKg: '',
+    familia: '',
+    subfamilia: '',
+    tema: '',
+    catalogoFuente: '',
+    catalogoVigencia: '',
   });
 
   useEffect(() => {
@@ -25,6 +35,16 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
       comentario: item.comentario || '',
       fechaRelevamiento: item.fechaRelevamiento || '',
       codigoFabricante: item.codigoFabricante || '',
+      unidad: item.unidad || '',
+      packing: item.packing || '',
+      precioLista: item.precioLista != null ? String(item.precioLista) : '',
+      moneda: item.moneda || '',
+      pesoKg: item.pesoKg != null ? String(item.pesoKg) : '',
+      familia: item.familia || '',
+      subfamilia: item.subfamilia || '',
+      tema: item.tema || '',
+      catalogoFuente: item.catalogoFuente || '',
+      catalogoVigencia: item.catalogoVigencia || '',
     });
   }, [item]);
 
@@ -36,7 +56,11 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
 
   const submit = (e) => {
     e.preventDefault();
-    onSave(form);
+    onSave({
+      ...form,
+      precioLista: form.precioLista === '' ? null : form.precioLista,
+      pesoKg: form.pesoKg === '' ? null : form.pesoKg,
+    });
   };
 
   return (
@@ -121,6 +145,73 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
               onChange={set('fechaRelevamiento')}
             />
           </div>
+
+          <div className="border-t border-border pt-3">
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">
+              Catálogo (Siemens / Sivacon)
+            </p>
+            <div className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-label">Tema</label>
+                  <input className="input-field" value={form.tema} onChange={set('tema')} />
+                </div>
+                <div>
+                  <label className="text-label">Familia</label>
+                  <input className="input-field" value={form.familia} onChange={set('familia')} />
+                </div>
+              </div>
+              <div>
+                <label className="text-label">Subfamilia</label>
+                <input className="input-field" value={form.subfamilia} onChange={set('subfamilia')} />
+              </div>
+              <div className="grid gap-3 sm:grid-cols-2">
+                <div>
+                  <label className="text-label">Unidad</label>
+                  <input className="input-field" value={form.unidad} onChange={set('unidad')} />
+                </div>
+                <div>
+                  <label className="text-label">Packing / MOQ</label>
+                  <input className="input-field" value={form.packing} onChange={set('packing')} />
+                </div>
+                <div>
+                  <label className="text-label">Precio lista</label>
+                  <input className="input-field" value={form.precioLista} onChange={set('precioLista')} />
+                </div>
+                <div>
+                  <label className="text-label">Moneda</label>
+                  <input
+                    className="input-field"
+                    placeholder="EUR / USD"
+                    value={form.moneda}
+                    onChange={set('moneda')}
+                  />
+                </div>
+                <div>
+                  <label className="text-label">Peso (kg)</label>
+                  <input className="input-field" value={form.pesoKg} onChange={set('pesoKg')} />
+                </div>
+                <div>
+                  <label className="text-label">Vigencia</label>
+                  <input
+                    className="input-field"
+                    value={form.catalogoVigencia}
+                    onChange={set('catalogoVigencia')}
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="text-label">Fuente catálogo</label>
+                <input
+                  className="input-field"
+                  placeholder="sivacon_s8 / siemens_ar"
+                  value={form.catalogoFuente}
+                  onChange={set('catalogoFuente')}
+                />
+              </div>
+            </div>
+          </div>
+
           <button type="submit" className="btn-primary w-full" disabled={saving}>
             {saving ? 'GUARDANDO...' : 'GUARDAR'}
           </button>

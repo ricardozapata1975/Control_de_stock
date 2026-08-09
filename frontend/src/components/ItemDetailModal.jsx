@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { formatUbicacionLabel } from '../utils/contenedor';
 
 function formatFecha(iso) {
-  if (!iso) return '—';
+  if (!iso) return null;
   const d = String(iso).slice(0, 10);
   const [y, m, day] = d.split('-');
   return day && m && y ? `${day}/${m}/${y}` : iso;
@@ -13,7 +13,26 @@ function herramientaLabel(item) {
   if (item.marca) {
     parts.push(`${item.marca}${item.modelo ? ` ${item.modelo}` : ''}`);
   }
-  return parts.filter(Boolean).join(' · ') || '—';
+  return parts.filter(Boolean).join(' · ') || null;
+}
+
+function display(val) {
+  if (val === 0) return '0';
+  if (val == null || val === '') return null;
+  return val;
+}
+
+function formatPrecio(item) {
+  if (item.precioLista == null || item.precioLista === '') return null;
+  const n = Number(item.precioLista);
+  if (!Number.isFinite(n)) return null;
+  const moneda = item.moneda ? ` ${item.moneda}` : '';
+  return `${n}${moneda}`;
+}
+
+function clasificacionLabel(item) {
+  const parts = [item.tema, item.familia, item.subfamilia].filter(Boolean);
+  return parts.length ? parts.join(' · ') : null;
 }
 
 function DetailRow({ label, value, multiline = false }) {
@@ -23,7 +42,7 @@ function DetailRow({ label, value, multiline = false }) {
       <dd
         className={`text-content ${multiline ? 'break-words whitespace-pre-wrap' : 'break-words'}`}
       >
-        {value || '—'}
+        {value ?? '—'}
       </dd>
     </div>
   );
@@ -106,7 +125,8 @@ export default function ItemDetailModal({
               </span>
             }
           />
-          <DetailRow label="Tipo" value={item.tipo} />
+          <DetailRow label="Tipo" value={display(item.tipo)} />
+          <DetailRow label="Detalle" value={display(item.detalle)} multiline />
           <DetailRow
             label="Cód. fabricante"
             value={
@@ -117,9 +137,29 @@ export default function ItemDetailModal({
               )
             }
           />
-          <DetailRow label="Calibración" value={item.calibracion} multiline />
-          <DetailRow label="Comentario" value={item.comentario} multiline />
-          <DetailRow label="Fecha relev." value={formatFecha(item.fecha_relevamiento)} />
+          <DetailRow label="Calibración" value={display(item.calibracion)} multiline />
+          <DetailRow label="Comentario" value={display(item.comentario)} multiline />
+          <DetailRow
+            label="Fecha relev."
+            value={formatFecha(item.fechaRelevamiento || item.fecha_relevamiento)}
+          />
+
+          <div className="border-t border-border pt-4">
+            <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Catálogo</p>
+          </div>
+          <DetailRow label="Clasificación" value={clasificacionLabel(item)} multiline />
+          <DetailRow label="Tema" value={display(item.tema)} />
+          <DetailRow label="Familia" value={display(item.familia)} />
+          <DetailRow label="Subfamilia" value={display(item.subfamilia)} />
+          <DetailRow label="Unidad" value={display(item.unidad)} />
+          <DetailRow label="Packing / MOQ" value={display(item.packing)} />
+          <DetailRow label="Precio lista" value={formatPrecio(item)} />
+          <DetailRow
+            label="Peso"
+            value={item.pesoKg != null && item.pesoKg !== '' ? `${item.pesoKg} kg` : null}
+          />
+          <DetailRow label="Fuente catálogo" value={display(item.catalogoFuente)} />
+          <DetailRow label="Vigencia" value={display(item.catalogoVigencia)} />
         </dl>
 
         <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
