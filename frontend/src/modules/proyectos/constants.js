@@ -46,7 +46,7 @@ export const PROYECTOS_NAV = [
   { to: '/proyectos/transito', label: 'Materiales en tránsito', desc: 'Origen → destino', icon: '🚚' },
   { to: '/proyectos/disponibles', label: 'Materiales disponibles', desc: 'Almacén general (neto)', icon: '✅' },
   { to: '/proyectos/reservados', label: 'Materiales reservados', desc: 'Limbo / comprometidos', icon: '🏷️' },
-  { to: '/proyectos/produccion', label: 'Materiales en producción', desc: 'En tableros / taller', icon: '🔧' },
+  { to: '/proyectos/produccion', label: 'Armado / Producción', desc: 'Escanear a tablero', icon: '🔧' },
   { to: '/proyectos/devoluciones', label: 'Devoluciones', desc: 'Desde proyecto / reserva', icon: '↩️' },
   { to: '/proyectos/auditorias', label: 'Auditorías', desc: 'Físico vs sistema', icon: '🔎' },
   { to: '/proyectos/herramientas', label: 'Herramientas', desc: 'Préstamos a operarios', icon: '🛠️' },

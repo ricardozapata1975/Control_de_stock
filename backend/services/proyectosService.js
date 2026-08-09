@@ -6,6 +6,9 @@ import {
   countDevolucionesPendientes,
   countHerramientasAsignadas,
 } from './proyectosFase3Service.js';
+import { resolveUbicacion } from './ubicacionService.js';
+import { getProduccionUbicacion } from './ubicacionUtils.js';
+import { PROYECTOS_ARMARIO, PROYECTOS_ESTANTE } from './sedeBootstrap.js';
 
 function isDemo() {
   return demo.isDemoMode();
@@ -1035,4 +1038,512 @@ export async function listAlertas(filters) {
     meta: a.meta,
     createdAt: a.created_at,
   }));
+}
+
+async function loadTableroConProyecto(tableroId) {
+  const supabase = getSupabase();
+  const { data: tablero, error } = await supabase
+    .from('proyecto_tableros')
+    .select('*')
+    .eq('id', tableroId)
+    .maybeSingle();
+  if (error) {
+    if (schemaMissing(error)) throwSchemaHint(error);
+    throw Object.assign(new Error(error.message), { status: 500 });
+  }
+  if (!tablero) throw Object.assign(new Error('Tablero no encontrado'), { status: 404 });
+
+  const { data: proyecto, error: ep } = await supabase
+    .from('proyectos')
+    .select('*')
+    .eq('id', tablero.proyecto_id)
+    .maybeSingle();
+  if (ep) throw Object.assign(new Error(ep.message), { status: 500 });
+  if (!proyecto) throw Object.assign(new Error('Proyecto no encontrado'), { status: 404 });
+
+  return { tablero, proyecto };
+}
+
+async function resolveItemIdFromScan(supabase, { itemId, codigo, scan }) {
+  if (itemId) return itemId;
+
+  const raw = String(codigo || scan || '').trim();
+  if (!raw) return null;
+
+  // QR interno: item:<uuid> o JSON con itemId
+  const uuidMatch = raw.match(
+    /[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}/i
+  );
+  if (uuidMatch) {
+    const { data } = await supabase.from('items').select('id').eq('id', uuidMatch[0]).maybeSingle();
+    if (data?.id) return data.id;
+  }
+
+  const code = raw.toUpperCase();
+  const tries = [
+    () => supabase.from('items').select('id').eq('codigo_fabricante', code).limit(1),
+    () => supabase.from('items').select('id').ilike('codigo_fabricante', code).limit(1),
+    () => supabase.from('items').select('id').ilike('nombre', code).limit(1),
+  ];
+  for (const tryFn of tries) {
+    try {
+      const { data } = await tryFn();
+      if (data?.[0]?.id) return data[0].id;
+    } catch {
+      /* columna puede no existir */
+    }
+  }
+  return null;
+}
+
+async function resolveDestinoProduccion(sede) {
+  const ref = getProduccionUbicacion(sede);
+  if (!ref?.almacen) {
+    throw Object.assign(
+      new Error(
+        'No hay almacén de producción en esta sede. Reiniciá el backend para que el bootstrap lo cree.'
+      ),
+      { status: 503 }
+    );
+  }
+  const cont = await resolveUbicacion({
+    sede,
+    almacen: ref.almacen,
+    armario: ref.armario || PROYECTOS_ARMARIO,
+    estante: ref.estante || PROYECTOS_ESTANTE,
+    contenedor: 'C01',
+    skipArmarioCheck: true,
+  });
+  return { contenedor: cont, ref };
+}
+
+async function transferirStockAProduccion(supabase, {
+  itemId,
+  cantidad,
+  stockIdPreferido,
+  contenedorIdPreferido,
+  destContenedorId,
+}) {
+  let origen = null;
+
+  if (stockIdPreferido) {
+    const { data } = await supabase
+      .from('stock')
+      .select('id, item_id, contenedor_id, cantidad')
+      .eq('id', stockIdPreferido)
+      .eq('item_id', itemId)
+      .maybeSingle();
+    if (data && Number(data.cantidad) >= cantidad) origen = data;
+  }
+
+  if (!origen && contenedorIdPreferido) {
+    const { data } = await supabase
+      .from('stock')
+      .select('id, item_id, contenedor_id, cantidad')
+      .eq('item_id', itemId)
+      .eq('contenedor_id', contenedorIdPreferido)
+      .maybeSingle();
+    if (data && Number(data.cantidad) >= cantidad) origen = data;
+  }
+
+  if (!origen) {
+    const { data: rows } = await supabase
+      .from('stock')
+      .select('id, item_id, contenedor_id, cantidad')
+      .eq('item_id', itemId)
+      .gt('cantidad', 0)
+      .order('cantidad', { ascending: false });
+    origen = (rows || []).find(
+      (r) => r.contenedor_id !== destContenedorId && Number(r.cantidad) >= cantidad
+    );
+  }
+
+  if (!origen) {
+    throw Object.assign(
+      new Error('No hay stock físico suficiente en depósito para entregar a producción'),
+      { status: 409 }
+    );
+  }
+
+  const nuevaOrigen = Number(origen.cantidad) - cantidad;
+  if (nuevaOrigen <= 0) {
+    const { error: ed } = await supabase.from('stock').delete().eq('id', origen.id);
+    if (ed) throw Object.assign(new Error(ed.message), { status: 500 });
+  } else {
+    const { error: eu } = await supabase
+      .from('stock')
+      .update({ cantidad: nuevaOrigen, updated_at: new Date().toISOString() })
+      .eq('id', origen.id);
+    if (eu) throw Object.assign(new Error(eu.message), { status: 500 });
+  }
+
+  const { data: destStock, error: edq } = await supabase
+    .from('stock')
+    .select('id, cantidad')
+    .eq('item_id', itemId)
+    .eq('contenedor_id', destContenedorId)
+    .maybeSingle();
+  if (edq) throw Object.assign(new Error(edq.message), { status: 500 });
+
+  if (destStock) {
+    const { error: em } = await supabase
+      .from('stock')
+      .update({
+        cantidad: Number(destStock.cantidad) + cantidad,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', destStock.id);
+    if (em) throw Object.assign(new Error(em.message), { status: 500 });
+  } else {
+    const { error: ei } = await supabase.from('stock').insert({
+      item_id: itemId,
+      contenedor_id: destContenedorId,
+      cantidad,
+    });
+    if (ei) throw Object.assign(new Error(ei.message), { status: 500 });
+  }
+
+  return {
+    origenStockId: origen.id,
+    origenContenedorId: origen.contenedor_id,
+    destinoContenedorId: destContenedorId,
+  };
+}
+
+/**
+ * Checklist BOM del tablero: pedido vs reservado vs entregado a producción.
+ */
+export async function getChecklistTablero(tableroId) {
+  if (isDemo()) return pdemo.demoGetChecklistTablero(tableroId);
+
+  const { tablero, proyecto } = await loadTableroConProyecto(tableroId);
+  const supabase = getSupabase();
+
+  const { data: materiales, error } = await supabase
+    .from('proyecto_materiales')
+    .select('*')
+    .eq('tablero_id', tableroId)
+    .order('created_at');
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+  const itemIds = [...new Set((materiales || []).map((m) => m.item_id).filter(Boolean))];
+  const itemsById = new Map();
+  if (itemIds.length) {
+    const { data: items } = await supabase
+      .from('items')
+      .select('id, nombre, codigo_fabricante')
+      .in('id', itemIds);
+    for (const it of items || []) itemsById.set(it.id, it);
+  }
+
+  const { data: reservasActivas } = await supabase
+    .from('proyecto_reservas')
+    .select('item_id, cantidad, estado')
+    .eq('tablero_id', tableroId)
+    .eq('estado', 'activa');
+
+  const reservadoPendiente = new Map();
+  for (const r of reservasActivas || []) {
+    reservadoPendiente.set(
+      r.item_id,
+      (reservadoPendiente.get(r.item_id) || 0) + Number(r.cantidad || 0)
+    );
+  }
+
+  const lineas = (materiales || []).map((m) => {
+    const item = itemsById.get(m.item_id);
+    const requerido = Number(m.cantidad_requerida || 0);
+    const entregado = Number(m.cantidad_entregada || 0);
+    const consumido = Number(m.cantidad_consumida || 0);
+    const pendienteReserva = Math.max(0, reservadoPendiente.get(m.item_id) || 0);
+    const pendienteEntrega = Math.max(0, requerido - entregado);
+    return {
+      materialId: m.id,
+      itemId: m.item_id,
+      codigoArticulo: m.codigo_articulo || item?.codigo_fabricante || null,
+      descripcion: m.descripcion || item?.nombre || null,
+      cantidadRequerida: requerido,
+      cantidadReservada: Number(m.cantidad_reservada || 0),
+      cantidadEntregada: entregado,
+      cantidadConsumida: consumido,
+      pendienteReserva,
+      pendienteEntrega,
+      enProduccion: Math.max(0, entregado - consumido),
+      estado: m.estado,
+    };
+  });
+
+  const resumen = {
+    lineas: lineas.length,
+    requeridas: lineas.reduce((a, l) => a + l.cantidadRequerida, 0),
+    entregadas: lineas.reduce((a, l) => a + l.cantidadEntregada, 0),
+    pendientesEntrega: lineas.reduce((a, l) => a + l.pendienteEntrega, 0),
+    enProduccion: lineas.reduce((a, l) => a + l.enProduccion, 0),
+    completas: lineas.filter((l) => l.pendienteEntrega <= 0).length,
+  };
+
+  return {
+    tablero: mapTablero(tablero),
+    proyecto: mapProyecto(proyecto),
+    resumen,
+    lineas,
+  };
+}
+
+/**
+ * Escanea / ingresa una pieza a producción del tablero:
+ * consume reserva activa → mueve stock físico al ALM producción.
+ */
+export async function escanearAProduccion(tableroId, payload = {}) {
+  if (isDemo()) return pdemo.demoEscanearAProduccion(tableroId, payload);
+
+  const cantidad = Math.max(1, Number(payload.cantidad || 1));
+  if (!Number.isFinite(cantidad) || cantidad <= 0) {
+    throw Object.assign(new Error('Cantidad inválida'), { status: 400 });
+  }
+
+  const { tablero, proyecto } = await loadTableroConProyecto(tableroId);
+  if (['completado', 'cancelado'].includes(tablero.estado)) {
+    throw Object.assign(
+      new Error(`El tablero está ${tablero.estado}; no se puede entregar material`),
+      { status: 409 }
+    );
+  }
+
+  const supabase = getSupabase();
+  const itemId = await resolveItemIdFromScan(supabase, payload);
+  if (!itemId) {
+    throw Object.assign(
+      new Error('No se reconoció el ítem. Escaneá QR de artículo o ingresá el MLFB.'),
+      { status: 404 }
+    );
+  }
+
+  const { data: reservas, error: er } = await supabase
+    .from('proyecto_reservas')
+    .select('*')
+    .eq('tablero_id', tableroId)
+    .eq('item_id', itemId)
+    .eq('estado', 'activa')
+    .order('created_at', { ascending: true });
+  if (er) throw Object.assign(new Error(er.message), { status: 500 });
+
+  let restante = cantidad;
+  const reservasUsadas = [];
+  for (const r of reservas || []) {
+    const disp = Number(r.cantidad || 0);
+    if (disp <= 0) continue;
+    const tomar = Math.min(restante, disp);
+    reservasUsadas.push({ row: r, tomar });
+    restante -= tomar;
+    if (restante <= 0) break;
+  }
+
+  if (!reservasUsadas.length || restante > 0) {
+    throw Object.assign(
+      new Error(
+        restante === cantidad
+          ? 'No hay reserva activa de este ítem para el tablero. Generá el pedido masivo primero.'
+          : `Solo hay ${cantidad - restante} unidad(es) reservada(s) pendientes; pediste ${cantidad}.`
+      ),
+      { status: 409 }
+    );
+  }
+
+  const { contenedor: destCont, ref: prodRef } = await resolveDestinoProduccion(proyecto.sede);
+  const movimientosStock = [];
+
+  for (const { row, tomar } of reservasUsadas) {
+    const move = await transferirStockAProduccion(supabase, {
+      itemId,
+      cantidad: tomar,
+      stockIdPreferido: payload.stockId || row.stock_id,
+      contenedorIdPreferido: row.contenedor_id,
+      destContenedorId: destCont.id,
+    });
+    movimientosStock.push(move);
+
+    const remanente = Number(row.cantidad) - tomar;
+    if (remanente <= 0) {
+      const { error: eu } = await supabase
+        .from('proyecto_reservas')
+        .update({ estado: 'entregada', updated_at: new Date().toISOString() })
+        .eq('id', row.id);
+      if (eu) throw Object.assign(new Error(eu.message), { status: 500 });
+    } else {
+      const { error: eu } = await supabase
+        .from('proyecto_reservas')
+        .update({ cantidad: remanente, updated_at: new Date().toISOString() })
+        .eq('id', row.id);
+      if (eu) throw Object.assign(new Error(eu.message), { status: 500 });
+    }
+
+    if (row.material_id) {
+      const { data: mat } = await supabase
+        .from('proyecto_materiales')
+        .select('*')
+        .eq('id', row.material_id)
+        .maybeSingle();
+      if (mat) {
+        const nuevaReservada = Math.max(0, Number(mat.cantidad_reservada || 0) - tomar);
+        const nuevaEntregada = Number(mat.cantidad_entregada || 0) + tomar;
+        const requerido = Number(mat.cantidad_requerida || 0);
+        let estado = mat.estado;
+        if (nuevaEntregada >= requerido && requerido > 0) estado = 'completo';
+        else if (nuevaEntregada > 0) estado = 'parcial';
+        await supabase
+          .from('proyecto_materiales')
+          .update({
+            cantidad_reservada: nuevaReservada,
+            cantidad_entregada: nuevaEntregada,
+            estado,
+            updated_at: new Date().toISOString(),
+          })
+          .eq('id', mat.id);
+      }
+    }
+
+    await supabase.from('proyecto_movimientos').insert({
+      proyecto_id: proyecto.id,
+      tablero_id: tableroId,
+      reserva_id: row.id,
+      material_id: row.material_id,
+      item_id: itemId,
+      tipo: 'entrega_produccion',
+      cantidad: tomar,
+      estado_material: 'Entregado al Taller',
+      usuario: payload.usuario || null,
+      notas: payload.notas || null,
+      meta: {
+        origenStockId: move.origenStockId,
+        origenContenedorId: move.origenContenedorId,
+        destinoContenedorId: move.destinoContenedorId,
+        destinoAlmacen: prodRef.almacen,
+        scan: payload.scan || payload.codigo || null,
+      },
+    });
+  }
+
+  if (tablero.estado === 'pendiente') {
+    await supabase
+      .from('proyecto_tableros')
+      .update({ estado: 'en_curso', updated_at: new Date().toISOString() })
+      .eq('id', tableroId);
+  }
+
+  const { data: item } = await supabase
+    .from('items')
+    .select('id, nombre, codigo_fabricante')
+    .eq('id', itemId)
+    .maybeSingle();
+
+  const checklist = await getChecklistTablero(tableroId);
+
+  return {
+    ok: true,
+    cantidad,
+    item: item
+      ? { id: item.id, nombre: item.nombre, codigoFabricante: item.codigo_fabricante }
+      : { id: itemId },
+    destino: {
+      almacen: prodRef.almacen,
+      codigo: destCont.codigo,
+      contenedorId: destCont.id,
+    },
+    reservasConsumidas: reservasUsadas.map(({ row, tomar }) => ({
+      reservaId: row.id,
+      cantidad: tomar,
+    })),
+    checklist,
+  };
+}
+
+/**
+ * Al entregar el tablero al cliente: baja el stock del ALM producción
+ * (material ya instalado) y marca consumido.
+ */
+export async function completarProduccionTablero(tableroId, payload = {}) {
+  if (isDemo()) return pdemo.demoCompletarProduccionTablero(tableroId, payload);
+
+  const { tablero, proyecto } = await loadTableroConProyecto(tableroId);
+  const supabase = getSupabase();
+  const { contenedor: destCont, ref: prodRef } = await resolveDestinoProduccion(proyecto.sede);
+
+  const { data: materiales, error } = await supabase
+    .from('proyecto_materiales')
+    .select('*')
+    .eq('tablero_id', tableroId);
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+  const bajadas = [];
+  for (const mat of materiales || []) {
+    const enProd = Math.max(
+      0,
+      Number(mat.cantidad_entregada || 0) - Number(mat.cantidad_consumida || 0)
+    );
+    if (enProd <= 0 || !mat.item_id) continue;
+
+    const { data: stockRow } = await supabase
+      .from('stock')
+      .select('id, cantidad')
+      .eq('item_id', mat.item_id)
+      .eq('contenedor_id', destCont.id)
+      .maybeSingle();
+
+    if (stockRow) {
+      const quitar = Math.min(enProd, Number(stockRow.cantidad || 0));
+      const nueva = Number(stockRow.cantidad) - quitar;
+      if (nueva <= 0) {
+        await supabase.from('stock').delete().eq('id', stockRow.id);
+      } else {
+        await supabase
+          .from('stock')
+          .update({ cantidad: nueva, updated_at: new Date().toISOString() })
+          .eq('id', stockRow.id);
+      }
+      bajadas.push({ itemId: mat.item_id, cantidad: quitar });
+    } else {
+      bajadas.push({ itemId: mat.item_id, cantidad: 0, aviso: 'sin stock en producción' });
+    }
+
+    await supabase
+      .from('proyecto_materiales')
+      .update({
+        cantidad_consumida: Number(mat.cantidad_entregada || 0),
+        estado: 'completo',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', mat.id);
+  }
+
+  await supabase
+    .from('proyecto_reservas')
+    .update({ estado: 'consumida', updated_at: new Date().toISOString() })
+    .eq('tablero_id', tableroId)
+    .eq('estado', 'entregada');
+
+  const { data: tableroUpd, error: et } = await supabase
+    .from('proyecto_tableros')
+    .update({ estado: 'completado', updated_at: new Date().toISOString() })
+    .eq('id', tableroId)
+    .select('*')
+    .single();
+  if (et) throw Object.assign(new Error(et.message), { status: 500 });
+
+  await supabase.from('proyecto_movimientos').insert({
+    proyecto_id: proyecto.id,
+    tablero_id: tableroId,
+    tipo: 'tablero_entregado',
+    estado_material: 'Consumido',
+    usuario: payload.usuario || null,
+    notas: payload.notas || 'Entrega de tablero — baja de almacén producción',
+    meta: { bajadas, almacen: prodRef.almacen, contenedorId: destCont.id },
+  });
+
+  return {
+    ok: true,
+    tablero: mapTablero(tableroUpd),
+    bajadas,
+    destinoLimpiado: { almacen: prodRef.almacen, codigo: destCont.codigo },
+  };
 }

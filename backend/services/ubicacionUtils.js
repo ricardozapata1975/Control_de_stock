@@ -90,6 +90,13 @@ export function getAduanaUbicacion(sede) {
   return info?.aduana || null;
 }
 
+/** Almacén de producción / armado de tableros (refs bootstrap en sede). */
+export function getProduccionUbicacion(sede) {
+  const code = canonicalSedeCode(sede || SEDE_DEFAULT) || SEDE_DEFAULT;
+  const info = sedesMap[code];
+  return info?.produccion || null;
+}
+
 export function getSedeInfo(sede) {
   const code = canonicalSedeCode(sede || SEDE_DEFAULT) || SEDE_DEFAULT;
   return sedesMap[code] || { nombre: code };

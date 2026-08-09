@@ -666,6 +666,158 @@ export async function demoListAlertas({ sede, soloNoLeidas = true } = {}) {
   }));
 }
 
+export async function demoGetChecklistTablero(tableroId) {
+  const tablero = db.tableros.find((t) => t.id === tableroId);
+  if (!tablero) throw Object.assign(new Error('Tablero no encontrado'), { status: 404 });
+  const proyecto = db.proyectos.find((p) => p.id === tablero.proyecto_id);
+  if (!proyecto) throw Object.assign(new Error('Proyecto no encontrado'), { status: 404 });
+
+  const mats = db.materiales.filter((m) => m.tablero_id === tableroId);
+  const lineas = mats.map((m) => {
+    const pendienteReserva = db.reservas
+      .filter((r) => r.tablero_id === tableroId && r.item_id === m.item_id && r.estado === 'activa')
+      .reduce((a, r) => a + Number(r.cantidad || 0), 0);
+    const requerido = Number(m.cantidad_requerida || 0);
+    const entregado = Number(m.cantidad_entregada || 0);
+    const consumido = Number(m.cantidad_consumida || 0);
+    return {
+      materialId: m.id,
+      itemId: m.item_id,
+      codigoArticulo: m.codigo_articulo,
+      descripcion: m.descripcion,
+      cantidadRequerida: requerido,
+      cantidadReservada: Number(m.cantidad_reservada || 0),
+      cantidadEntregada: entregado,
+      cantidadConsumida: consumido,
+      pendienteReserva,
+      pendienteEntrega: Math.max(0, requerido - entregado),
+      enProduccion: Math.max(0, entregado - consumido),
+      estado: m.estado,
+    };
+  });
+  const resumen = {
+    lineas: lineas.length,
+    requeridas: lineas.reduce((a, l) => a + l.cantidadRequerida, 0),
+    entregadas: lineas.reduce((a, l) => a + l.cantidadEntregada, 0),
+    pendientesEntrega: lineas.reduce((a, l) => a + l.pendienteEntrega, 0),
+    enProduccion: lineas.reduce((a, l) => a + l.enProduccion, 0),
+    completas: lineas.filter((l) => l.pendienteEntrega <= 0).length,
+  };
+  return {
+    tablero: mapTablero(tablero),
+    proyecto: mapProyecto(proyecto),
+    resumen,
+    lineas,
+  };
+}
+
+export async function demoEscanearAProduccion(tableroId, payload = {}) {
+  const cantidad = Math.max(1, Number(payload.cantidad || 1));
+  const tablero = db.tableros.find((t) => t.id === tableroId);
+  if (!tablero) throw Object.assign(new Error('Tablero no encontrado'), { status: 404 });
+  if (['completado', 'cancelado'].includes(tablero.estado)) {
+    throw Object.assign(new Error(`El tablero está ${tablero.estado}`), { status: 409 });
+  }
+  const proyecto = db.proyectos.find((p) => p.id === tablero.proyecto_id);
+  const itemId = payload.itemId || null;
+  if (!itemId) {
+    throw Object.assign(new Error('En demo enviá itemId'), { status: 400 });
+  }
+
+  const activas = db.reservas.filter(
+    (r) => r.tablero_id === tableroId && r.item_id === itemId && r.estado === 'activa'
+  );
+  let restante = cantidad;
+  const usadas = [];
+  for (const r of activas) {
+    const tomar = Math.min(restante, Number(r.cantidad || 0));
+    if (tomar <= 0) continue;
+    usadas.push({ row: r, tomar });
+    restante -= tomar;
+    if (restante <= 0) break;
+  }
+  if (!usadas.length || restante > 0) {
+    throw Object.assign(new Error('No hay reserva activa suficiente para este ítem'), { status: 409 });
+  }
+
+  for (const { row, tomar } of usadas) {
+    const rem = Number(row.cantidad) - tomar;
+    if (rem <= 0) row.estado = 'entregada';
+    else row.cantidad = rem;
+    row.updated_at = nowIso();
+    if (row.material_id) {
+      const mat = db.materiales.find((m) => m.id === row.material_id);
+      if (mat) {
+        mat.cantidad_reservada = Math.max(0, Number(mat.cantidad_reservada || 0) - tomar);
+        mat.cantidad_entregada = Number(mat.cantidad_entregada || 0) + tomar;
+        mat.estado =
+          mat.cantidad_entregada >= Number(mat.cantidad_requerida || 0) ? 'completo' : 'parcial';
+        mat.updated_at = nowIso();
+      }
+    }
+    pushMovimiento({
+      proyecto_id: tablero.proyecto_id,
+      tablero_id: tableroId,
+      reserva_id: row.id,
+      material_id: row.material_id,
+      item_id: itemId,
+      tipo: 'entrega_produccion',
+      cantidad: tomar,
+      estado_material: 'Entregado al Taller',
+      usuario: payload.usuario,
+      notas: payload.notas,
+    });
+  }
+  if (tablero.estado === 'pendiente') tablero.estado = 'en_curso';
+  const checklist = await demoGetChecklistTablero(tableroId);
+  return {
+    ok: true,
+    cantidad,
+    item: { id: itemId },
+    destino: { almacen: 'DEMO-PROD', codigo: 'DEMO-PROD-A00-E00-C01' },
+    reservasConsumidas: usadas.map(({ row, tomar }) => ({ reservaId: row.id, cantidad: tomar })),
+    checklist,
+    proyecto: mapProyecto(proyecto),
+  };
+}
+
+export async function demoCompletarProduccionTablero(tableroId, payload = {}) {
+  const tablero = db.tableros.find((t) => t.id === tableroId);
+  if (!tablero) throw Object.assign(new Error('Tablero no encontrado'), { status: 404 });
+  const bajadas = [];
+  for (const mat of db.materiales.filter((m) => m.tablero_id === tableroId)) {
+    const enProd = Math.max(
+      0,
+      Number(mat.cantidad_entregada || 0) - Number(mat.cantidad_consumida || 0)
+    );
+    if (enProd > 0) bajadas.push({ itemId: mat.item_id, cantidad: enProd });
+    mat.cantidad_consumida = Number(mat.cantidad_entregada || 0);
+    mat.estado = 'completo';
+    mat.updated_at = nowIso();
+  }
+  for (const r of db.reservas.filter((x) => x.tablero_id === tableroId && x.estado === 'entregada')) {
+    r.estado = 'consumida';
+    r.updated_at = nowIso();
+  }
+  tablero.estado = 'completado';
+  tablero.updated_at = nowIso();
+  pushMovimiento({
+    proyecto_id: tablero.proyecto_id,
+    tablero_id: tableroId,
+    tipo: 'tablero_entregado',
+    estado_material: 'Consumido',
+    usuario: payload.usuario,
+    notas: payload.notas || 'Entrega de tablero',
+    meta: { bajadas },
+  });
+  return {
+    ok: true,
+    tablero: mapTablero(tablero),
+    bajadas,
+    destinoLimpiado: { almacen: 'DEMO-PROD', codigo: 'DEMO-PROD' },
+  };
+}
+
 const PRIORIDAD_RANK = { critica: 0, alta: 1, media: 2, baja: 3 };
 
 function mapRecepcion(row) {

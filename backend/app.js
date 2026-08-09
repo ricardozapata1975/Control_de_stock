@@ -64,6 +64,9 @@ import {
   postReasignarReserva,
   postPedidoMasivo,
   postPedidoMasivoPreview,
+  getChecklistTablero,
+  postEscanearProduccion,
+  postCompletarProduccionTablero,
   getAlertas,
   getRecepciones,
   getRecepcionById,
@@ -257,6 +260,13 @@ app.get('/api/proyectos/:id', requireAuth, getProyectoById);
 app.put('/api/proyectos/:id', requireAuth, putProyecto);
 app.post('/api/proyectos/:id/tableros', requireAuth, postTablero);
 app.put('/api/proyectos/tableros/:tableroId', requireAuth, putTablero);
+app.get('/api/proyectos/tableros/:tableroId/checklist', requireAuth, getChecklistTablero);
+app.post('/api/proyectos/tableros/:tableroId/escanear-produccion', requireAuth, postEscanearProduccion);
+app.post(
+  '/api/proyectos/tableros/:tableroId/completar-produccion',
+  requireAuth,
+  postCompletarProduccionTablero
+);
 app.post('/api/proyectos/reservas/:id/liberar', requireAuth, postLiberarReserva);
 app.post('/api/proyectos/reservas/:id/reasignar', requireAuth, postReasignarReserva);
 app.post('/api/proyectos/pedidos-masivos/preview', requireAuth, postPedidoMasivoPreview);

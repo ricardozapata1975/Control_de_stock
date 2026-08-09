@@ -314,6 +314,18 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  checklistTablero: (tableroId) =>
+    request(`/api/proyectos/tableros/${encodeURIComponent(tableroId)}/checklist`),
+  escanearProduccionTablero: (tableroId, body) =>
+    request(`/api/proyectos/tableros/${encodeURIComponent(tableroId)}/escanear-produccion`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  completarProduccionTablero: (tableroId, body = {}) =>
+    request(`/api/proyectos/tableros/${encodeURIComponent(tableroId)}/completar-produccion`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   catalogEnrichPreview: (body) =>
     request('/api/admin/catalog-enrich/preview', {
       method: 'POST',

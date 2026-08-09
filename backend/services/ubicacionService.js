@@ -11,6 +11,7 @@ import {
   listArmariosPorAlmacen,
   listSedes,
   getAduanaUbicacion,
+  getProduccionUbicacion,
   getSedeForAlmacen,
   mapUbicacionFields,
   normalizeAlmacen,

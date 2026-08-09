@@ -160,6 +160,44 @@ export async function postPedidoMasivo(req, res) {
   }
 }
 
+export async function getChecklistTablero(req, res) {
+  try {
+    const data = await service.getChecklistTablero(req.params.tableroId);
+    res.json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postEscanearProduccion(req, res) {
+  try {
+    const result = await service.escanearAProduccion(req.params.tableroId, {
+      itemId: req.body?.itemId,
+      codigo: req.body?.codigo,
+      scan: req.body?.scan,
+      cantidad: req.body?.cantidad,
+      stockId: req.body?.stockId,
+      notas: req.body?.notas,
+      usuario: req.user?.name || req.user?.email,
+    });
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postCompletarProduccionTablero(req, res) {
+  try {
+    const result = await service.completarProduccionTablero(req.params.tableroId, {
+      notas: req.body?.notas,
+      usuario: req.user?.name || req.user?.email,
+    });
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
 export async function getAlertas(req, res) {
   try {
     const alertas = await service.listAlertas({
