@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import FilterableSelect from '../components/FilterableSelect';
 import FocusedPage from '../components/FocusedPage';
 import StockBulkImport from '../components/StockBulkImport';
+import CatalogEnrichImport from '../components/CatalogEnrichImport';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
 import {
@@ -581,12 +582,28 @@ export default function AdminEditorStock() {
         >
           Carga masiva
         </button>
+        <button
+          type="button"
+          className={section === 'catalogo' ? 'btn-primary py-2 text-base' : 'btn-secondary py-2 text-base'}
+          onClick={() => setSection('catalogo')}
+        >
+          Catálogo Siemens/Sivacon
+        </button>
       </div>
 
       {error && <div className="alert-error mb-4">{error}</div>}
       {success && <div className="alert-success mb-4">{success}</div>}
 
       {section === 'masiva' && <StockBulkImport onImported={handleImported} />}
+      {section === 'catalogo' && (
+        <CatalogEnrichImport
+          items={items}
+          onApplied={(data) => {
+            setSuccess(`Catálogo aplicado: ${data.actualizados} ítems actualizados.`);
+            load();
+          }}
+        />
+      )}
 
       {section === 'individual' && (
         <>

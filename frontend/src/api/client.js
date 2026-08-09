@@ -314,6 +314,16 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  catalogEnrichPreview: (body) =>
+    request('/api/admin/catalog-enrich/preview', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  catalogEnrichApply: (body) =>
+    request('/api/admin/catalog-enrich/apply', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   proyectosAlertas: (params = {}) => {
     const q = new URLSearchParams(params).toString();
     return request(`/api/proyectos/alertas${q ? `?${q}` : ''}`);

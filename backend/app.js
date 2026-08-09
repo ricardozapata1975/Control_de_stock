@@ -31,6 +31,10 @@ import {
   postImportPreview,
 } from './controllers/importController.js';
 import {
+  postCatalogEnrichApply,
+  postCatalogEnrichPreview,
+} from './controllers/catalogEnrichController.js';
+import {
   deleteDbRow,
   getDbSchema,
   getDbTable,
@@ -147,7 +151,7 @@ app.use(
     credentials: true,
   })
 );
-app.use(express.json({ limit: '3mb' }));
+app.use(express.json({ limit: '8mb' }));
 
 // Documentación estática
 app.use('/docs', docsRouter);
@@ -283,6 +287,8 @@ app.get('/api/admin/import/especificacion', requireAdmin, getEspecificacion);
 app.get('/api/admin/import/plantilla.csv', requireAdmin, getPlantilla);
 app.post('/api/admin/import/preview', requireAdmin, postImportPreview);
 app.post('/api/admin/import/csv', requireAdmin, postImportCsv);
+app.post('/api/admin/catalog-enrich/preview', requireAdmin, postCatalogEnrichPreview);
+app.post('/api/admin/catalog-enrich/apply', requireAdmin, postCatalogEnrichApply);
 
 // Editor de tablas (admin)
 app.get('/api/admin/db/schema', requireAdmin, getDbSchema);
