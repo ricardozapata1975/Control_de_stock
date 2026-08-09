@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
-import AccesosMenuTable from '../../../components/AccesosMenuTable';
 import { KPI_DEFS, PROYECTOS_NAV } from '../constants';
 
 export default function ProyectosDashboard() {
@@ -77,15 +76,7 @@ export default function ProyectosDashboard() {
       )}
 
       <section>
-        <h2 className="section-title mb-1">Menú de accesos</h2>
-        <p className="mb-3 text-sm text-muted">
-          Menú principal y accesos rápidos de Inventario, Agenda y Proyectos.
-        </p>
-        <AccesosMenuTable />
-      </section>
-
-      <section>
-        <h2 className="section-title mb-3">Accesos del módulo Proyectos</h2>
+        <h2 className="section-title mb-3">Accesos rápidos</h2>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
           {PROYECTOS_NAV.map((item) => (
             <Link
