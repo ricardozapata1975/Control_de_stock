@@ -1042,25 +1042,6 @@ export default function AdminEditorStock() {
               </button>
             </form>
           )}
-
-          <div className="card mt-6">
-            <h3 className="section-title mb-3">Ítems registrados</h3>
-            {loading && !items.length ? (
-              <p className="text-muted">Cargando...</p>
-            ) : (
-              <ul className="space-y-2 text-sm">
-                {items.map((i) => (
-                  <li key={i.id} className="flex flex-wrap justify-between gap-2 border-b border-border py-2">
-                    <span className="font-medium text-content">{i.nombre}</span>
-                    <span className="text-muted">
-                      {i.totalStock} u. ·{' '}
-                      {i.ubicaciones?.map((u) => u.contenedorCodigo || u.ubicacionLabel).join(', ') || '—'}
-                    </span>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
         </>
       )}
     </FocusedPage>
