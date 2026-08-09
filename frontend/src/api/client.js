@@ -304,6 +304,11 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+  pedidoMasivoPreview: (body) =>
+    request('/api/proyectos/pedidos-masivos/preview', {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
   pedidoMasivoProyecto: (body) =>
     request('/api/proyectos/pedidos-masivos', {
       method: 'POST',

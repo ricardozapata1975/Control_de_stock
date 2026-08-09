@@ -1,8 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import * as XLSX from 'xlsx';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
-import { parsePedidoCsv } from '../constants';
+import { parsePedidoCsv, parsePedidoRows, pedidoLineasToCsv } from '../constants';
+
+function sheetToPedidoRows(workbook) {
+  const name = workbook.SheetNames?.[0];
+  if (!name) throw new Error('El Excel no tiene hojas');
+  return XLSX.utils.sheet_to_json(workbook.Sheets[name], { header: 1, defval: '' });
+}
 
 export default function PedidosMasivos() {
   const { sede } = useAuth();
@@ -13,9 +20,11 @@ export default function PedidosMasivos() {
   const [tableros, setTableros] = useState([]);
   const [raw, setRaw] = useState('codigo,cantidad\n');
   const [fileName, setFileName] = useState('');
+  const [previewMatch, setPreviewMatch] = useState(null);
   const [result, setResult] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [previewing, setPreviewing] = useState(false);
 
   useEffect(() => {
     api.proyectos(sede ? { sede } : {}).then((d) => setProyectos(d.proyectos || []));
@@ -32,20 +41,65 @@ export default function PedidosMasivos() {
     });
   }, [proyectoId]);
 
-  const preview = useMemo(() => parsePedidoCsv(raw).slice(0, 20), [raw]);
+  const lineas = useMemo(() => parsePedidoCsv(raw), [raw]);
+  const preview = useMemo(() => lineas.slice(0, 25), [lineas]);
 
   const onFile = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
+    setError('');
+    setPreviewMatch(null);
+    setResult(null);
     setFileName(file.name);
-    const text = await file.text();
-    setRaw(text);
+    const lower = file.name.toLowerCase();
+    try {
+      if (lower.endsWith('.xlsx') || lower.endsWith('.xls')) {
+        const buf = await file.arrayBuffer();
+        const wb = XLSX.read(buf, { type: 'array' });
+        const parsed = parsePedidoRows(sheetToPedidoRows(wb));
+        if (!parsed.length) {
+          throw new Error('No se encontraron filas codigo/cantidad en la primera hoja');
+        }
+        setRaw(pedidoLineasToCsv(parsed));
+      } else {
+        setRaw(await file.text());
+      }
+    } catch (err) {
+      setError(err.message || 'No se pudo leer el archivo');
+      setFileName('');
+    }
+  };
+
+  const analizar = async () => {
+    setError('');
+    setResult(null);
+    setPreviewMatch(null);
+    if (!proyectoId) {
+      setError('Seleccioná un proyecto');
+      return;
+    }
+    if (!lineas.length) {
+      setError('No hay líneas válidas (codigo,cantidad)');
+      return;
+    }
+    setPreviewing(true);
+    try {
+      const data = await api.pedidoMasivoPreview({
+        proyectoId,
+        lineas,
+      });
+      setPreviewMatch(data);
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setPreviewing(false);
+    }
   };
 
   const submit = async () => {
     setError('');
     setResult(null);
-    const lineas = parsePedidoCsv(raw);
     if (!proyectoId) {
       setError('Seleccioná un proyecto');
       return;
@@ -63,6 +117,7 @@ export default function PedidosMasivos() {
         archivoNombre: fileName || 'manual.csv',
       });
       setResult(data);
+      setPreviewMatch(null);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -70,13 +125,15 @@ export default function PedidosMasivos() {
     }
   };
 
+  const resumenPrev = previewMatch?.resumen;
+
   return (
     <div className="space-y-4">
       <h2 className="section-title">Pedidos masivos</h2>
       <p className="text-sm text-muted">
-        Importá CSV/texto con columnas <strong>codigo,cantidad</strong>. El sistema valida
-        artículos, reserva stock disponible (limbo) y genera faltantes — sin descontar el stock
-        físico del inventario.
+        Importá CSV o Excel (primera hoja: código MLFB + cantidad, con o sin encabezado). El sistema
+        valida artículos, reserva stock disponible (limbo) y genera faltantes — sin descontar el
+        stock físico del inventario.
       </p>
 
       {error && <div className="alert-error">{error}</div>}
@@ -114,23 +171,33 @@ export default function PedidosMasivos() {
           </select>
         </div>
         <div className="sm:col-span-2">
-          <label className="text-label">Archivo CSV</label>
-          <input type="file" accept=".csv,.txt,.tsv" className="input-field" onChange={onFile} />
+          <label className="text-label">Archivo CSV / Excel</label>
+          <input
+            type="file"
+            accept=".csv,.txt,.tsv,.xlsx,.xls"
+            className="input-field"
+            onChange={onFile}
+          />
+          {fileName && <p className="mt-1 text-xs text-muted">{fileName}</p>}
         </div>
         <div className="sm:col-span-2">
-          <label className="text-label">Contenido</label>
+          <label className="text-label">Contenido (editable)</label>
           <textarea
             className="input-field font-mono text-sm"
             rows={8}
             value={raw}
-            onChange={(e) => setRaw(e.target.value)}
+            onChange={(e) => {
+              setRaw(e.target.value);
+              setPreviewMatch(null);
+            }}
           />
+          <p className="mt-1 text-xs text-muted">{lineas.length} líneas válidas detectadas</p>
         </div>
       </div>
 
-      {preview.length > 0 && (
+      {preview.length > 0 && !previewMatch && (
         <div className="card text-sm">
-          <p className="mb-2 text-muted">Vista previa ({preview.length} líneas)</p>
+          <p className="mb-2 text-muted">Vista previa rápida ({preview.length} de {lineas.length})</p>
           <ul className="max-h-40 overflow-y-auto font-mono">
             {preview.map((l, i) => (
               <li key={`${l.codigo}-${i}`}>
@@ -141,9 +208,80 @@ export default function PedidosMasivos() {
         </div>
       )}
 
-      <button type="button" className="btn-primary" disabled={loading} onClick={submit}>
-        {loading ? 'Procesando…' : 'Procesar pedido'}
-      </button>
+      <div className="flex flex-wrap gap-2">
+        <button
+          type="button"
+          className="btn-secondary"
+          disabled={previewing || loading || !lineas.length}
+          onClick={analizar}
+        >
+          {previewing ? 'Analizando…' : '1. Analizar match / faltantes'}
+        </button>
+        <button
+          type="button"
+          className="btn-primary"
+          disabled={loading || previewing || !lineas.length}
+          onClick={submit}
+        >
+          {loading ? 'Procesando…' : '2. Procesar pedido (reservar)'}
+        </button>
+      </div>
+
+      {previewMatch && (
+        <div className="card space-y-3">
+          <h3 className="section-title">Análisis (sin reservar)</h3>
+          <p className="text-sm">
+            OK: <strong className="text-emerald-600 dark:text-emerald-300">{resumenPrev?.ok || 0}</strong>
+            {' · '}
+            Parcial:{' '}
+            <strong className="text-amber-600 dark:text-amber-300">{resumenPrev?.parcial || 0}</strong>
+            {' · '}
+            Sin ítem:{' '}
+            <strong className="text-red-600 dark:text-red-300">{resumenPrev?.sinItem || 0}</strong>
+            {' · '}
+            Faltante total u.: <strong>{resumenPrev?.totalFaltante || 0}</strong>
+            {' · '}
+            Reservable u.: <strong>{resumenPrev?.totalReservable || 0}</strong>
+          </p>
+          <div className="max-h-72 overflow-auto rounded border border-edge">
+            <table className="w-full text-left text-xs">
+              <thead className="bg-surface-2 sticky top-0">
+                <tr>
+                  <th className="px-2 py-1">Código</th>
+                  <th className="px-2 py-1">Artículo</th>
+                  <th className="px-2 py-1 text-right">Ped.</th>
+                  <th className="px-2 py-1 text-right">Disp.</th>
+                  <th className="px-2 py-1 text-right">Res.</th>
+                  <th className="px-2 py-1 text-right">Fal.</th>
+                  <th className="px-2 py-1">Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                {(previewMatch.lineas || []).map((l, i) => (
+                  <tr
+                    key={`${l.codigo}-${i}`}
+                    className={
+                      l.estado === 'ok'
+                        ? 'border-t border-edge'
+                        : l.estado === 'parcial'
+                          ? 'border-t border-edge bg-amber-500/10'
+                          : 'border-t border-edge bg-red-500/10'
+                    }
+                  >
+                    <td className="px-2 py-1 font-mono">{l.codigo}</td>
+                    <td className="px-2 py-1">{l.nombre || '—'}</td>
+                    <td className="px-2 py-1 text-right">{l.cantidad}</td>
+                    <td className="px-2 py-1 text-right">{l.disponible}</td>
+                    <td className="px-2 py-1 text-right">{l.reservable}</td>
+                    <td className="px-2 py-1 text-right">{l.faltante}</td>
+                    <td className="px-2 py-1">{l.estado}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
 
       {result && (
         <div className="card border-emerald-500/40">

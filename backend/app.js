@@ -59,6 +59,7 @@ import {
   postLiberarReserva,
   postReasignarReserva,
   postPedidoMasivo,
+  postPedidoMasivoPreview,
   getAlertas,
   getRecepciones,
   getRecepcionById,
@@ -254,6 +255,7 @@ app.post('/api/proyectos/:id/tableros', requireAuth, postTablero);
 app.put('/api/proyectos/tableros/:tableroId', requireAuth, putTablero);
 app.post('/api/proyectos/reservas/:id/liberar', requireAuth, postLiberarReserva);
 app.post('/api/proyectos/reservas/:id/reasignar', requireAuth, postReasignarReserva);
+app.post('/api/proyectos/pedidos-masivos/preview', requireAuth, postPedidoMasivoPreview);
 app.post('/api/proyectos/pedidos-masivos', requireAuth, postPedidoMasivo);
 
 app.post('/api/sync', postSync);

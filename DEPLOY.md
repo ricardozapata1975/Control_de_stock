@@ -17,6 +17,9 @@ En [Render Dashboard](https://dashboard.render.com) → tu servicio **control-de
 
 Render Free no tiene disco persistente: usá **Supabase** y **no** dejes `DEMO_MODE=true`. Pasos completos (tablas, claves, verificación): [SUPABASE_SETUP.md](./SUPABASE_SETUP.md).
 
+Catálogo enriquecido de ítems (precios Siemens/Sivacon): ejecutá también
+`supabase/patch-item-catalogo.sql` en el SQL Editor de Supabase.
+
 | Variable | Valor |
 |----------|--------|
 | `NODE_ENV` | `production` |

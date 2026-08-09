@@ -56,8 +56,41 @@ export default function Item() {
         <p className="text-xs font-semibold uppercase tracking-wide text-sky-400">Artículo</p>
         <h2 className="page-title mb-1">{item.nombre}</h2>
         <p className="font-mono text-sm text-accent">item_id: {itemId}</p>
+        {item.codigoFabricante && (
+          <p className="font-mono text-sm text-muted">MLFB: {item.codigoFabricante}</p>
+        )}
         {item.tipo && <p className="text-muted mt-1">{item.tipo}</p>}
         <p className="mt-2 text-lg font-bold text-content">Stock total: {total}</p>
+        {(item.familia || item.subfamilia || item.tema || item.precioLista != null) && (
+          <div className="mt-3 rounded-lg border border-edge bg-surface-2 p-3 text-sm">
+            <p className="text-xs font-semibold uppercase tracking-wide text-muted">Catálogo</p>
+            {[item.tema, item.familia, item.subfamilia].filter(Boolean).length > 0 && (
+              <p className="mt-1">
+                {[item.tema, item.familia, item.subfamilia].filter(Boolean).join(' · ')}
+              </p>
+            )}
+            {item.precioLista != null && (
+              <p className="mt-1">
+                Precio lista: {item.precioLista} {item.moneda || ''}
+                {item.catalogoVigencia ? ` · vig. ${item.catalogoVigencia}` : ''}
+              </p>
+            )}
+            {(item.unidad || item.packing || item.pesoKg != null) && (
+              <p className="mt-1 text-muted">
+                {[
+                  item.unidad && `Unidad ${item.unidad}`,
+                  item.packing && `Pack ${item.packing}`,
+                  item.pesoKg != null && `${item.pesoKg} kg`,
+                ]
+                  .filter(Boolean)
+                  .join(' · ')}
+              </p>
+            )}
+            {item.catalogoFuente && (
+              <p className="mt-1 text-xs text-muted">Fuente: {item.catalogoFuente}</p>
+            )}
+          </div>
+        )}
       </div>
 
       <ScanResultPanel parsed={parsed} items={rows} onScanAgain={() => navigate('/escanear')} />

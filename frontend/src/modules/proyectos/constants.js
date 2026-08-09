@@ -121,12 +121,36 @@ export function parsePedidoCsv(text) {
   for (let i = 0; i < lines.length; i += 1) {
     const parts = lines[i].split(/[,;\t]/).map((p) => p.trim().replace(/^"|"$/g, ''));
     if (!parts.length) continue;
-    const maybeHeader = /codigo|código|code|sku|articulo|artículo/i.test(parts[0]);
+    const maybeHeader = /codigo|código|code|sku|articulo|artículo|mlfb|order-number/i.test(parts[0]);
     if (i === 0 && maybeHeader) continue;
     const codigo = parts[0];
-    const cantidad = Number(parts[1] || 0);
+    const cantidad = Number(String(parts[1] || '0').replace(',', '.'));
     if (!codigo) continue;
-    out.push({ codigo, cantidad });
+    if (!Number.isFinite(cantidad) || cantidad <= 0) continue;
+    out.push({ codigo: codigo.toUpperCase(), cantidad });
   }
   return out;
+}
+
+/** Filas de Excel/hoja (col0=código, col1=cantidad) → mismo shape que parsePedidoCsv. */
+export function parsePedidoRows(rows) {
+  const out = [];
+  (rows || []).forEach((row, i) => {
+    const cells = Array.isArray(row) ? row : [];
+    const codigo = String(cells[0] ?? '').trim();
+    if (!codigo) return;
+    if (i === 0 && /codigo|código|code|sku|articulo|artículo|mlfb|order-number/i.test(codigo)) {
+      return;
+    }
+    const cantidad = Number(String(cells[1] ?? '0').replace(',', '.'));
+    if (!Number.isFinite(cantidad) || cantidad <= 0) return;
+    out.push({ codigo: codigo.toUpperCase(), cantidad });
+  });
+  return out;
+}
+
+/** Serializa líneas a texto editable en el textarea. */
+export function pedidoLineasToCsv(lineas) {
+  const rows = (lineas || []).map((l) => `${l.codigo},${l.cantidad}`);
+  return ['codigo,cantidad', ...rows].join('\n');
 }

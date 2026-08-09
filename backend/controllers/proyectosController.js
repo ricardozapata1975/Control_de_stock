@@ -133,6 +133,18 @@ export async function postReasignarReserva(req, res) {
   }
 }
 
+export async function postPedidoMasivoPreview(req, res) {
+  try {
+    const result = await service.previewPedidoMasivo({
+      proyectoId: req.body?.proyectoId,
+      lineas: req.body?.lineas,
+    });
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
 export async function postPedidoMasivo(req, res) {
   try {
     const result = await service.procesarPedidoMasivo({

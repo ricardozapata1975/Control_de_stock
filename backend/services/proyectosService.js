@@ -650,6 +650,132 @@ async function resolveItemsAndStock(lineas) {
   return { itemsByCodigo, stockByItem };
 }
 
+/**
+ * Dry-run de pedido masivo: match por codigo_fabricante y estimado de reserva/faltante
+ * sin escribir en DB.
+ */
+export async function previewPedidoMasivo(payload) {
+  const { proyectoId, lineas } = payload;
+  if (!proyectoId) throw Object.assign(new Error('proyectoId requerido'), { status: 400 });
+  if (!Array.isArray(lineas) || !lineas.length) {
+    throw Object.assign(new Error('Se requieren líneas de pedido'), { status: 400 });
+  }
+
+  if (isDemo()) {
+    const inv = await demo.demoListInventario({});
+    const itemsByCodigo = new Map();
+    const stockByItem = new Map();
+    for (const row of inv.items || inv || []) {
+      const item = { id: row.itemId || row.item_id, nombre: row.nombre };
+      if (!item.id) continue;
+      for (const key of [row.codigoFabricante, row.sku, row.codigo, row.nombre]) {
+        if (key) itemsByCodigo.set(String(key).trim().toUpperCase(), item);
+      }
+      const prev = stockByItem.get(item.id) || { cantidad: 0 };
+      prev.cantidad += Number(row.cantidad || 0);
+      stockByItem.set(item.id, prev);
+    }
+    return buildPedidoPreview(lineas, itemsByCodigo, stockByItem);
+  }
+
+  const supabase = getSupabase();
+  const { data: proyecto, error: ep } = await supabase
+    .from('proyectos')
+    .select('id')
+    .eq('id', proyectoId)
+    .maybeSingle();
+  if (ep) {
+    if (schemaMissing(ep)) throwSchemaHint(ep);
+    throw Object.assign(new Error(ep.message), { status: 500 });
+  }
+  if (!proyecto) throw Object.assign(new Error('Proyecto no encontrado'), { status: 404 });
+
+  const { itemsByCodigo, stockByItem } = await resolveItemsAndStock(lineas);
+  return buildPedidoPreview(lineas, itemsByCodigo, stockByItem);
+}
+
+function buildPedidoPreview(lineas, itemsByCodigo, stockByItem) {
+  const working = new Map();
+  for (const [id, st] of stockByItem.entries()) {
+    working.set(id, { cantidad: Number(st.cantidad || 0) });
+  }
+
+  const out = [];
+  let ok = 0;
+  let parcial = 0;
+  let sinItem = 0;
+  let totalReservable = 0;
+  let totalFaltante = 0;
+
+  for (const line of lineas || []) {
+    const codigo = String(line.codigo || '')
+      .trim()
+      .toUpperCase();
+    const cantidad = Number(line.cantidad || 0);
+    if (!codigo || !(cantidad > 0)) continue;
+
+    const item = itemsByCodigo.get(codigo);
+    if (!item) {
+      sinItem += 1;
+      totalFaltante += cantidad;
+      out.push({
+        codigo,
+        cantidad,
+        itemId: null,
+        nombre: null,
+        disponible: 0,
+        reservable: 0,
+        faltante: cantidad,
+        estado: 'sin_item',
+      });
+      continue;
+    }
+
+    const st = working.get(item.id) || { cantidad: 0 };
+    const disponible = Number(st.cantidad || 0);
+    const reservable = Math.min(cantidad, disponible);
+    const faltante = Math.max(0, cantidad - reservable);
+    st.cantidad = Math.max(0, disponible - reservable);
+    working.set(item.id, st);
+
+    let estado = 'ok';
+    if (faltante > 0 && reservable > 0) {
+      estado = 'parcial';
+      parcial += 1;
+    } else if (faltante > 0) {
+      estado = 'faltante';
+      parcial += 1;
+    } else {
+      ok += 1;
+    }
+    totalReservable += reservable;
+    totalFaltante += faltante;
+
+    out.push({
+      codigo,
+      cantidad,
+      itemId: item.id,
+      nombre: item.nombre || null,
+      disponible,
+      reservable,
+      faltante,
+      estado,
+    });
+  }
+
+  return {
+    lineas: out,
+    resumen: {
+      total: out.length,
+      ok,
+      parcial,
+      sinItem,
+      totalReservable,
+      totalFaltante,
+    },
+  };
+}
+
 export async function procesarPedidoMasivo(payload) {
   const { proyectoId, tableroId, lineas, usuario, archivoNombre } = payload;
   if (!proyectoId) throw Object.assign(new Error('proyectoId requerido'), { status: 400 });

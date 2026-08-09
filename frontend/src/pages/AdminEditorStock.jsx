@@ -64,6 +64,17 @@ export default function AdminEditorStock() {
   const [editModelo, setEditModelo] = useState('');
   const [editTipo, setEditTipo] = useState(DEFAULT_TIPO);
   const [editDetalle, setEditDetalle] = useState('');
+  const [editCodigoFab, setEditCodigoFab] = useState('');
+  const [editUnidad, setEditUnidad] = useState('');
+  const [editPacking, setEditPacking] = useState('');
+  const [editPrecioLista, setEditPrecioLista] = useState('');
+  const [editMoneda, setEditMoneda] = useState('');
+  const [editPesoKg, setEditPesoKg] = useState('');
+  const [editFamilia, setEditFamilia] = useState('');
+  const [editSubfamilia, setEditSubfamilia] = useState('');
+  const [editTema, setEditTema] = useState('');
+  const [editCatalogoFuente, setEditCatalogoFuente] = useState('');
+  const [editCatalogoVigencia, setEditCatalogoVigencia] = useState('');
   const [editAlmacen, setEditAlmacen] = useState(ALMACEN_DEFAULT);
   const [editArmario, setEditArmario] = useState('A01');
   const [editEstante, setEditEstante] = useState('E01');
@@ -183,6 +194,17 @@ export default function AdminEditorStock() {
     setEditModelo(item.modelo || '');
     setEditTipo(item.tipo || DEFAULT_TIPO);
     setEditDetalle(item.detalle || '');
+    setEditCodigoFab(item.codigoFabricante || '');
+    setEditUnidad(item.unidad || '');
+    setEditPacking(item.packing || '');
+    setEditPrecioLista(item.precioLista != null ? String(item.precioLista) : '');
+    setEditMoneda(item.moneda || '');
+    setEditPesoKg(item.pesoKg != null ? String(item.pesoKg) : '');
+    setEditFamilia(item.familia || '');
+    setEditSubfamilia(item.subfamilia || '');
+    setEditTema(item.tema || '');
+    setEditCatalogoFuente(item.catalogoFuente || '');
+    setEditCatalogoVigencia(item.catalogoVigencia || '');
     const ubi = pickPrincipalUbicacion(item.ubicaciones);
     if (ubi?.stockId) setEditStockId(ubi.stockId);
     if (ubi) {
@@ -298,6 +320,17 @@ export default function AdminEditorStock() {
         modelo: editModelo,
         tipo: editTipo,
         detalle: editDetalle,
+        codigoFabricante: editCodigoFab,
+        unidad: editUnidad,
+        packing: editPacking,
+        precioLista: editPrecioLista === '' ? null : editPrecioLista,
+        moneda: editMoneda,
+        pesoKg: editPesoKg === '' ? null : editPesoKg,
+        familia: editFamilia,
+        subfamilia: editSubfamilia,
+        tema: editTema,
+        catalogoFuente: editCatalogoFuente,
+        catalogoVigencia: editCatalogoVigencia,
         stockId: editStockId,
         cantidad: Number(editCantidad),
         sede: sessionSede || undefined,
@@ -759,6 +792,103 @@ export default function AdminEditorStock() {
                               value={editDetalle}
                               onChange={(e) => setEditDetalle(e.target.value)}
                             />
+                          </div>
+                        </div>
+                        <div className="border-t border-border pt-3 space-y-3">
+                          <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                            Catálogo (Siemens / Sivacon)
+                          </p>
+                          <div>
+                            <label className="text-label text-xs text-subtle">Código fabricante (MLFB)</label>
+                            <input
+                              className="input-field py-2 font-mono text-sm"
+                              value={editCodigoFab}
+                              onChange={(e) => setEditCodigoFab(e.target.value)}
+                            />
+                          </div>
+                          <div className="grid grid-cols-2 gap-2">
+                            <div>
+                              <label className="text-label text-xs text-subtle">Tema</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                value={editTema}
+                                onChange={(e) => setEditTema(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-label text-xs text-subtle">Familia</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                value={editFamilia}
+                                onChange={(e) => setEditFamilia(e.target.value)}
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="text-label text-xs text-subtle">Subfamilia</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                value={editSubfamilia}
+                                onChange={(e) => setEditSubfamilia(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-label text-xs text-subtle">Unidad</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                value={editUnidad}
+                                onChange={(e) => setEditUnidad(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-label text-xs text-subtle">Packing / MOQ</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                value={editPacking}
+                                onChange={(e) => setEditPacking(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-label text-xs text-subtle">Precio lista</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                value={editPrecioLista}
+                                onChange={(e) => setEditPrecioLista(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-label text-xs text-subtle">Moneda</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                placeholder="EUR / USD"
+                                value={editMoneda}
+                                onChange={(e) => setEditMoneda(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-label text-xs text-subtle">Peso kg</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                value={editPesoKg}
+                                onChange={(e) => setEditPesoKg(e.target.value)}
+                              />
+                            </div>
+                            <div>
+                              <label className="text-label text-xs text-subtle">Vigencia catálogo</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                value={editCatalogoVigencia}
+                                onChange={(e) => setEditCatalogoVigencia(e.target.value)}
+                              />
+                            </div>
+                            <div className="col-span-2">
+                              <label className="text-label text-xs text-subtle">Fuente catálogo</label>
+                              <input
+                                className="input-field py-2 text-sm"
+                                placeholder="sivacon_s8 / siemens_ar"
+                                value={editCatalogoFuente}
+                                onChange={(e) => setEditCatalogoFuente(e.target.value)}
+                              />
+                            </div>
                           </div>
                         </div>
                       </div>

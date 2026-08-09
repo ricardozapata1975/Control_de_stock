@@ -3,6 +3,37 @@ export function normalizeCodigoFabricante(val) {
   return s || null;
 }
 
+function parseOptionalNumber(val) {
+  if (val === undefined || val === null || val === '') return null;
+  const n = Number(String(val).replace(',', '.').replace(/[^\d.-]/g, ''));
+  return Number.isFinite(n) ? n : null;
+}
+
+function pickCatalogFromItem(item) {
+  return {
+    unidad: item.unidad || '',
+    packing: item.packing || '',
+    precioLista:
+      item.precio_lista != null
+        ? Number(item.precio_lista)
+        : item.precioLista != null
+          ? Number(item.precioLista)
+          : null,
+    moneda: item.moneda || '',
+    pesoKg:
+      item.peso_kg != null
+        ? Number(item.peso_kg)
+        : item.pesoKg != null
+          ? Number(item.pesoKg)
+          : null,
+    familia: item.familia || '',
+    subfamilia: item.subfamilia || '',
+    tema: item.tema || '',
+    catalogoFuente: item.catalogo_fuente || item.catalogoFuente || '',
+    catalogoVigencia: item.catalogo_vigencia || item.catalogoVigencia || '',
+  };
+}
+
 export function mapItemCampos(item) {
   if (!item) return {};
   const fecha = item.fecha_relevamiento ?? item.fechaRelevamiento ?? null;
@@ -14,7 +45,29 @@ export function mapItemCampos(item) {
     codigoFabricante: codigoFab ? String(codigoFab).trim() : '',
     imagenUrl: item.imagen_url || item.imagenUrl || '',
     imagenPath: item.imagen_path || item.imagenPath || '',
+    ...pickCatalogFromItem(item),
   };
+}
+
+function applyCatalogPayload(target, body) {
+  if (body.unidad !== undefined) target.unidad = String(body.unidad || '').trim();
+  if (body.packing !== undefined) target.packing = String(body.packing || '').trim();
+  if (body.precioLista !== undefined || body.precio_lista !== undefined) {
+    target.precio_lista = parseOptionalNumber(body.precioLista ?? body.precio_lista);
+  }
+  if (body.moneda !== undefined) target.moneda = String(body.moneda || '').trim().toUpperCase();
+  if (body.pesoKg !== undefined || body.peso_kg !== undefined) {
+    target.peso_kg = parseOptionalNumber(body.pesoKg ?? body.peso_kg);
+  }
+  if (body.familia !== undefined) target.familia = String(body.familia || '').trim();
+  if (body.subfamilia !== undefined) target.subfamilia = String(body.subfamilia || '').trim();
+  if (body.tema !== undefined) target.tema = String(body.tema || '').trim();
+  if (body.catalogoFuente !== undefined || body.catalogo_fuente !== undefined) {
+    target.catalogo_fuente = String(body.catalogoFuente ?? body.catalogo_fuente ?? '').trim();
+  }
+  if (body.catalogoVigencia !== undefined || body.catalogo_vigencia !== undefined) {
+    target.catalogo_vigencia = String(body.catalogoVigencia ?? body.catalogo_vigencia ?? '').trim();
+  }
 }
 
 export function itemPayloadFromBody(body) {
@@ -34,6 +87,7 @@ export function itemPayloadFromBody(body) {
       body.codigoFabricante ?? body.codigo_fabricante
     );
   }
+  applyCatalogPayload(payload, body);
   return payload;
 }
 
@@ -57,6 +111,7 @@ export function itemPartialUpdateFromBody(body) {
       body.codigoFabricante ?? body.codigo_fabricante
     );
   }
+  applyCatalogPayload(updates, body);
   return updates;
 }
 
