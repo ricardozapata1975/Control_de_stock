@@ -1,46 +1,121 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { NavLink, Outlet, useLocation } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
+import { filterNavGroups } from '../nav/appNav';
 import OfflineStatus from './OfflineStatus';
 import ThemeToggle from './ThemeToggle';
 
-const links = [
-  { to: '/', label: 'Inventario', end: true },
-  { to: '/consulta-sucursales', label: 'Otras sucursales' },
-  { to: '/agenda', label: 'Agenda' },
-  { to: '/proyectos', label: 'Proyectos' },
-  { to: '/escanear', label: 'QR' },
-  { to: '/egreso', label: 'Egreso' },
-  { to: '/ingreso', label: 'Ingreso' },
-  { to: '/historial', label: 'Historial' },
-  { to: '/imprimir-qr', label: 'Etiquetas' },
-  { to: '/remito', label: 'Remito' },
-];
-
-const adminLinks = [
-  { to: '/admin/locaciones', label: 'Locaciones' },
-  { to: '/admin/editor-stock', label: 'Editor de Stock' },
-  { to: '/admin/usuarios', label: 'Usuarios' },
-];
-
-function NavItems({ items, onNavigate }) {
+function AccesoLink({ item, onNavigate }) {
+  if (item.soon || !item.to) {
+    return (
+      <span className="block rounded-md px-2 py-1.5 text-sm text-content-muted opacity-70" title="Próximamente">
+        {item.label}
+      </span>
+    );
+  }
   return (
-    <ul className="space-y-1">
-      {items.map((l) => (
-        <li key={l.to}>
-          <NavLink
-            to={l.to}
-            end={l.end}
-            onClick={onNavigate}
-            className={({ isActive }) =>
-              `nav-link ${isActive ? 'nav-link-active' : 'nav-link-inactive'}`
-            }
-          >
-            {l.label}
-          </NavLink>
-        </li>
-      ))}
+    <NavLink
+      to={item.to}
+      end={item.end}
+      onClick={onNavigate}
+      className={({ isActive }) =>
+        `block rounded-md px-2 py-1.5 text-sm transition ${
+          isActive
+            ? 'bg-accent/15 font-semibold text-accent'
+            : 'text-content-muted hover:bg-surface-hover hover:text-content'
+        }`
+      }
+    >
+      {item.label}
+    </NavLink>
+  );
+}
+
+function NavGroups({ groups, onNavigate }) {
+  const location = useLocation();
+  const path = location.pathname;
+
+  const initialOpen = useMemo(() => {
+    const open = {};
+    for (const g of groups) {
+      open[g.id] = typeof g.match === 'function' ? g.match(path) : false;
+    }
+    // Si ninguno matchea, abrir Inventario
+    if (!Object.values(open).some(Boolean)) open.inventario = true;
+    return open;
+  }, [groups, path]);
+
+  const [openMap, setOpenMap] = useState(initialOpen);
+
+  useEffect(() => {
+    setOpenMap((prev) => {
+      const next = { ...prev };
+      for (const g of groups) {
+        if (typeof g.match === 'function' && g.match(path)) next[g.id] = true;
+      }
+      return next;
+    });
+  }, [path, groups]);
+
+  const toggle = (id) => setOpenMap((m) => ({ ...m, [id]: !m[id] }));
+
+  return (
+    <ul className="space-y-2">
+      {groups.map((g) => {
+        const isOpen = Boolean(openMap[g.id]);
+        const sectionActive = typeof g.match === 'function' && g.match(path);
+        return (
+          <li key={g.id} className="rounded-lg border border-border/70 bg-surface-muted/40">
+            <div className="flex items-stretch">
+              <NavLink
+                to={g.to}
+                end={g.to === '/'}
+                onClick={onNavigate}
+                className={() =>
+                  `nav-link min-w-0 flex-1 rounded-none rounded-l-lg border-0 ${
+                    sectionActive ? 'nav-link-active' : 'nav-link-inactive'
+                  }`
+                }
+              >
+                {g.label}
+              </NavLink>
+              <button
+                type="button"
+                className="shrink-0 border-l border-border/70 px-3 text-content-muted hover:bg-surface-hover hover:text-content"
+                aria-expanded={isOpen}
+                aria-label={`${isOpen ? 'Ocultar' : 'Mostrar'} accesos de ${g.label}`}
+                onClick={() => toggle(g.id)}
+              >
+                <svg
+                  className={`h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`}
+                  viewBox="0 0 20 20"
+                  fill="currentColor"
+                  aria-hidden
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M5.23 7.21a.75.75 0 011.06.02L10 11.17l3.71-3.94a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z"
+                    clipRule="evenodd"
+                  />
+                </svg>
+              </button>
+            </div>
+            {isOpen && (
+              <ul className="space-y-0.5 border-t border-border/60 px-2 py-2">
+                <li className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+                  Accesos rápidos
+                </li>
+                {g.accesos.map((a) => (
+                  <li key={`${g.id}-${a.to || a.label}`}>
+                    <AccesoLink item={a} onNavigate={onNavigate} />
+                  </li>
+                ))}
+              </ul>
+            )}
+          </li>
+        );
+      })}
     </ul>
   );
 }
@@ -51,7 +126,7 @@ export default function Layout() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sedes, setSedes] = useState([]);
   const [switching, setSwitching] = useState(false);
-  const navLinks = isAdmin ? [...links, ...adminLinks] : links;
+  const groups = useMemo(() => filterNavGroups(isAdmin), [isAdmin]);
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -139,10 +214,13 @@ export default function Layout() {
             className="h-10 w-auto max-w-full object-contain"
           />
           <p className="mt-2 text-sm font-bold text-content">Inventario Px Control</p>
+          <p className="mt-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+            Menú principal
+          </p>
         </div>
 
         <nav className="flex-1 overflow-y-auto p-3" aria-label="Navegación principal">
-          <NavItems items={navLinks} onNavigate={closeDrawer} />
+          <NavGroups groups={groups} onNavigate={closeDrawer} />
         </nav>
 
         <div className="shrink-0 space-y-3 border-t border-border p-4">
