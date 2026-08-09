@@ -13,6 +13,7 @@ export { default as HerramientasPage } from './pages/HerramientasPage';
 export { default as ReportesPage } from './pages/ReportesPage';
 export { default as ConfiguracionPage } from './pages/ConfiguracionPage';
 export { default as DisponiblesPage } from './pages/DisponiblesPage';
+export { default as ProduccionPage } from './pages/ProduccionPage';
 export { default as TransitoPage } from './pages/TransitoPage';
 export { default as TransferenciasPage } from './pages/TransferenciasPage';
 export { default as PendientesCierrePage } from './pages/PendientesCierrePage';

@@ -34,6 +34,7 @@ import {
   ReportesPage,
   ConfiguracionPage,
   DisponiblesPage,
+  ProduccionPage,
   TransitoPage,
   TransferenciasPage,
   PendientesCierrePage,
@@ -97,6 +98,7 @@ export default function App() {
                 <Route path="configuracion" element={<ConfiguracionPage />} />
                 <Route path="transito" element={<TransitoPage />} />
                 <Route path="disponibles" element={<DisponiblesPage />} />
+                <Route path="produccion" element={<ProduccionPage />} />
                 <Route path="transferencias" element={<TransferenciasPage />} />
                 <Route path="pendientes-cierre" element={<PendientesCierrePage />} />
                 <Route path=":id" element={<ProyectoDetail />} />

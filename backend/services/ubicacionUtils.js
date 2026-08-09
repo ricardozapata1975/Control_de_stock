@@ -79,6 +79,8 @@ export function listSedes() {
     codigo,
     nombre: info?.nombre || codigo,
     aduana: info?.aduana || null,
+    reservados: info?.reservados || null,
+    produccion: info?.produccion || null,
   }));
 }
 
@@ -246,6 +248,9 @@ export function listAlmacenes(sedeFilter) {
       tipo: info?.tipo || '',
       nombre: info?.nombre || codigo,
       sede: info?.sede || SEDE_DEFAULT,
+      esAduana: Boolean(info?.esAduana),
+      esReservados: Boolean(info?.esReservados),
+      esProduccion: Boolean(info?.esProduccion),
     }));
 }
 

@@ -4,6 +4,9 @@ export const ADUANA_ARMARIO = 'A00';
 export const ADUANA_ESTANTE = 'E01';
 export const ADUANA_CONTENEDOR = 'C01';
 
+export const PROYECTOS_ARMARIO = 'A00';
+export const PROYECTOS_ESTANTE = 'E00';
+
 export function nextAlmacenCode(catalogo) {
   let num = catalogo.nextAlmacenNum || Object.keys(catalogo.almacenes || {}).length + 1;
   let code;
@@ -55,11 +58,132 @@ export function createAduanaForSede(catalogo, sedeCode, sedeNombre) {
   return aduana;
 }
 
-/** Asegura sede Ballester y aduana para sedes existentes sin aduana */
+function findAlmacenByFlag(catalogo, sedeCode, flag) {
+  return Object.entries(catalogo.almacenes || {}).find(
+    ([, info]) => info?.sede === sedeCode && info?.[flag]
+  )?.[0];
+}
+
+function findAlmacenByNombreHint(catalogo, sedeCode, hints) {
+  return Object.entries(catalogo.almacenes || {}).find(([_, info]) => {
+    if (info?.sede !== sedeCode) return false;
+    const n = String(info?.nombre || '').toLowerCase();
+    return hints.some((h) => n.includes(h));
+  })?.[0];
+}
+
+/**
+ * Almacenes lógicos de Proyectos por sede:
+ * - Reservados: compromiso limbo (stock físico sigue en depósito general)
+ * - Producción: materiales ya retirados para armar tableros
+ */
+export function ensureProyectosAlmacenesForSede(catalogo, sedeCode, sedeNombre) {
+  catalogo.almacenes = catalogo.almacenes || {};
+  catalogo.sedes = catalogo.sedes || {};
+  catalogo.proyectosAlmacenes = catalogo.proyectosAlmacenes || {};
+  const sedeInfo = catalogo.sedes[sedeCode] || { nombre: sedeNombre || sedeCode };
+  catalogo.sedes[sedeCode] = sedeInfo;
+
+  const cfg = catalogo.proyectosAlmacenes[sedeCode] || {};
+
+  let reservadosCode =
+    cfg.reservados ||
+    sedeInfo.reservados?.almacen ||
+    findAlmacenByFlag(catalogo, sedeCode, 'esReservados') ||
+    findAlmacenByNombreHint(catalogo, sedeCode, ['materiales reservados', 'reservados (proyectos)']);
+
+  if (!reservadosCode || !catalogo.almacenes[reservadosCode]) {
+    reservadosCode = nextAlmacenCode(catalogo);
+    catalogo.almacenes[reservadosCode] = {
+      sede: sedeCode,
+      tipo: 'Depósito',
+      nombre: `Materiales reservados — ${sedeNombre || sedeCode}`,
+      esReservados: true,
+      armarios: {
+        [PROYECTOS_ARMARIO]: {
+          nombre: 'Limbo / comprometidos (sin egreso físico)',
+          tipo: 'gabinete',
+        },
+      },
+      nextArmarioNum: 1,
+    };
+  } else {
+    catalogo.almacenes[reservadosCode].esReservados = true;
+    catalogo.almacenes[reservadosCode].sede = sedeCode;
+  }
+
+  let produccionCode =
+    cfg.produccion ||
+    sedeInfo.produccion?.almacen ||
+    findAlmacenByFlag(catalogo, sedeCode, 'esProduccion') ||
+    findAlmacenByNombreHint(catalogo, sedeCode, ['producción', 'produccion', 'armado de tableros']);
+
+  if (!produccionCode || !catalogo.almacenes[produccionCode]) {
+    produccionCode = nextAlmacenCode(catalogo);
+    catalogo.almacenes[produccionCode] = {
+      sede: sedeCode,
+      tipo: 'Depósito',
+      nombre: `Producción / Armado tableros — ${sedeNombre || sedeCode}`,
+      esProduccion: true,
+      armarios: {
+        [PROYECTOS_ARMARIO]: {
+          nombre: 'Material en tableros / taller',
+          tipo: 'gabinete',
+        },
+      },
+      nextArmarioNum: 1,
+    };
+  } else {
+    catalogo.almacenes[produccionCode].esProduccion = true;
+    catalogo.almacenes[produccionCode].sede = sedeCode;
+  }
+
+  sedeInfo.reservados = {
+    almacen: reservadosCode,
+    armario: PROYECTOS_ARMARIO,
+    estante: PROYECTOS_ESTANTE,
+  };
+  sedeInfo.produccion = {
+    almacen: produccionCode,
+    armario: PROYECTOS_ARMARIO,
+    estante: PROYECTOS_ESTANTE,
+  };
+  catalogo.proyectosAlmacenes[sedeCode] = {
+    reservados: reservadosCode,
+    produccion: produccionCode,
+  };
+
+  return { reservados: reservadosCode, produccion: produccionCode };
+}
+
+/** Marca flags especiales según refs de sede (tras cargar desde DB sin columnas extra). */
+export function annotateSpecialAlmacenes(catalogo) {
+  const c = catalogo;
+  c.almacenes = c.almacenes || {};
+  for (const [sedeCode, sedeInfo] of Object.entries(c.sedes || {})) {
+    const aduanaAlm = sedeInfo?.aduana?.almacen;
+    if (aduanaAlm && c.almacenes[aduanaAlm]) {
+      c.almacenes[aduanaAlm].esAduana = true;
+      c.almacenes[aduanaAlm].sede = c.almacenes[aduanaAlm].sede || sedeCode;
+    }
+    const resAlm = sedeInfo?.reservados?.almacen || c.proyectosAlmacenes?.[sedeCode]?.reservados;
+    if (resAlm && c.almacenes[resAlm]) {
+      c.almacenes[resAlm].esReservados = true;
+    }
+    const prodAlm = sedeInfo?.produccion?.almacen || c.proyectosAlmacenes?.[sedeCode]?.produccion;
+    if (prodAlm && c.almacenes[prodAlm]) {
+      c.almacenes[prodAlm].esProduccion = true;
+    }
+  }
+  return c;
+}
+
+/** Asegura sede Ballester, aduana y almacenes de Proyectos para sedes existentes */
 export function bootstrapSedesCatalog(catalogo) {
   const c = { ...catalogo };
   c.sedes = c.sedes || {};
   c.almacenes = c.almacenes || {};
+  c.proyectosAlmacenes = c.proyectosAlmacenes || {};
   if (!c.nextSedeNum) {
     c.nextSedeNum = Math.max(2, Object.keys(c.sedes).length + 1);
   }
@@ -81,7 +205,8 @@ export function bootstrapSedesCatalog(catalogo) {
     if (!sedeInfo.aduana?.almacen) {
       createAduanaForSede(c, sedeCode, sedeInfo.nombre || sedeCode);
     }
+    ensureProyectosAlmacenesForSede(c, sedeCode, sedeInfo.nombre || sedeCode);
   }
 
-  return c;
+  return annotateSpecialAlmacenes(c);
 }

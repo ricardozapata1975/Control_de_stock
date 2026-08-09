@@ -34,8 +34,8 @@ export default function DisponiblesPage() {
       <div>
         <h2 className="page-title">Materiales disponibles (netos)</h2>
         <p className="text-muted">
-          Stock físico de la sede menos reservas activas de Proyectos. Relacionado con el inventario
-          general{sede ? ` · sede ${sede}` : ''}.
+          Stock del almacén general de la sede menos reservas activas (limbo). No incluye aduana,
+          reservados ni producción{sede ? ` · sede ${sede}` : ''}.
         </p>
       </div>
 

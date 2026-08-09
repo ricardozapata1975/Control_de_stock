@@ -47,98 +47,125 @@ function applySedeViaAlmacenes(query, sede) {
   return query.in('almacen', alms);
 }
 
+const INVENTARIO_PAGE = 1000;
+
+/** Supabase limita a ~1000 filas por request: pagina hasta vaciar. */
+async function fetchInventarioPaged(buildQuery) {
+  const all = [];
+  let from = 0;
+  for (;;) {
+    const { data, error } = await buildQuery().range(from, from + INVENTARIO_PAGE - 1);
+    if (error) return { data: null, error };
+    const chunk = data || [];
+    all.push(...chunk);
+    if (chunk.length < INVENTARIO_PAGE) break;
+    from += INVENTARIO_PAGE;
+  }
+  return { data: all, error: null };
+}
+
 export async function listInventario(filters = {}) {
   if (demo.isDemoMode()) return demo.demoListInventario(filters);
 
   const supabase = getSupabase();
-  let query = supabase.from('v_inventario').select('*').order('nombre');
   const sede = String(filters.sede || '').trim().toUpperCase();
 
-  if (sede) {
-    // Filtrar por almacenes de la sede (más confiable que la columna sede suelta)
-    query = applySedeViaAlmacenes(query, sede);
-  }
+  const applyFilters = (query) => {
+    let q = query;
+    if (sede) {
+      // Filtrar por almacenes de la sede (más confiable que la columna sede suelta)
+      q = applySedeViaAlmacenes(q, sede);
+    }
 
-  if (filters.codigo) {
-    const parsed = parseCodigo(filters.codigo);
-    if (parsed?.almacen && !parsed.armario) {
-      query = query.eq('almacen', parsed.almacen);
-    } else if (parsed?.armario && !parsed.estante) {
-      query = query.eq('armario', parsed.armario);
-      if (parsed.almacen) query = query.eq('almacen', parsed.almacen);
-    } else if (parsed?.estante && !parsed.contenedor) {
-      query = query.eq('armario', parsed.armario).eq('estante', parsed.estante);
-      if (parsed.almacen) query = query.eq('almacen', parsed.almacen);
-    } else if (parsed?.codigo) {
-      const variants = codigoLookupVariants(parsed);
-      if (variants.length === 1) {
-        query = query.eq('contenedor_codigo', variants[0]);
-      } else {
-        query = query.in('contenedor_codigo', variants);
+    if (filters.codigo) {
+      const parsed = parseCodigo(filters.codigo);
+      if (parsed?.almacen && !parsed.armario) {
+        q = q.eq('almacen', parsed.almacen);
+      } else if (parsed?.armario && !parsed.estante) {
+        q = q.eq('armario', parsed.armario);
+        if (parsed.almacen) q = q.eq('almacen', parsed.almacen);
+      } else if (parsed?.estante && !parsed.contenedor) {
+        q = q.eq('armario', parsed.armario).eq('estante', parsed.estante);
+        if (parsed.almacen) q = q.eq('almacen', parsed.almacen);
+      } else if (parsed?.codigo) {
+        const variants = codigoLookupVariants(parsed);
+        if (variants.length === 1) {
+          q = q.eq('contenedor_codigo', variants[0]);
+        } else {
+          q = q.in('contenedor_codigo', variants);
+        }
+      }
+    } else {
+      if (filters.almacen) q = q.eq('almacen', filters.almacen);
+      if (filters.ubicacion) q = q.ilike('ubicacion', filters.ubicacion);
+      if (filters.armario) {
+        q = q.eq('armario', filters.armario);
+        if (filters.almacen) q = q.eq('almacen', filters.almacen);
+      }
+      const cont = String(filters.contenedor || '').trim().toUpperCase();
+      if (cont) {
+        q = q.eq('contenedor', cont);
       }
     }
-  } else {
-    if (filters.almacen) query = query.eq('almacen', filters.almacen);
-    if (filters.ubicacion) query = query.ilike('ubicacion', filters.ubicacion);
-    if (filters.armario) {
-      query = query.eq('armario', filters.armario);
-      if (filters.almacen) query = query.eq('almacen', filters.almacen);
+    if (filters.tipo) q = q.ilike('tipo', filters.tipo);
+
+    const codigoFab = String(filters.codigoFabricante || filters.codigo_fabricante || '').trim();
+    if (codigoFab) {
+      q = q.eq('codigo_fabricante', codigoFab);
     }
-    const cont = String(filters.contenedor || '').trim().toUpperCase();
-    if (cont) {
-      query = query.eq('contenedor', cont);
+
+    if (filters.itemId) {
+      q = q.eq('item_id', filters.itemId);
     }
-  }
-  if (filters.tipo) query = query.ilike('tipo', filters.tipo);
 
-  const codigoFab = String(filters.codigoFabricante || filters.codigo_fabricante || '').trim();
-  if (codigoFab) {
-    query = query.eq('codigo_fabricante', codigoFab);
-  }
-
-  if (filters.itemId) {
-    query = query.eq('item_id', filters.itemId);
-  }
-
-  if (filters.q) {
-    const term = `%${filters.q}%`;
-    query = query.or(
-      `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term},codigo_fabricante.ilike.${term}`
-    );
-  }
-
-  let { data, error } = await query;
-
-  if (error && sede && /sede|schema cache|column/i.test(error.message || '')) {
-    let fallback = supabase.from('v_inventario').select('*').order('nombre');
-    fallback = applySedeViaAlmacenes(fallback, sede);
-    if (filters.almacen) fallback = fallback.eq('almacen', filters.almacen);
-    if (filters.armario) fallback = fallback.eq('armario', filters.armario);
-    const contFb = String(filters.contenedor || '').trim().toUpperCase();
-    if (contFb) fallback = fallback.eq('contenedor', contFb);
-    if (filters.tipo) fallback = fallback.ilike('tipo', filters.tipo);
-    if (filters.itemId) fallback = fallback.eq('item_id', filters.itemId);
-    if (codigoFab) fallback = fallback.eq('codigo_fabricante', codigoFab);
     if (filters.q) {
       const term = `%${filters.q}%`;
-      fallback = fallback.or(
-        `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term}`
+      q = q.or(
+        `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term},codigo_fabricante.ilike.${term}`
       );
     }
-    ({ data, error } = await fallback);
+    return q;
+  };
+
+  let { data, error } = await fetchInventarioPaged(() =>
+    applyFilters(supabase.from('v_inventario').select('*').order('nombre'))
+  );
+
+  if (error && sede && /sede|schema cache|column/i.test(error.message || '')) {
+    ({ data, error } = await fetchInventarioPaged(() => {
+      let fallback = supabase.from('v_inventario').select('*').order('nombre');
+      fallback = applySedeViaAlmacenes(fallback, sede);
+      if (filters.almacen) fallback = fallback.eq('almacen', filters.almacen);
+      if (filters.armario) fallback = fallback.eq('armario', filters.armario);
+      const contFb = String(filters.contenedor || '').trim().toUpperCase();
+      if (contFb) fallback = fallback.eq('contenedor', contFb);
+      if (filters.tipo) fallback = fallback.ilike('tipo', filters.tipo);
+      if (filters.itemId) fallback = fallback.eq('item_id', filters.itemId);
+      const codigoFab = String(filters.codigoFabricante || filters.codigo_fabricante || '').trim();
+      if (codigoFab) fallback = fallback.eq('codigo_fabricante', codigoFab);
+      if (filters.q) {
+        const term = `%${filters.q}%`;
+        fallback = fallback.or(
+          `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term}`
+        );
+      }
+      return fallback;
+    }));
   }
 
   if (error) {
+    const codigoFab = String(filters.codigoFabricante || filters.codigo_fabricante || '').trim();
     if (filters.q && /codigo_fabricante/i.test(error.message || '') && !codigoFab) {
-      let fallback = supabase.from('v_inventario').select('*').order('nombre');
-      if (sede) fallback = applySedeViaAlmacenes(fallback, sede);
-      if (filters.tipo) fallback = fallback.ilike('tipo', filters.tipo);
-      if (filters.almacen) fallback = fallback.eq('almacen', filters.almacen);
-      const term = `%${filters.q}%`;
-      fallback = fallback.or(
-        `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term}`
-      );
-      const { data: data2, error: err2 } = await fallback;
+      const { data: data2, error: err2 } = await fetchInventarioPaged(() => {
+        let fallback = supabase.from('v_inventario').select('*').order('nombre');
+        if (sede) fallback = applySedeViaAlmacenes(fallback, sede);
+        if (filters.tipo) fallback = fallback.ilike('tipo', filters.tipo);
+        if (filters.almacen) fallback = fallback.eq('almacen', filters.almacen);
+        const term = `%${filters.q}%`;
+        return fallback.or(
+          `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term}`
+        );
+      });
       if (err2) throw Object.assign(new Error(err2.message), { status: 500 });
       const items = (data2 || []).map(mapInventarioRow);
       return {

@@ -1,9 +1,10 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import * as XLSX from 'xlsx';
 import { api, getDocsUrl } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 
 const IMPORT_BATCH = 150;
+const AUTO_NEXT_SECONDS = 30;
 
 function sheetToCsv(workbook) {
   const name = workbook.SheetNames?.[0];
@@ -44,11 +45,24 @@ export default function StockBulkImport({ onImported }) {
   const [loteActual, setLoteActual] = useState(0);
   const [loteLog, setLoteLog] = useState([]);
   const [acumulado, setAcumulado] = useState({ ok: 0, errores: 0 });
+  const [autoSecs, setAutoSecs] = useState(null);
+  const autoCancelledRef = useRef(false);
+  const aplicarLoteRef = useRef(null);
 
   const [purgeRows, setPurgeRows] = useState([]);
   const [purgeSelected, setPurgeSelected] = useState(() => new Set());
   const [purgeLoading, setPurgeLoading] = useState(false);
   const [purgeInfo, setPurgeInfo] = useState('');
+
+  const cancelAutoNext = useCallback(() => {
+    autoCancelledRef.current = true;
+    setAutoSecs(null);
+  }, []);
+
+  const startAutoNext = useCallback(() => {
+    autoCancelledRef.current = false;
+    setAutoSecs(AUTO_NEXT_SECONDS);
+  }, []);
 
   useEffect(() => {
     api.importEspecificacion().then(setSpec).catch((e) => setError(e.message));
@@ -62,9 +76,11 @@ export default function StockBulkImport({ onImported }) {
         if (cancelled) return;
         const list = cat.almacenes || [];
         setAlmacenes(list);
-        const aduanaAlm = cat.aduanasPorSede?.[sede]?.almacen;
+        const especiales = new Set(
+          list.filter((a) => a.esAduana || a.esReservados || a.esProduccion).map((a) => a.codigo)
+        );
         const prefer =
-          list.find((a) => a.codigo !== aduanaAlm)?.codigo || list[0]?.codigo || '';
+          list.find((a) => !especiales.has(a.codigo))?.codigo || list[0]?.codigo || '';
         setAlmacen((prev) => (prev && list.some((a) => a.codigo === prev) ? prev : prefer));
       } catch (e) {
         if (!cancelled) setError(e.message);
@@ -104,6 +120,7 @@ export default function StockBulkImport({ onImported }) {
   }, [almacenes, almacen]);
 
   const resetLotes = () => {
+    cancelAutoNext();
     setLoteActual(0);
     setLoteLog([]);
     setAcumulado({ ok: 0, errores: 0 });
@@ -166,7 +183,7 @@ export default function StockBulkImport({ onImported }) {
     }
   };
 
-  const aplicarLote = async () => {
+  const aplicarLote = async ({ auto = false } = {}) => {
     if (!csv.trim() || !preview) return;
     if (!forzarAduana && !almacen) {
       setError('Elegí un almacén destino');
@@ -177,12 +194,14 @@ export default function StockBulkImport({ onImported }) {
       return;
     }
     if (loteStats.ok === 0) {
+      cancelAutoNext();
       setError(
         'Este lote no tiene filas OK. Corregí el CSV (o el depósito), pulsá Analizar otra vez y reintentá.'
       );
       return;
     }
     if (
+      !auto &&
       loteStats.bad > 0 &&
       !window.confirm(
         `Este lote tiene ${loteStats.ok} OK y ${loteStats.bad} con error. ¿Aplicar solo las OK?`
@@ -191,6 +210,7 @@ export default function StockBulkImport({ onImported }) {
       return;
     }
 
+    cancelAutoNext();
     setLoading(true);
     setError('');
     try {
@@ -232,13 +252,38 @@ export default function StockBulkImport({ onImported }) {
           lotes: next,
           almacen: data.almacen || almacen,
         });
+      } else {
+        // Mantener el backend despierto: auto-aplicar el siguiente lote en 30s.
+        startAutoNext();
       }
     } catch (err) {
-      setError(err.message);
+      setError(
+        err.message ||
+          'Falló el lote (¿backend dormido?). Esperá ~50s, reintentá o dejá que el conteo reintente.'
+      );
+      // Si falló por cold start, reabrir countdown para reintentar solo.
+      startAutoNext();
     } finally {
       setLoading(false);
     }
   };
+
+  aplicarLoteRef.current = aplicarLote;
+
+  useEffect(() => {
+    if (autoSecs == null) return undefined;
+    if (autoSecs <= 0) {
+      if (!autoCancelledRef.current && !loading) {
+        aplicarLoteRef.current?.({ auto: true });
+      }
+      return undefined;
+    }
+    const t = setTimeout(() => {
+      if (autoCancelledRef.current) return;
+      setAutoSecs((s) => (s == null ? null : s - 1));
+    }, 1000);
+    return () => clearTimeout(t);
+  }, [autoSecs, loading]);
 
   const loadPurgeList = async () => {
     if (!almacen) return;
@@ -400,7 +445,10 @@ export default function StockBulkImport({ onImported }) {
             type="button"
             className="btn-secondary flex-1"
             disabled={loading || !csv.trim()}
-            onClick={analizar}
+            onClick={() => {
+              cancelAutoNext();
+              analizar();
+            }}
           >
             {loading && !preview ? 'Analizando…' : '1. Analizar archivo'}
           </button>
@@ -408,15 +456,28 @@ export default function StockBulkImport({ onImported }) {
             type="button"
             className="btn-primary flex-1"
             disabled={loading || !preview || !lotePendiente || loteStats.ok === 0}
-            onClick={aplicarLote}
+            onClick={() => aplicarLote({ auto: false })}
           >
             {loading
               ? `Aplicando lote ${loteActual + 1}…`
-              : lotePendiente
-                ? `2. Aplicar lote ${loteActual + 1}/${totalLotes} (${loteStats.ok} OK)`
-                : 'Todos los lotes aplicados'}
+              : autoSecs != null && lotePendiente
+                ? `2. Siguiente lote en ${autoSecs}s (${loteStats.ok} OK)`
+                : lotePendiente
+                  ? `2. Aplicar lote ${loteActual + 1}/${totalLotes} (${loteStats.ok} OK)`
+                  : 'Todos los lotes aplicados'}
           </button>
+          {autoSecs != null && lotePendiente && !loading && (
+            <button type="button" className="btn-secondary" onClick={cancelAutoNext}>
+              Cancelar auto ({autoSecs}s)
+            </button>
+          )}
         </div>
+        {autoSecs != null && lotePendiente && (
+          <p className="text-sm text-muted">
+            Auto-avance en {autoSecs}s para que el backend no se duerma entre lotes. Podés cancelar o
+            pulsar el botón para aplicar ya.
+          </p>
+        )}
       </div>
 
       {preview && (

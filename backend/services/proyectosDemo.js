@@ -1483,7 +1483,8 @@ function mapRemitoDemo(r) {
 
 export async function demoListDisponiblesNetos(filters = {}) {
   const { demoListInventario } = await import('./demoService.js');
-  const items = await demoListInventario({ sede: filters.sede, q: filters.q });
+  const inv = await demoListInventario({ sede: filters.sede, q: filters.q });
+  const items = Array.isArray(inv) ? inv : inv?.items || [];
   const sede = filters.sede || null;
   let reservas = db.reservas.filter((r) => r.estado === 'activa');
   if (sede) {

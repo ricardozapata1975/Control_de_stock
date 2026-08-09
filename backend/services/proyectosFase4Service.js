@@ -4,7 +4,7 @@ import * as pdemo from './proyectosDemo.js';
 import { listInventario } from './inventarioService.js';
 import { resolveUbicacion } from './ubicacionService.js';
 import { getAduanaUbicacion, getSedeForAlmacen } from './ubicacionUtils.js';
-import { almacenesCodigosDeSede } from './sedeScope.js';
+import { almacenesGeneralesCodigosDeSede } from './sedeScope.js';
 
 function isDemo() {
   return demo.isDemoMode();
@@ -81,7 +81,9 @@ export async function listDisponiblesNetos(filters = {}) {
   if (isDemo()) return pdemo.demoListDisponiblesNetos(filters);
 
   const sede = String(filters.sede || '').trim().toUpperCase() || null;
-  const items = await listInventario({ sede, q: filters.q || undefined });
+  const inv = await listInventario({ sede, q: filters.q || undefined });
+  const items = Array.isArray(inv) ? inv : inv?.items || [];
+  const generales = new Set(sede ? almacenesGeneralesCodigosDeSede(sede) : []);
 
   const supabase = getSupabase();
   let reservas = [];
@@ -112,6 +114,10 @@ export async function listDisponiblesNetos(filters = {}) {
 
   const byItem = {};
   for (const row of items) {
+    // Solo almacén general (no aduana / reservados / producción)
+    if (generales.size && row.almacen && !generales.has(String(row.almacen).toUpperCase())) {
+      continue;
+    }
     const id = row.itemId;
     if (!id) continue;
     if (!byItem[id]) {

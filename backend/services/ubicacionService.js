@@ -39,10 +39,20 @@ export function getCatalogoUbicacion(almacenFilter, sedeFilter) {
   const aduanasPorSede = Object.fromEntries(
     sedes.filter((s) => s.aduana).map((s) => [s.codigo, { ...s.aduana, sedeNombre: s.nombre }])
   );
+  const proyectosAlmacenesPorSede = Object.fromEntries(
+    sedes.map((s) => [
+      s.codigo,
+      {
+        reservados: s.reservados || null,
+        produccion: s.produccion || null,
+      },
+    ])
+  );
   const almacenes = listAlmacenes(sedeFilter || undefined);
   return {
     sedes,
     aduanasPorSede,
+    proyectosAlmacenesPorSede,
     almacenes,
     armarios: almacenFilter ? listArmarios(almacenFilter) : [],
     armariosPorAlmacen,
