@@ -145,6 +145,28 @@ export default function SearchFilters({
           </select>
         </div>
       )}
+      {!ubicacionOnly && (
+        <div className="min-w-0">
+          <label className="text-label">Familia</label>
+          <input
+            className="input-field max-w-full"
+            placeholder="Ej. Interruptor…"
+            value={filters.familia || ''}
+            onChange={(e) => onChange({ familia: e.target.value })}
+          />
+        </div>
+      )}
+      {!ubicacionOnly && (
+        <div className="min-w-0">
+          <label className="text-label">Tema</label>
+          <input
+            className="input-field max-w-full"
+            placeholder="Catálogo / tema…"
+            value={filters.tema || ''}
+            onChange={(e) => onChange({ tema: e.target.value })}
+          />
+        </div>
+      )}
       </div>
     </div>
   );

@@ -83,11 +83,23 @@ export default function ProyectoDetail() {
           <Link className="btn-secondary text-sm" to={`/proyectos/pedidos?proyectoId=${proyecto.id}`}>
             Pedido masivo
           </Link>
+          <Link
+            className="btn-secondary text-sm"
+            to={`/proyectos/materiales?proyectoId=${proyecto.id}`}
+          >
+            BOM
+          </Link>
           <Link className="btn-secondary text-sm" to={`/proyectos/reservas?proyectoId=${proyecto.id}`}>
             Reservas
           </Link>
           <Link className="btn-secondary text-sm" to={`/proyectos/faltantes?proyectoId=${proyecto.id}`}>
             Faltantes
+          </Link>
+          <Link
+            className="btn-secondary text-sm"
+            to={`/proyectos/produccion?proyectoId=${proyecto.id}`}
+          >
+            Armado
           </Link>
         </div>
       </div>
@@ -101,12 +113,20 @@ export default function ProyectoDetail() {
         </div>
         <ul className="space-y-2">
           {tableros.map((t) => (
-            <li key={t.id} className="flex justify-between border-b border-border py-2 text-sm">
+            <li key={t.id} className="flex justify-between gap-2 border-b border-border py-2 text-sm">
               <span>
                 <strong>{t.nombre}</strong>
                 {t.codigo ? ` (${t.codigo})` : ''} · {t.estado}
               </span>
-              <span className={prioridadClass(t.prioridad)}>{t.prioridad}</span>
+              <span className="flex items-center gap-2">
+                <span className={prioridadClass(t.prioridad)}>{t.prioridad}</span>
+                <Link
+                  className="text-accent underline"
+                  to={`/proyectos/produccion?proyectoId=${proyecto.id}&tableroId=${t.id}`}
+                >
+                  Armar
+                </Link>
+              </span>
             </li>
           ))}
           {!tableros.length && <p className="text-muted">Sin tableros.</p>}

@@ -135,7 +135,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     setPage(1);
-  }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.codigo, filters.scanType, pageSize]);
+  }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.familia, filters.tema, filters.codigo, filters.scanType, pageSize]);
 
   useEffect(() => {
     const codigo = searchParams.get('codigo');
@@ -147,7 +147,7 @@ export default function Dashboard() {
 
   useEffect(() => {
     fetchInventario();
-  }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.codigo, filters.sede]);
+  }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.familia, filters.tema, filters.codigo, filters.sede]);
 
   useEffect(() => {
     const codigo = resolveCodigoContenedorFiltrado({

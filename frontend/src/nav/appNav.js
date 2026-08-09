@@ -33,7 +33,7 @@ export const APP_NAV_GROUPS = [
       { to: '/imprimir-qr', label: 'Etiquetas' },
       { to: '/remito', label: 'Remito' },
       { to: '/admin/editor-stock', label: 'Editor de Stock', admin: true },
-      { to: '/admin/editor-stock', label: '⚙️ Configuración', admin: true },
+      { to: '/admin/importar', label: 'Importar CSV', admin: true },
     ],
   },
   {
@@ -45,12 +45,10 @@ export const APP_NAV_GROUPS = [
       path.startsWith('/admin/locaciones') ||
       path.startsWith('/admin/usuarios'),
     accesos: [
+      { to: '/agenda', label: 'Empresas y clientes' },
       { to: '/admin/locaciones', label: 'Locaciones', admin: true },
       { to: '/admin/usuarios', label: 'Usuarios', admin: true },
-      { label: 'Clientes', soon: true },
       { label: 'Proveedores', soon: true },
-      { label: 'Sedes propias', soon: true },
-      { to: '/agenda', label: '⚙️ Configuración' },
     ],
   },
   {

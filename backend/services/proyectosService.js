@@ -121,6 +121,103 @@ function throwSchemaHint(err) {
   );
 }
 
+export async function listTableros({ sede, q } = {}) {
+  if (isDemo()) return pdemo.demoListTableros({ sede, q });
+
+  const supabase = getSupabase();
+  let proyQuery = supabase.from('proyectos').select('id, nombre, codigo, sede');
+  if (sede) proyQuery = proyQuery.eq('sede', sede);
+  const { data: proyectos, error: ep } = await proyQuery;
+  if (ep) {
+    if (schemaMissing(ep)) throwSchemaHint(ep);
+    throw Object.assign(new Error(ep.message), { status: 500 });
+  }
+  const proyById = new Map((proyectos || []).map((p) => [p.id, p]));
+  const ids = [...proyById.keys()];
+  if (!ids.length) return [];
+
+  const { data: tabs, error } = await supabase
+    .from('proyecto_tableros')
+    .select('*')
+    .in('proyecto_id', ids)
+    .order('created_at', { ascending: false });
+  if (error) throw Object.assign(new Error(error.message), { status: 500 });
+
+  const term = String(q || '').trim().toLowerCase();
+  return (tabs || [])
+    .map((t) => {
+      const p = proyById.get(t.proyecto_id);
+      return {
+        ...mapTablero(t),
+        proyectoNombre: p?.nombre || null,
+        proyectoCodigo: p?.codigo || null,
+        sede: p?.sede || null,
+      };
+    })
+    .filter((t) => {
+      if (!term) return true;
+      return [t.nombre, t.codigo, t.proyectoNombre, t.proyectoCodigo]
+        .filter(Boolean)
+        .some((s) => String(s).toLowerCase().includes(term));
+    });
+}
+
+export async function listMaterialesBom({ sede, proyectoId, tableroId, q } = {}) {
+  if (isDemo()) return pdemo.demoListMaterialesBom({ sede, proyectoId, tableroId, q });
+
+  const supabase = getSupabase();
+  let proyIds = null;
+  if (proyectoId) {
+    proyIds = [proyectoId];
+  } else if (sede) {
+    const { data: proyectos } = await supabase.from('proyectos').select('id').eq('sede', sede);
+    proyIds = (proyectos || []).map((p) => p.id);
+    if (!proyIds.length) return [];
+  }
+
+  let query = supabase.from('proyecto_materiales').select('*').order('created_at', { ascending: false });
+  if (proyIds) query = query.in('proyecto_id', proyIds);
+  if (tableroId) query = query.eq('tablero_id', tableroId);
+  const { data, error } = await query;
+  if (error) {
+    if (schemaMissing(error)) throwSchemaHint(error);
+    throw Object.assign(new Error(error.message), { status: 500 });
+  }
+
+  const pIds = [...new Set((data || []).map((m) => m.proyecto_id))];
+  const tIds = [...new Set((data || []).map((m) => m.tablero_id).filter(Boolean))];
+  const proyById = new Map();
+  const tabById = new Map();
+  if (pIds.length) {
+    const { data: ps } = await supabase.from('proyectos').select('id, nombre, codigo').in('id', pIds);
+    for (const p of ps || []) proyById.set(p.id, p);
+  }
+  if (tIds.length) {
+    const { data: ts } = await supabase.from('proyecto_tableros').select('id, nombre, codigo').in('id', tIds);
+    for (const t of ts || []) tabById.set(t.id, t);
+  }
+
+  const term = String(q || '').trim().toLowerCase();
+  return (data || [])
+    .map((m) => {
+      const p = proyById.get(m.proyecto_id);
+      const t = m.tablero_id ? tabById.get(m.tablero_id) : null;
+      return {
+        ...mapMaterial(m),
+        proyectoNombre: p?.nombre || null,
+        proyectoCodigo: p?.codigo || null,
+        tableroNombre: t?.nombre || null,
+        tableroCodigo: t?.codigo || null,
+      };
+    })
+    .filter((m) => {
+      if (!term) return true;
+      return [m.codigoArticulo, m.descripcion, m.proyectoNombre, m.tableroNombre]
+        .filter(Boolean)
+        .some((s) => String(s).toLowerCase().includes(term));
+    });
+}
+
 export async function listProyectos({ sede, estado, q } = {}) {
   if (isDemo()) return pdemo.demoListProyectos({ sede, estado, q });
 
@@ -780,7 +877,7 @@ function buildPedidoPreview(lineas, itemsByCodigo, stockByItem) {
 }
 
 export async function procesarPedidoMasivo(payload) {
-  const { proyectoId, tableroId, lineas, usuario, archivoNombre } = payload;
+  const { proyectoId, tableroId, lineas, usuario, archivoNombre, crearItemsFaltantes } = payload;
   if (!proyectoId) throw Object.assign(new Error('proyectoId requerido'), { status: 400 });
   if (!Array.isArray(lineas) || !lineas.length) {
     throw Object.assign(new Error('Se requieren líneas de pedido'), { status: 400 });
@@ -816,6 +913,7 @@ export async function procesarPedidoMasivo(payload) {
       stockByItem,
       usuario,
       archivoNombre,
+      crearItemsFaltantes: Boolean(crearItemsFaltantes),
     });
   }
 
@@ -832,6 +930,41 @@ export async function procesarPedidoMasivo(payload) {
   if (!proyecto) throw Object.assign(new Error('Proyecto no encontrado'), { status: 404 });
 
   const { itemsByCodigo, stockByItem } = await resolveItemsAndStock(lineas);
+
+  let itemsCreados = 0;
+  if (crearItemsFaltantes) {
+    for (const line of lineas) {
+      const codigo = String(line.codigo || '').trim().toUpperCase();
+      if (!codigo || Number(line.cantidad || 0) <= 0) continue;
+      if (itemsByCodigo.has(codigo)) continue;
+      const { data: created, error: ec } = await supabase
+        .from('items')
+        .insert({
+          nombre: codigo,
+          codigo_fabricante: codigo,
+          tipo: 'Material',
+          detalle: 'Alta automática desde pedido masivo (sin stock)',
+        })
+        .select('id, nombre, codigo_fabricante')
+        .single();
+      if (ec) {
+        // Si ya existe por carrera, reintentar lectura
+        const { data: existing } = await supabase
+          .from('items')
+          .select('id, nombre, codigo_fabricante')
+          .eq('codigo_fabricante', codigo)
+          .limit(1);
+        if (existing?.[0]) {
+          itemsByCodigo.set(codigo, existing[0]);
+          stockByItem.set(existing[0].id, { cantidad: 0, stockId: null, contenedorId: null });
+        }
+        continue;
+      }
+      itemsByCodigo.set(codigo, created);
+      stockByItem.set(created.id, { cantidad: 0, stockId: null, contenedorId: null });
+      itemsCreados += 1;
+    }
+  }
 
   const { data: pedido, error: ePed } = await supabase
     .from('proyecto_pedidos')
@@ -988,6 +1121,7 @@ export async function procesarPedidoMasivo(payload) {
     invalidas: invalidos,
     totalReservado,
     totalFaltante,
+    itemsCreados,
   };
   await supabase.from('proyecto_pedidos').update({ resumen }).eq('id', pedido.id);
 
@@ -1231,7 +1365,7 @@ export async function getChecklistTablero(tableroId) {
   if (itemIds.length) {
     const { data: items } = await supabase
       .from('items')
-      .select('id, nombre, codigo_fabricante')
+      .select('id, nombre, codigo_fabricante, precio_lista, moneda, familia, tema')
       .in('id', itemIds);
     for (const it of items || []) itemsById.set(it.id, it);
   }
@@ -1250,6 +1384,9 @@ export async function getChecklistTablero(tableroId) {
     );
   }
 
+  const porMoneda = new Map();
+  let sinPrecio = 0;
+
   const lineas = (materiales || []).map((m) => {
     const item = itemsById.get(m.item_id);
     const requerido = Number(m.cantidad_requerida || 0);
@@ -1257,11 +1394,24 @@ export async function getChecklistTablero(tableroId) {
     const consumido = Number(m.cantidad_consumida || 0);
     const pendienteReserva = Math.max(0, reservadoPendiente.get(m.item_id) || 0);
     const pendienteEntrega = Math.max(0, requerido - entregado);
+    const precio =
+      item?.precio_lista != null && item.precio_lista !== ''
+        ? Number(item.precio_lista)
+        : null;
+    const moneda = String(item?.moneda || 'ARS').trim().toUpperCase() || 'ARS';
+    const costoLinea =
+      precio != null && Number.isFinite(precio) ? Math.round(precio * requerido * 100) / 100 : null;
+    if (costoLinea == null) sinPrecio += 1;
+    else {
+      porMoneda.set(moneda, (porMoneda.get(moneda) || 0) + costoLinea);
+    }
     return {
       materialId: m.id,
       itemId: m.item_id,
       codigoArticulo: m.codigo_articulo || item?.codigo_fabricante || null,
       descripcion: m.descripcion || item?.nombre || null,
+      familia: item?.familia || null,
+      tema: item?.tema || null,
       cantidadRequerida: requerido,
       cantidadReservada: Number(m.cantidad_reservada || 0),
       cantidadEntregada: entregado,
@@ -1270,6 +1420,9 @@ export async function getChecklistTablero(tableroId) {
       pendienteEntrega,
       enProduccion: Math.max(0, entregado - consumido),
       estado: m.estado,
+      precioLista: precio,
+      moneda: precio != null ? moneda : null,
+      costoLinea,
     };
   });
 
@@ -1282,10 +1435,20 @@ export async function getChecklistTablero(tableroId) {
     completas: lineas.filter((l) => l.pendienteEntrega <= 0).length,
   };
 
+  const costeo = {
+    porMoneda: [...porMoneda.entries()].map(([moneda, total]) => ({
+      moneda,
+      total: Math.round(total * 100) / 100,
+    })),
+    lineasSinPrecio: sinPrecio,
+    base: 'cantidad_requerida × precio_lista',
+  };
+
   return {
     tablero: mapTablero(tablero),
     proyecto: mapProyecto(proyecto),
     resumen,
+    costeo,
     lineas,
   };
 }

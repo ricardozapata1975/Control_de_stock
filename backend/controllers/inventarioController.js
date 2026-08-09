@@ -14,6 +14,10 @@ export async function getInventario(req, res) {
       typeof req.query.codigoFabricante === 'string'
         ? req.query.codigoFabricante.trim()
         : req.query.codigoFabricante || req.query.codigo_fabricante,
+    familia: typeof req.query.familia === 'string' ? req.query.familia.trim() : req.query.familia,
+    subfamilia:
+      typeof req.query.subfamilia === 'string' ? req.query.subfamilia.trim() : req.query.subfamilia,
+    tema: typeof req.query.tema === 'string' ? req.query.tema.trim() : req.query.tema,
     sede: req.query.sede || req.user?.sede || '',
   });
   res.json(data);

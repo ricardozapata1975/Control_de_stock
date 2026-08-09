@@ -25,6 +25,7 @@ export default function PedidosMasivos() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [previewing, setPreviewing] = useState(false);
+  const [crearItemsFaltantes, setCrearItemsFaltantes] = useState(false);
 
   useEffect(() => {
     api.proyectos(sede ? { sede } : {}).then((d) => setProyectos(d.proyectos || []));
@@ -115,6 +116,7 @@ export default function PedidosMasivos() {
         tableroId: tableroId || undefined,
         lineas,
         archivoNombre: fileName || 'manual.csv',
+        crearItemsFaltantes,
       });
       setResult(data);
       setPreviewMatch(null);
@@ -208,6 +210,19 @@ export default function PedidosMasivos() {
         </div>
       )}
 
+      <label className="flex items-start gap-2 text-sm">
+        <input
+          type="checkbox"
+          className="mt-1"
+          checked={crearItemsFaltantes}
+          onChange={(e) => setCrearItemsFaltantes(e.target.checked)}
+        />
+        <span>
+          Crear ítems nuevos si el MLFB no existe (sin stock; quedan como faltante de compra). Útil
+          para los códigos del pedido que aún no están en el catálogo.
+        </span>
+      </label>
+
       <div className="flex flex-wrap gap-2">
         <button
           type="button"
@@ -291,6 +306,9 @@ export default function PedidosMasivos() {
             {result.pedido?.resumen?.invalidas} · Reservado:{' '}
             {result.pedido?.resumen?.totalReservado} · Faltante:{' '}
             {result.pedido?.resumen?.totalFaltante}
+            {result.pedido?.resumen?.itemsCreados
+              ? ` · Ítems creados: ${result.pedido.resumen.itemsCreados}`
+              : ''}
           </p>
           <ul className="mt-3 max-h-60 space-y-1 overflow-y-auto text-sm">
             {(result.lineas || []).map((l) => (

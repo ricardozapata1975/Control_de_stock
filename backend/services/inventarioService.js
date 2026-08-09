@@ -114,6 +114,13 @@ export async function listInventario(filters = {}) {
       q = q.eq('codigo_fabricante', codigoFab);
     }
 
+    const familia = String(filters.familia || '').trim();
+    if (familia) q = q.ilike('familia', familia);
+    const subfamilia = String(filters.subfamilia || '').trim();
+    if (subfamilia) q = q.ilike('subfamilia', subfamilia);
+    const tema = String(filters.tema || '').trim();
+    if (tema) q = q.ilike('tema', tema);
+
     if (filters.itemId) {
       q = q.eq('item_id', filters.itemId);
     }
@@ -121,7 +128,7 @@ export async function listInventario(filters = {}) {
     if (filters.q) {
       const term = `%${filters.q}%`;
       q = q.or(
-        `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term},codigo_fabricante.ilike.${term}`
+        `nombre.ilike.${term},marca.ilike.${term},tipo.ilike.${term},ubicacion.ilike.${term},comentario.ilike.${term},calibracion.ilike.${term},codigo_fabricante.ilike.${term},familia.ilike.${term},subfamilia.ilike.${term},tema.ilike.${term}`
       );
     }
     return q;

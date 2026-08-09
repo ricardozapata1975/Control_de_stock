@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import QrScanner from '../../../components/QrScanner';
@@ -11,10 +12,11 @@ import { resolveScanToInventario } from '../../../utils/resolveScan';
  */
 export default function ProduccionPage() {
   const { sede } = useAuth();
+  const [params] = useSearchParams();
   const [proyectos, setProyectos] = useState([]);
-  const [proyectoId, setProyectoId] = useState('');
+  const [proyectoId, setProyectoId] = useState(params.get('proyectoId') || '');
   const [tableros, setTableros] = useState([]);
-  const [tableroId, setTableroId] = useState('');
+  const [tableroId, setTableroId] = useState(params.get('tableroId') || '');
   const [checklist, setChecklist] = useState(null);
   const [catalogo, setCatalogo] = useState(null);
   const [stockProd, setStockProd] = useState([]);
@@ -45,11 +47,17 @@ export default function ProduccionPage() {
       setTableroId('');
       return;
     }
+    const keep = params.get('tableroId');
     api.proyecto(proyectoId).then((d) => {
-      setTableros(d.tableros || []);
-      setTableroId('');
+      const list = d.tableros || [];
+      setTableros(list);
+      setTableroId((prev) => {
+        if (prev && list.some((t) => t.id === prev)) return prev;
+        if (keep && list.some((t) => t.id === keep)) return keep;
+        return '';
+      });
     });
-  }, [proyectoId]);
+  }, [proyectoId, params]);
 
   const loadChecklist = useCallback(() => {
     if (!tableroId) {
@@ -298,6 +306,26 @@ export default function ProduccionPage() {
             </p>
           )}
 
+          {checklist?.costeo && (
+            <p className="text-sm">
+              Costeo BOM (pedido × precio lista):{' '}
+              {(checklist.costeo.porMoneda || []).length === 0 ? (
+                <span className="text-muted">sin precios en catálogo</span>
+              ) : (
+                (checklist.costeo.porMoneda || []).map((c) => (
+                  <strong key={c.moneda} className="mr-3">
+                    {c.total.toLocaleString('es-AR', { maximumFractionDigits: 2 })} {c.moneda}
+                  </strong>
+                ))
+              )}
+              {checklist.costeo.lineasSinPrecio > 0 && (
+                <span className="text-muted">
+                  · {checklist.costeo.lineasSinPrecio} línea(s) sin precio
+                </span>
+              )}
+            </p>
+          )}
+
           {loadingCheck && <p className="text-muted">Cargando checklist…</p>}
 
           {lineas.length > 0 && (
@@ -311,6 +339,7 @@ export default function ProduccionPage() {
                     <th className="px-3 py-2 text-right">Reservado</th>
                     <th className="px-3 py-2 text-right">Entregado</th>
                     <th className="px-3 py-2 text-right">Pendiente</th>
+                    <th className="px-3 py-2 text-right">Costo</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -327,6 +356,13 @@ export default function ProduccionPage() {
                       <td className="px-3 py-2 text-right">{l.pendienteReserva}</td>
                       <td className="px-3 py-2 text-right font-semibold">{l.cantidadEntregada}</td>
                       <td className="px-3 py-2 text-right">{l.pendienteEntrega}</td>
+                      <td className="px-3 py-2 text-right text-xs">
+                        {l.costoLinea != null
+                          ? `${Number(l.costoLinea).toLocaleString('es-AR', {
+                              maximumFractionDigits: 2,
+                            })} ${l.moneda || ''}`
+                          : '—'}
+                      </td>
                     </tr>
                   ))}
                 </tbody>

@@ -152,9 +152,36 @@ export async function postPedidoMasivo(req, res) {
       tableroId: req.body?.tableroId,
       lineas: req.body?.lineas,
       archivoNombre: req.body?.archivoNombre,
+      crearItemsFaltantes: Boolean(req.body?.crearItemsFaltantes),
       usuario: req.user?.name || req.user?.email,
     });
     res.status(201).json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getTableros(req, res) {
+  try {
+    const tableros = await service.listTableros({
+      sede: sedeFromReq(req),
+      q: req.query.q,
+    });
+    res.json({ tableros });
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getMaterialesBom(req, res) {
+  try {
+    const materiales = await service.listMaterialesBom({
+      sede: sedeFromReq(req),
+      proyectoId: req.query.proyectoId,
+      tableroId: req.query.tableroId,
+      q: req.query.q,
+    });
+    res.json({ materiales });
   } catch (err) {
     handle(err, res);
   }

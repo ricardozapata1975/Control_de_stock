@@ -449,9 +449,23 @@ export async function demoProcesarPedidoMasivo({
   stockByItem,
   usuario,
   archivoNombre,
+  crearItemsFaltantes = false,
 }) {
   const proyecto = db.proyectos.find((p) => p.id === proyectoId);
   if (!proyecto) throw Object.assign(new Error('Proyecto no encontrado'), { status: 404 });
+
+  let itemsCreados = 0;
+  if (crearItemsFaltantes) {
+    for (const line of lineas || []) {
+      const codigo = String(line.codigo || '').trim().toUpperCase();
+      if (!codigo || Number(line.cantidad || 0) <= 0) continue;
+      if (itemsByCodigo.has(codigo)) continue;
+      const created = { id: uuid(), nombre: codigo, codigo_fabricante: codigo };
+      itemsByCodigo.set(codigo, created);
+      stockByItem.set(created.id, { cantidad: 0 });
+      itemsCreados += 1;
+    }
+  }
 
   const pedido = {
     id: uuid(),
@@ -619,6 +633,7 @@ export async function demoProcesarPedidoMasivo({
     invalidas: invalidos,
     totalReservado,
     totalFaltante,
+    itemsCreados,
   };
 
   return {
@@ -666,6 +681,58 @@ export async function demoListAlertas({ sede, soloNoLeidas = true } = {}) {
   }));
 }
 
+export async function demoListTableros({ sede, q } = {}) {
+  const proy = db.proyectos.filter((p) => !sede || p.sede === sede);
+  const byId = new Map(proy.map((p) => [p.id, p]));
+  const term = String(q || '').trim().toLowerCase();
+  return db.tableros
+    .filter((t) => byId.has(t.proyecto_id))
+    .map((t) => {
+      const p = byId.get(t.proyecto_id);
+      return {
+        ...mapTablero(t),
+        proyectoNombre: p?.nombre || null,
+        proyectoCodigo: p?.codigo || null,
+        sede: p?.sede || null,
+      };
+    })
+    .filter((t) => {
+      if (!term) return true;
+      return [t.nombre, t.codigo, t.proyectoNombre]
+        .filter(Boolean)
+        .some((s) => String(s).toLowerCase().includes(term));
+    });
+}
+
+export async function demoListMaterialesBom({ sede, proyectoId, tableroId, q } = {}) {
+  let mats = [...db.materiales];
+  if (proyectoId) mats = mats.filter((m) => m.proyecto_id === proyectoId);
+  else if (sede) {
+    const ids = new Set(db.proyectos.filter((p) => p.sede === sede).map((p) => p.id));
+    mats = mats.filter((m) => ids.has(m.proyecto_id));
+  }
+  if (tableroId) mats = mats.filter((m) => m.tablero_id === tableroId);
+  const term = String(q || '').trim().toLowerCase();
+  return mats
+    .map((m) => {
+      const p = db.proyectos.find((x) => x.id === m.proyecto_id);
+      const t = db.tableros.find((x) => x.id === m.tablero_id);
+      return {
+        ...mapMaterial(m),
+        proyectoNombre: p?.nombre || null,
+        proyectoCodigo: p?.codigo || null,
+        tableroNombre: t?.nombre || null,
+        tableroCodigo: t?.codigo || null,
+      };
+    })
+    .filter((m) => {
+      if (!term) return true;
+      return [m.codigoArticulo, m.descripcion, m.proyectoNombre]
+        .filter(Boolean)
+        .some((s) => String(s).toLowerCase().includes(term));
+    });
+}
+
 export async function demoGetChecklistTablero(tableroId) {
   const tablero = db.tableros.find((t) => t.id === tableroId);
   if (!tablero) throw Object.assign(new Error('Tablero no encontrado'), { status: 404 });
@@ -693,6 +760,9 @@ export async function demoGetChecklistTablero(tableroId) {
       pendienteEntrega: Math.max(0, requerido - entregado),
       enProduccion: Math.max(0, entregado - consumido),
       estado: m.estado,
+      precioLista: null,
+      moneda: null,
+      costoLinea: null,
     };
   });
   const resumen = {
@@ -707,6 +777,7 @@ export async function demoGetChecklistTablero(tableroId) {
     tablero: mapTablero(tablero),
     proyecto: mapProyecto(proyecto),
     resumen,
+    costeo: { porMoneda: [], lineasSinPrecio: lineas.length, base: 'cantidad_requerida × precio_lista' },
     lineas,
   };
 }

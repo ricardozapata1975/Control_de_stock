@@ -67,6 +67,8 @@ import {
   getChecklistTablero,
   postEscanearProduccion,
   postCompletarProduccionTablero,
+  getTableros,
+  getMaterialesBom,
   getAlertas,
   getRecepciones,
   getRecepcionById,
@@ -256,6 +258,8 @@ app.post('/api/proyectos/transferencias/:id/validar-item', requireAuth, postVali
 app.post('/api/proyectos/transferencias/:id/cerrar-parcial', requireAuth, postCerrarRecepcionParcial);
 app.get('/api/proyectos', requireAuth, getProyectos);
 app.post('/api/proyectos', requireAuth, postProyecto);
+app.get('/api/proyectos/tableros', requireAuth, getTableros);
+app.get('/api/proyectos/materiales', requireAuth, getMaterialesBom);
 app.get('/api/proyectos/:id', requireAuth, getProyectoById);
 app.put('/api/proyectos/:id', requireAuth, putProyecto);
 app.post('/api/proyectos/:id/tableros', requireAuth, postTablero);

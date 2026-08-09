@@ -22,6 +22,8 @@ import {
   ProyectosLayout,
   ProyectosDashboard,
   ProyectosLista,
+  TablerosPage,
+  MaterialesPage,
   ProyectoDetail,
   PedidosMasivos,
   ReservasPage,
@@ -83,11 +85,11 @@ export default function App() {
               <Route path="proyectos" element={<ProyectosLayout />}>
                 <Route index element={<ProyectosDashboard />} />
                 <Route path="lista" element={<ProyectosLista />} />
-                <Route path="tableros" element={<ProyectosLista />} />
-                <Route path="materiales" element={<ProyectosLista />} />
+                <Route path="tableros" element={<TablerosPage />} />
+                <Route path="materiales" element={<MaterialesPage />} />
                 <Route path="pedidos" element={<PedidosMasivos />} />
                 <Route path="reservas" element={<ReservasPage />} />
-                <Route path="reservados" element={<ReservasPage />} />
+                <Route path="reservados" element={<Navigate to="/proyectos/reservas" replace />} />
                 <Route path="faltantes" element={<FaltantesPage />} />
                 <Route path="prioridades" element={<PrioridadesPage />} />
                 <Route path="recepciones" element={<RecepcionesPage />} />

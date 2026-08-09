@@ -268,6 +268,14 @@ export const api = {
     const q = new URLSearchParams(params).toString();
     return request(`/api/proyectos${q ? `?${q}` : ''}`);
   },
+  proyectosTableros: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/tableros${q ? `?${q}` : ''}`);
+  },
+  proyectosMateriales: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/materiales${q ? `?${q}` : ''}`);
+  },
   proyecto: (id) => request(`/api/proyectos/${encodeURIComponent(id)}`),
   crearProyecto: (body) =>
     request('/api/proyectos', { method: 'POST', body: JSON.stringify(body) }),

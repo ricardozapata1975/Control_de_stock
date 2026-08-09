@@ -34,27 +34,29 @@ export const ESTADOS_MATERIAL = [
   'Ajustado',
 ];
 
-/** Accesos del dashboard — rutas hijas bajo /proyectos */
+/**
+ * Accesos del dashboard — rutas hijas bajo /proyectos.
+ * Agrupados por operación; sin duplicados (reservados = reservas).
+ */
 export const PROYECTOS_NAV = [
   { to: '/proyectos/lista', label: 'Proyectos', desc: 'Alta y seguimiento', icon: '📁' },
-  { to: '/proyectos/tableros', label: 'Tableros', desc: 'Por proyecto', icon: '🧩' },
-  { to: '/proyectos/materiales', label: 'Materiales requeridos', desc: 'BOM / necesidades', icon: '📋' },
+  { to: '/proyectos/tableros', label: 'Tableros', desc: 'Listado + armado', icon: '🧩' },
+  { to: '/proyectos/materiales', label: 'Materiales (BOM)', desc: 'Necesidades', icon: '📋' },
   { to: '/proyectos/pedidos', label: 'Pedidos masivos', desc: 'Importar CSV/Excel', icon: '📥' },
   { to: '/proyectos/reservas', label: 'Reservas', desc: 'Limbo / comprometidos', icon: '🔒' },
   { to: '/proyectos/faltantes', label: 'Faltantes', desc: 'Compras pendientes', icon: '⚠️' },
   { to: '/proyectos/recepciones', label: 'Recepciones', desc: 'Remito / OC / manual', icon: '📦' },
-  { to: '/proyectos/transito', label: 'Materiales en tránsito', desc: 'Origen → destino', icon: '🚚' },
-  { to: '/proyectos/disponibles', label: 'Materiales disponibles', desc: 'Almacén general (neto)', icon: '✅' },
-  { to: '/proyectos/reservados', label: 'Materiales reservados', desc: 'Limbo / comprometidos', icon: '🏷️' },
+  { to: '/proyectos/transito', label: 'En tránsito', desc: 'Origen → destino', icon: '🚚' },
+  { to: '/proyectos/disponibles', label: 'Disponibles', desc: 'Almacén general (neto)', icon: '✅' },
   { to: '/proyectos/produccion', label: 'Armado / Producción', desc: 'Escanear a tablero', icon: '🔧' },
+  { to: '/proyectos/transferencias', label: 'Transferencias', desc: 'Recepción ítem a ítem', icon: '🔄' },
+  { to: '/proyectos/pendientes-cierre', label: 'Pendientes de cierre', desc: 'Recepciones parciales', icon: '📝' },
   { to: '/proyectos/devoluciones', label: 'Devoluciones', desc: 'Desde proyecto / reserva', icon: '↩️' },
   { to: '/proyectos/auditorias', label: 'Auditorías', desc: 'Físico vs sistema', icon: '🔎' },
   { to: '/proyectos/herramientas', label: 'Herramientas', desc: 'Préstamos a operarios', icon: '🛠️' },
   { to: '/proyectos/prioridades', label: 'Prioridades', desc: 'Criticidad', icon: '🎯' },
-  { to: '/proyectos/transferencias', label: 'Transferencias depósitos', desc: 'Recepción ítem a ítem', icon: '🔄' },
-  { to: '/proyectos/pendientes-cierre', label: 'Remitos pendientes de cierre', desc: 'Recepciones parciales', icon: '📝' },
   { to: '/proyectos/reportes', label: 'Reportes', desc: 'Indicadores y movimientos', icon: '📊' },
-  { to: '/proyectos/configuracion', label: 'Configuración', desc: 'Roles del módulo', icon: '⚙️' },
+  { to: '/proyectos/configuracion', label: 'Configuración', desc: 'Roles (diseño)', icon: '⚙️' },
 ];
 
 /** Diseño de roles (no altera auth global aún) */
