@@ -101,18 +101,84 @@ function StatusBadge({ isActive }) {
   );
 }
 
-function RoleSelect({ user, onUpdateRole }) {
+function RoleSelect({ user, onUpdateRole, roles = [] }) {
+  const current = normalizeRole(user.role);
+  const options =
+    roles.length > 0
+      ? roles
+      : [
+          { codigo: 'operario', nombre: 'Operario' },
+          { codigo: 'admin', nombre: 'Administrador' },
+        ];
+  const known = options.some((r) => r.codigo === current);
   return (
     <select
       className="select-field-compact max-w-full"
-      value={normalizeRole(user.role)}
+      value={current}
       onChange={(e) => onUpdateRole(user, e.target.value, e.target)}
       aria-label={`Cambiar rol de ${user.username}`}
-      title={ROLE_LABELS[normalizeRole(user.role)]}
+      title={ROLE_LABELS[current] || current}
     >
-      <option value="operario">Oper.</option>
-      <option value="admin">Admin</option>
+      {!known && <option value={current}>{current}</option>}
+      {options.map((r) => (
+        <option key={r.codigo} value={r.codigo}>
+          {r.codigo === 'admin' ? 'Admin' : r.codigo === 'operario' ? 'Oper.' : r.nombre}
+        </option>
+      ))}
     </select>
+  );
+}
+
+/** Multi-selección de sucursales habilitadas (operario). Admin ignora la lista. */
+function SedesMultiSelect({ user, sedes = [], onUpdateSedes }) {
+  const selected = new Set(
+    (user.sedesHabilitadas || []).map((c) => String(c).toUpperCase()).filter(Boolean)
+  );
+  const isAdmin = normalizeRole(user.role) === 'admin';
+
+  const toggle = (codigo) => {
+    const next = new Set(selected);
+    if (next.has(codigo)) next.delete(codigo);
+    else next.add(codigo);
+    onUpdateSedes?.(user, [...next]);
+  };
+
+  if (isAdmin) {
+    return (
+      <span className="text-[10px] font-semibold text-subtle" title="Admin accede a todas las sucursales">
+        Todas
+      </span>
+    );
+  }
+
+  if (!sedes.length) {
+    return <span className="text-[10px] text-subtle">—</span>;
+  }
+
+  return (
+    <div className="flex max-w-[11rem] flex-col gap-0.5" title="Sucursales habilitadas">
+      {sedes.map((s) => {
+        const code = s.codigo;
+        const checked = selected.has(code);
+        return (
+          <label
+            key={code}
+            className="flex cursor-pointer items-center gap-1 text-[10px] leading-tight text-content"
+          >
+            <input
+              type="checkbox"
+              className="h-3 w-3 accent-accent"
+              checked={checked}
+              onChange={() => toggle(code)}
+              aria-label={`${code} para ${user.username}`}
+            />
+            <span className="truncate" title={s.nombre || code}>
+              {code}
+            </span>
+          </label>
+        );
+      })}
+    </div>
   );
 }
 
@@ -146,6 +212,9 @@ export function UserRowTable({
   onResetPassword,
   onDelete,
   onUpdateRole,
+  onUpdateSedes,
+  sedes,
+  roles,
 }) {
   const name = displayName(user);
   const lastLogin = user.lastLoginAt
@@ -174,7 +243,10 @@ export function UserRowTable({
         {user.email || '—'}
       </td>
       <td className="w-[4.5rem] px-1.5 py-1.5">
-        <RoleSelect user={user} onUpdateRole={onUpdateRole} />
+        <RoleSelect user={user} onUpdateRole={onUpdateRole} roles={roles} />
+      </td>
+      <td className="px-1.5 py-1.5">
+        <SedesMultiSelect user={user} sedes={sedes} onUpdateSedes={onUpdateSedes} />
       </td>
       <td className="w-14 px-1.5 py-1.5">
         <StatusBadge isActive={user.isActive} />
@@ -217,6 +289,9 @@ export function UserRowCard({
   onResetPassword,
   onDelete,
   onUpdateRole,
+  onUpdateSedes,
+  sedes,
+  roles,
 }) {
   const name = displayName(user);
 
@@ -248,11 +323,15 @@ export function UserRowCard({
         ) : null}
       </div>
       <div className="mb-2 flex flex-wrap items-center gap-2">
-        <RoleSelect user={user} onUpdateRole={onUpdateRole} />
+        <RoleSelect user={user} onUpdateRole={onUpdateRole} roles={roles} />
         <StatusBadge isActive={user.isActive} />
         <span className="text-[10px] text-subtle" title="Estado de contraseña">
           Clave: {passwordLabel(user)}
         </span>
+      </div>
+      <div className="mb-2">
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">Sucursales</p>
+        <SedesMultiSelect user={user} sedes={sedes} onUpdateSedes={onUpdateSedes} />
       </div>
       <UserActions
         user={user}

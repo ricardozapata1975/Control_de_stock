@@ -21,12 +21,15 @@ const rowProps = (ctx, u) => ({
   currentUserId: ctx.currentUser?.id,
   sendingWelcomeId: ctx.sendingWelcomeId,
   deletingUserId: ctx.deletingUserId,
+  sedes: ctx.sedes,
+  roles: ctx.roles,
   onToggleSelect: ctx.toggleSelect,
   onSendWelcome: ctx.sendWelcome,
   onToggleActive: ctx.toggleActive,
   onResetPassword: ctx.resetPassword,
   onDelete: ctx.deleteUser,
   onUpdateRole: ctx.updateRole,
+  onUpdateSedes: ctx.updateSedes,
 });
 
 function canReceiveInvite(user) {
@@ -62,7 +65,15 @@ export default function AdminUsers() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
-  const [form, setForm] = useState({ username: '', displayName: '', role: 'operario', email: '' });
+  const [form, setForm] = useState({
+    username: '',
+    displayName: '',
+    role: 'operario',
+    email: '',
+    sedesHabilitadas: [],
+  });
+  const [sedes, setSedes] = useState([]);
+  const [roles, setRoles] = useState([]);
   const [saving, setSaving] = useState(false);
   const [csvText, setCsvText] = useState('');
   const [csvPreview, setCsvPreview] = useState(null);
@@ -113,6 +124,19 @@ export default function AdminUsers() {
 
   useEffect(() => {
     load();
+    api
+      .catalogoUbicacion()
+      .then((cat) => setSedes(cat.sedes || []))
+      .catch(() => setSedes([]));
+    api
+      .roles()
+      .then((d) => setRoles(d.roles || []))
+      .catch(() =>
+        setRoles([
+          { codigo: 'operario', nombre: 'Operario' },
+          { codigo: 'admin', nombre: 'Administrador' },
+        ])
+      );
   }, []);
 
   useEffect(() => {
@@ -135,9 +159,12 @@ export default function AdminUsers() {
     setError('');
     setMessage('');
     try {
-      const data = await api.adminCreateUser(form);
+      const data = await api.adminCreateUser({
+        ...form,
+        sedesHabilitadas: form.role === 'admin' ? [] : form.sedesHabilitadas,
+      });
       setMessage(data.message || 'Usuario creado.');
-      setForm({ username: '', displayName: '', role: 'operario', email: '' });
+      setForm({ username: '', displayName: '', role: 'operario', email: '', sedesHabilitadas: [] });
       await load();
     } catch (err) {
       setError(err.message);
@@ -302,7 +329,7 @@ export default function AdminUsers() {
       const label = user.name || user.displayName || user.username;
       if (
         !window.confirm(
-          `¿Dar permisos de administrador a "${label}" (${user.username})?\nPodrá gestionar usuarios, stock e importaciones.`
+          `¿Dar permisos de administrador a "${label}" (${user.username})?\nAcceso total al sitio.`
         )
       ) {
         if (selectEl) selectEl.value = currentRole;
@@ -314,12 +341,37 @@ export default function AdminUsers() {
     setMessage('');
     try {
       await api.adminUpdateUser(user.id, { role: nextRole });
-      setMessage(`Rol de "${user.username}" actualizado a ${ROLE_LABELS[nextRole]}.`);
+      const roleName =
+        ROLE_LABELS[nextRole] || roles.find((r) => r.codigo === nextRole)?.nombre || nextRole;
+      setMessage(`Rol de "${user.username}" actualizado a ${roleName}.`);
       await load();
     } catch (err) {
       setError(err.message);
       if (selectEl) selectEl.value = currentRole;
     }
+  };
+
+  const updateSedes = async (user, sedesHabilitadas) => {
+    setError('');
+    setMessage('');
+    try {
+      await api.adminUpdateUser(user.id, { sedesHabilitadas });
+      setUsers((prev) =>
+        prev.map((u) => (u.id === user.id ? { ...u, sedesHabilitadas } : u))
+      );
+    } catch (err) {
+      setError(err.message);
+      await load();
+    }
+  };
+
+  const toggleFormSede = (codigo) => {
+    setForm((prev) => {
+      const set = new Set(prev.sedesHabilitadas || []);
+      if (set.has(codigo)) set.delete(codigo);
+      else set.add(codigo);
+      return { ...prev, sedesHabilitadas: [...set] };
+    });
   };
 
   const onCsvFile = async (e) => {
@@ -413,9 +465,21 @@ export default function AdminUsers() {
             value={form.role}
             onChange={(e) => setForm({ ...form, role: e.target.value })}
           >
-            <option value="operario">Operario</option>
-            <option value="admin">Administrador</option>
+            {(roles.length
+              ? roles
+              : [
+                  { codigo: 'operario', nombre: 'Operario' },
+                  { codigo: 'admin', nombre: 'Administrador' },
+                ]
+            ).map((r) => (
+              <option key={r.codigo} value={r.codigo}>
+                {r.nombre}
+              </option>
+            ))}
           </select>
+          <p className="mt-1 text-xs text-muted">
+            Los permisos del rol se editan en Agenda → Roles y permisos.
+          </p>
         </div>
         <div>
           <label className="text-label">Correo (opcional, para recuperar contraseña)</label>
@@ -427,6 +491,33 @@ export default function AdminUsers() {
             placeholder="usuario@empresa.com"
           />
         </div>
+        {form.role !== 'admin' && (
+          <div>
+            <label className="text-label">Sucursales habilitadas</label>
+            <p className="mb-2 text-xs text-muted">
+              El operario solo podrá ingresar a las sucursales marcadas (puede ser más de una).
+            </p>
+            <div className="flex flex-wrap gap-3">
+              {sedes.map((s) => (
+                <label key={s.codigo} className="flex items-center gap-1.5 text-sm">
+                  <input
+                    type="checkbox"
+                    className="accent-accent"
+                    checked={(form.sedesHabilitadas || []).includes(s.codigo)}
+                    onChange={() => toggleFormSede(s.codigo)}
+                  />
+                  <span>
+                    {s.codigo}
+                    {s.nombre ? ` — ${s.nombre}` : ''}
+                  </span>
+                </label>
+              ))}
+              {!sedes.length && (
+                <span className="text-xs text-muted">No hay sucursales en el catálogo.</span>
+              )}
+            </div>
+          </div>
+        )}
         <button type="submit" className="btn-primary max-w-xs" disabled={saving}>
           {saving ? 'Creando...' : 'Crear usuario'}
         </button>
@@ -550,12 +641,15 @@ export default function AdminUsers() {
                     currentUser,
                     sendingWelcomeId,
                     deletingUserId,
+                    sedes,
+                    roles,
                     toggleSelect,
                     sendWelcome,
                     toggleActive,
                     resetPassword,
                     deleteUser,
                     updateRole,
+                    updateSedes,
                   },
                   u
                 )}
@@ -580,24 +674,25 @@ export default function AdminUsers() {
                   />
                 )}
               </th>
-              <th className="w-[18%] px-2 py-2">Usuario</th>
-              <th className="w-[20%] px-2 py-2">Correo</th>
-              <th className="w-[11%] px-1.5 py-2">Rol</th>
-              <th className="w-[9%] px-1.5 py-2">Estado</th>
-              <th className="hidden w-[10%] px-1.5 py-2 sm:table-cell">Clave</th>
+              <th className="w-[14%] px-2 py-2">Usuario</th>
+              <th className="w-[16%] px-2 py-2">Correo</th>
+              <th className="w-[9%] px-1.5 py-2">Rol</th>
+              <th className="w-[16%] px-1.5 py-2">Sucursales</th>
+              <th className="w-[8%] px-1.5 py-2">Estado</th>
+              <th className="hidden w-[8%] px-1.5 py-2 sm:table-cell">Clave</th>
               <th className="px-1.5 py-2">Acciones</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-sm text-muted">
+                <td colSpan={8} className="px-3 py-6 text-center text-sm text-muted">
                   Cargando...
                 </td>
               </tr>
             ) : filteredUsers.length === 0 ? (
               <tr>
-                <td colSpan={7} className="px-3 py-6 text-center text-sm text-muted">
+                <td colSpan={8} className="px-3 py-6 text-center text-sm text-muted">
                   {users.length === 0
                     ? 'No hay usuarios registrados.'
                     : 'Ningún usuario coincide con los filtros.'}
@@ -614,12 +709,15 @@ export default function AdminUsers() {
                       currentUser,
                       sendingWelcomeId,
                       deletingUserId,
+                      sedes,
+                      roles,
                       toggleSelect,
                       sendWelcome,
                       toggleActive,
                       resetPassword,
                       deleteUser,
                       updateRole,
+                      updateSedes,
                     },
                     u
                   )}

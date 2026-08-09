@@ -1,16 +1,24 @@
+import { Link } from 'react-router-dom';
 import { ROLES_MODULO } from '../constants';
 
+/**
+ * Vista de referencia del módulo. La matriz editable del sitio está en Admin → Roles.
+ */
 export default function ConfiguracionPage() {
   return (
     <div className="space-y-4">
       <h2 className="section-title">Configuración del módulo</h2>
       <p className="text-sm text-muted">
-        Matriz de roles prevista para Proyectos. Hoy la app usa roles globales{' '}
-        <strong>admin / operario</strong>; esta matriz documenta el diseño sin alterar el login
-        existente (Fase posterior: permisos por módulo en usuarios).
+        Los roles y permisos del sitio (todas las páginas) se administran en{' '}
+        <Link className="text-accent underline" to="/admin/roles">
+          Agenda → Roles y permisos
+        </Link>
+        . Ahí podés crear roles nuevos y marcar qué ve cada uno. En Usuarios asignás el rol y las
+        sucursales a cada cuenta.
       </p>
 
       <div className="card overflow-x-auto">
+        <p className="mb-2 text-sm font-semibold">Referencia histórica (módulo Proyectos)</p>
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-border text-muted">

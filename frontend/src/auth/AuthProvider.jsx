@@ -154,6 +154,7 @@ export function AuthProvider({ children }) {
   }, [clearSession]);
 
   const isAdmin = isAdminRole(user?.role);
+  const permissions = user?.permissions || (isAdmin ? ['*'] : []);
 
   return (
     <AuthContext.Provider
@@ -170,6 +171,7 @@ export function AuthProvider({ children }) {
         ready,
         isLoggedIn: !!user && !!token,
         isAdmin,
+        permissions,
         sede: user?.sede || null,
         sedeNombre: user?.sedeNombre || null,
       }}

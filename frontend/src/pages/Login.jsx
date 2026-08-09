@@ -61,6 +61,7 @@ export default function Login() {
     }
     setLoading(true);
     try {
+      // Operarios: el backend valida que la sede esté en sus sucursales habilitadas.
       const data = await login(username, password, sede);
       if (data.requiresPasswordSetup) {
         setPendingUser(data.user);
@@ -169,7 +170,8 @@ export default function Login() {
         ))}
       </select>
       <p className="mt-1 text-xs text-subtle">
-        Vas a ver inventario, alertas e historial solo de esta sucursal.
+        Inventario y operaciones de esta sucursal. Si sos operario, solo podés entrar a las que el
+        admin te haya habilitado.
       </p>
     </div>
   );

@@ -1,4 +1,4 @@
-import { BrowserRouter, Navigate, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { AuthProvider, useAuth } from './auth/AuthProvider';
 import { SyncProvider } from './context/SyncContext';
 import Layout from './components/Layout';
@@ -16,6 +16,7 @@ import AdminLocaciones from './pages/AdminLocaciones';
 import AdminEditorStock from './pages/AdminEditorStock';
 import ImportarCSV from './pages/ImportarCSV';
 import AdminUsers from './pages/AdminUsers';
+import AdminRoles from './pages/AdminRoles';
 import ConsultaSucursales from './pages/ConsultaSucursales';
 import Agenda from './pages/Agenda';
 import {
@@ -43,6 +44,7 @@ import {
 } from './modules/proyectos';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
+import { hasPermission, permissionForPath } from './utils/permissions';
 
 function PrivateRoute({ children }) {
   const { isLoggedIn, ready } = useAuth();
@@ -51,11 +53,25 @@ function PrivateRoute({ children }) {
   return <Navigate to="/login" replace />;
 }
 
-function AdminRoute({ children }) {
-  const { isLoggedIn, isAdmin, ready } = useAuth();
+function PermissionRoute({ permission, children }) {
+  const { isLoggedIn, ready, user } = useAuth();
   if (!ready) return null;
   if (!isLoggedIn) return <Navigate to="/login" replace />;
-  if (!isAdmin) return <Navigate to="/" replace />;
+  if (permission && !hasPermission(user, permission)) {
+    return <Navigate to="/" replace />;
+  }
+  return children;
+}
+
+/** Protege Outlet del Layout según permiso de la ruta */
+function PathPermissionGuard({ children }) {
+  const location = useLocation();
+  const { user, ready } = useAuth();
+  if (!ready) return null;
+  const perm = permissionForPath(location.pathname);
+  if (perm && !hasPermission(user, perm)) {
+    return <Navigate to="/" replace />;
+  }
   return children;
 }
 
@@ -72,7 +88,9 @@ export default function App() {
               path="/"
               element={
                 <PrivateRoute>
-                  <Layout />
+                  <PathPermissionGuard>
+                    <Layout />
+                  </PathPermissionGuard>
                 </PrivateRoute>
               }
             >
@@ -110,40 +128,45 @@ export default function App() {
               <Route path="remito" element={<RemitoSalida />} />
               <Route path="contenedor/:codigo" element={<Contenedor />} />
               <Route path="item/:itemId" element={<Item />} />
-              <Route
-                path="admin"
-                element={<Navigate to="/admin/editor-stock" replace />}
-              />
+              <Route path="admin" element={<Navigate to="/admin/roles" replace />} />
               <Route
                 path="admin/locaciones"
                 element={
-                  <AdminRoute>
+                  <PermissionRoute permission="agenda.locaciones">
                     <AdminLocaciones />
-                  </AdminRoute>
+                  </PermissionRoute>
                 }
               />
               <Route
                 path="admin/editor-stock"
                 element={
-                  <AdminRoute>
+                  <PermissionRoute permission="inventario.editor_stock">
                     <AdminEditorStock />
-                  </AdminRoute>
+                  </PermissionRoute>
                 }
               />
               <Route
                 path="admin/importar"
                 element={
-                  <AdminRoute>
+                  <PermissionRoute permission="inventario.importar">
                     <ImportarCSV />
-                  </AdminRoute>
+                  </PermissionRoute>
                 }
               />
               <Route
                 path="admin/usuarios"
                 element={
-                  <AdminRoute>
+                  <PermissionRoute permission="agenda.usuarios">
                     <AdminUsers />
-                  </AdminRoute>
+                  </PermissionRoute>
+                }
+              />
+              <Route
+                path="admin/roles"
+                element={
+                  <PermissionRoute permission="admin.roles">
+                    <AdminRoles />
+                  </PermissionRoute>
                 }
               />
               <Route path="admin/base-datos" element={<Navigate to="/admin/usuarios" replace />} />

@@ -18,7 +18,14 @@ import {
 import { postSync } from './controllers/syncController.js';
 import { getMe, postFirstLogin, postForgotPassword, postLogin, postResetPassword as postAuthResetPassword, postSetPassword, postSwitchSede } from './controllers/authController.js';
 import { getUsers, postUser, putUser, deleteUserHandler, postResetPassword, postSendWelcome, getUsersImportSpecHandler, postUsersImportPreview, postUsersImport } from './controllers/userController.js';
-import { requireAuth, requireAdmin, optionalAuth } from './middleware/auth.js';
+import { requireAuth, requireAdmin, requirePermission, optionalAuth } from './middleware/auth.js';
+import {
+  getRoles,
+  getRolesCatalog,
+  postRole,
+  putRole,
+  deleteRoleHandler,
+} from './controllers/rolesController.js';
 import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, getStockByAlmacen, postAltaStock, postBajaItem, postPurgeAlmacenStock, putUpdateItem, postItemImagen, deleteItemImagen } from './controllers/adminController.js';
 import { getCatalogo, postAlmacen, postArmario, postSede, patchAlmacenSede } from './controllers/ubicacionController.js';
@@ -185,10 +192,25 @@ app.get('/api/ubicacion/catalogo', optionalAuth, getCatalogo);
 app.get('/api/inventario', optionalAuth, getInventario);
 app.get('/inventario', optionalAuth, getInventario);
 app.get('/api/tipos', getTipos);
-app.post('/api/admin/catalogo/almacen', requireAuth, requireAdmin, postAlmacen);
-app.post('/api/admin/catalogo/armario', requireAuth, requireAdmin, postArmario);
-app.post('/api/admin/catalogo/sede', requireAuth, requireAdmin, postSede);
-app.patch('/api/admin/catalogo/almacen-sede', requireAuth, requireAdmin, patchAlmacenSede);
+app.post(
+  '/api/admin/catalogo/almacen',
+  requireAuth,
+  requirePermission('agenda.locaciones'),
+  postAlmacen
+);
+app.post(
+  '/api/admin/catalogo/armario',
+  requireAuth,
+  requirePermission('agenda.locaciones'),
+  postArmario
+);
+app.post('/api/admin/catalogo/sede', requireAuth, requirePermission('agenda.locaciones'), postSede);
+app.patch(
+  '/api/admin/catalogo/almacen-sede',
+  requireAuth,
+  requirePermission('agenda.locaciones'),
+  patchAlmacenSede
+);
 
 // Contenedores / QR
 app.get('/api/contenedor', getContenedores);
@@ -288,39 +310,66 @@ app.post('/api/auth/sede', requireAuth, postSwitchSede);
 app.post('/api/auth/forgot-password', postForgotPassword);
 app.post('/api/auth/reset-password', postAuthResetPassword);
 
-// Administración (solo admin)
-app.get('/api/admin/items', requireAdmin, getAdminItems);
-app.get('/api/admin/stock/by-almacen', requireAdmin, getStockByAlmacen);
-app.post('/api/admin/stock/purge', requireAdmin, postPurgeAlmacenStock);
-app.post('/api/admin/stock/alta', requireAdmin, postAltaStock);
-app.put('/api/admin/items/:itemId', requireAdmin, putUpdateItem);
-app.post('/api/admin/items/:itemId/baja', requireAdmin, postBajaItem);
+// Administración (permisos de editor / import)
+app.get('/api/admin/items', requirePermission('inventario.editor_stock'), getAdminItems);
+app.get('/api/admin/stock/by-almacen', requirePermission('inventario.editor_stock'), getStockByAlmacen);
+app.post('/api/admin/stock/purge', requirePermission('inventario.editor_stock'), postPurgeAlmacenStock);
+app.post('/api/admin/stock/alta', requirePermission('inventario.editor_stock'), postAltaStock);
+app.put('/api/admin/items/:itemId', requirePermission('inventario.editor_stock'), putUpdateItem);
+app.post('/api/admin/items/:itemId/baja', requirePermission('inventario.editor_stock'), postBajaItem);
 app.post('/api/admin/items/:itemId/imagen', requireAuth, postItemImagen);
 app.delete('/api/admin/items/:itemId/imagen', requireAuth, deleteItemImagen);
-app.get('/api/admin/import/especificacion', requireAdmin, getEspecificacion);
-app.get('/api/admin/import/plantilla.csv', requireAdmin, getPlantilla);
-app.post('/api/admin/import/preview', requireAdmin, postImportPreview);
-app.post('/api/admin/import/csv', requireAdmin, postImportCsv);
-app.post('/api/admin/catalog-enrich/preview', requireAdmin, postCatalogEnrichPreview);
-app.post('/api/admin/catalog-enrich/apply', requireAdmin, postCatalogEnrichApply);
+app.get('/api/admin/import/especificacion', requirePermission('inventario.importar'), getEspecificacion);
+app.get('/api/admin/import/plantilla.csv', requirePermission('inventario.importar'), getPlantilla);
+app.post('/api/admin/import/preview', requirePermission('inventario.importar'), postImportPreview);
+app.post('/api/admin/import/csv', requirePermission('inventario.importar'), postImportCsv);
+app.post(
+  '/api/admin/catalog-enrich/preview',
+  requirePermission('inventario.editor_stock'),
+  postCatalogEnrichPreview
+);
+app.post(
+  '/api/admin/catalog-enrich/apply',
+  requirePermission('inventario.editor_stock'),
+  postCatalogEnrichApply
+);
 
-// Editor de tablas (admin)
+// Editor de tablas (solo admin total)
 app.get('/api/admin/db/schema', requireAdmin, getDbSchema);
 app.get('/api/admin/db/:table', requireAdmin, getDbTable);
 app.post('/api/admin/db/:table', requireAdmin, postDbRow);
 app.put('/api/admin/db/:table/:id', requireAdmin, putDbRow);
 app.delete('/api/admin/db/:table/:id', requireAdmin, deleteDbRow);
 
-// Usuarios (admin)
-app.get('/api/admin/users', requireAdmin, getUsers);
-app.post('/api/admin/users', requireAdmin, postUser);
-app.put('/api/admin/users/:id', requireAdmin, putUser);
-app.delete('/api/admin/users/:id', requireAdmin, deleteUserHandler);
-app.post('/api/admin/users/:id/reset-password', requireAdmin, postResetPassword);
-app.post('/api/admin/users/:id/send-welcome', requireAdmin, postSendWelcome);
-app.get('/api/admin/users/import/especificacion', requireAdmin, getUsersImportSpecHandler);
-app.post('/api/admin/users/import/preview', requireAdmin, postUsersImportPreview);
-app.post('/api/admin/users/import', requireAdmin, postUsersImport);
+// Roles y permisos del sitio
+app.get('/api/admin/roles/catalogo', requirePermission('admin.roles'), getRolesCatalog);
+app.get('/api/admin/roles', requirePermission('admin.roles', 'agenda.usuarios'), getRoles);
+app.post('/api/admin/roles', requirePermission('admin.roles'), postRole);
+app.put('/api/admin/roles/:codigo', requirePermission('admin.roles'), putRole);
+app.delete('/api/admin/roles/:codigo', requirePermission('admin.roles'), deleteRoleHandler);
+
+// Usuarios
+app.get('/api/admin/users', requirePermission('agenda.usuarios'), getUsers);
+app.post('/api/admin/users', requirePermission('agenda.usuarios'), postUser);
+app.put('/api/admin/users/:id', requirePermission('agenda.usuarios'), putUser);
+app.delete('/api/admin/users/:id', requirePermission('agenda.usuarios'), deleteUserHandler);
+app.post(
+  '/api/admin/users/:id/reset-password',
+  requirePermission('agenda.usuarios'),
+  postResetPassword
+);
+app.post('/api/admin/users/:id/send-welcome', requirePermission('agenda.usuarios'), postSendWelcome);
+app.get(
+  '/api/admin/users/import/especificacion',
+  requirePermission('agenda.usuarios'),
+  getUsersImportSpecHandler
+);
+app.post(
+  '/api/admin/users/import/preview',
+  requirePermission('agenda.usuarios'),
+  postUsersImportPreview
+);
+app.post('/api/admin/users/import', requirePermission('agenda.usuarios'), postUsersImport);
 
 app.get('/admin/db', (_req, res) => {
   res.sendFile(path.join(__dirname, 'docs/site/admin-db.html'));

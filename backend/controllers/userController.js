@@ -18,9 +18,9 @@ export async function getUsers(req, res) {
 }
 
 export async function postUser(req, res) {
-  const { username, displayName, role, email } = req.body;
+  const { username, displayName, role, email, sedesHabilitadas } = req.body;
   try {
-    const user = await createUser({ username, displayName, role, email });
+    const user = await createUser({ username, displayName, role, email, sedesHabilitadas });
     res.status(201).json({
       user,
       message:
@@ -32,9 +32,9 @@ export async function postUser(req, res) {
 }
 
 export async function putUser(req, res) {
-  const { displayName, role, isActive } = req.body;
+  const { displayName, role, isActive, sedesHabilitadas } = req.body;
   try {
-    const user = await updateUser(req.params.id, { displayName, role, isActive });
+    const user = await updateUser(req.params.id, { displayName, role, isActive, sedesHabilitadas });
     res.json({ user });
   } catch (e) {
     res.status(e.status || 500).json({ error: e.message });

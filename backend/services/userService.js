@@ -19,13 +19,19 @@ export function normalizeUsernamePublic(username) {
   return normalizeUsername(username);
 }
 
-/** Rol canónico: 'admin' | 'operario' (tolera etiquetas legacy como "Administrador"). */
+/** Código de rol: 'admin' | 'operario' | custom (tolera "Administrador"). */
 export function normalizeRole(role) {
   const value = String(role || '')
     .trim()
-    .toLowerCase();
-  if (value === 'admin' || value === 'administrador') return 'admin';
-  return 'operario';
+    .toLowerCase()
+    .replace(/\s+/g, '_');
+  if (!value) return 'operario';
+  if (value === 'administrador') return 'admin';
+  return value.replace(/[^a-z0-9_]/g, '_') || 'operario';
+}
+
+export function isAdminRole(role) {
+  return normalizeRole(role) === 'admin';
 }
 
 /** Perfil actual desde DB; null si no existe o está inactivo. */
@@ -33,7 +39,15 @@ export async function getSessionUser(userId) {
   const row = await findById(userId);
   if (!row || row.is_active === false) return null;
   const profile = mapUserPublic(row);
-  return { ...profile, role: normalizeRole(profile.role) };
+  const role = normalizeRole(profile.role);
+  let permissions = [];
+  try {
+    const { getPermissionIdsForRole } = await import('./rolesService.js');
+    permissions = await getPermissionIdsForRole(role);
+  } catch {
+    permissions = isAdminRole(role) ? ['*'] : [];
+  }
+  return { ...profile, role, permissions };
 }
 
 function normalizeUsername(username) {
@@ -48,6 +62,62 @@ function validatePassword(password) {
   if (p.length < 6) {
     throw Object.assign(new Error('La contraseña debe tener al menos 6 caracteres'), { status: 400 });
   }
+}
+
+/** Normaliza lista de códigos de sede desde DB (array, JSON o CSV). */
+export function parseSedesHabilitadas(raw) {
+  if (Array.isArray(raw)) {
+    return [...new Set(raw.map((s) => String(s || '').trim().toUpperCase()).filter(Boolean))];
+  }
+  if (typeof raw === 'string') {
+    const trimmed = raw.trim();
+    if (!trimmed) return [];
+    try {
+      const parsed = JSON.parse(trimmed);
+      if (Array.isArray(parsed)) return parseSedesHabilitadas(parsed);
+    } catch {
+      /* CSV */
+    }
+    return [
+      ...new Set(
+        trimmed
+          .split(/[,;\s]+/)
+          .map((s) => s.trim().toUpperCase())
+          .filter(Boolean)
+      ),
+    ];
+  }
+  return [];
+}
+
+/** Sedes a las que el usuario puede ingresar (admin = null = todas). */
+export function getAllowedSedesForUser(row) {
+  if (!row) return [];
+  if (isAdminRole(row.role)) return null;
+  const list = parseSedesHabilitadas(row.sedes_habilitadas);
+  if (list.length) return list;
+  const fallback = String(row.sede_default || '').trim().toUpperCase();
+  return fallback ? [fallback] : [];
+}
+
+function assertSedePermitida(row, sedeCodigo) {
+  const code = String(sedeCodigo || '').trim().toUpperCase();
+  if (!code) {
+    throw Object.assign(new Error('Sucursal requerida'), { status: 400 });
+  }
+  const allowed = getAllowedSedesForUser(row);
+  if (allowed === null) return code;
+  if (!allowed.includes(code)) {
+    throw Object.assign(
+      new Error(
+        allowed.length
+          ? `No tenés acceso a la sucursal ${code}. Habilitadas: ${allowed.join(', ')}`
+          : 'No tenés sucursales habilitadas. Pedile al administrador que te asigne una.'
+      ),
+      { status: 403 }
+    );
+  }
+  return code;
 }
 
 export function mapUserPublic(row) {
@@ -65,6 +135,7 @@ export function mapUserPublic(row) {
     lastLoginAt: row.last_login_at || null,
     createdAt: row.created_at || null,
     sedeDefault: row.sede_default || null,
+    sedesHabilitadas: parseSedesHabilitadas(row.sedes_habilitadas),
   };
 }
 
@@ -229,18 +300,23 @@ async function updateUserRow(id, patch) {
 
   if (
     error &&
-    payload.sede_default !== undefined &&
-    /sede_default|schema cache|column/i.test(error.message || '')
+    (payload.sede_default !== undefined || payload.sedes_habilitadas !== undefined) &&
+    /sede_default|sedes_habilitadas|schema cache|column/i.test(error.message || '')
   ) {
-    const { sede_default, ...rest } = payload;
+    const { sede_default, sedes_habilitadas, ...rest } = payload;
     ({ data, error } = await supabase.from('users').update(rest).eq('id', id).select('*').single());
+    if (!error && (sede_default !== undefined || sedes_habilitadas !== undefined)) {
+      console.warn(
+        '[Users] Columnas sede_default/sedes_habilitadas no disponibles. Ejecutá patch-users-sede.sql y patch-users-sedes-habilitadas.sql'
+      );
+    }
   }
 
   if (error) throw Object.assign(new Error(error.message), { status: 500 });
   return data;
 }
 
-function buildAuthProfile(row, sedeInfo = null) {
+function buildAuthProfile(row, sedeInfo = null, permissions = null) {
   const profile = {
     id: row.id,
     username: row.username,
@@ -248,6 +324,7 @@ function buildAuthProfile(row, sedeInfo = null) {
     role: normalizeRole(row.role),
     mustChangePassword: !!row.must_change_password,
   };
+  if (permissions) profile.permissions = permissions;
   if (sedeInfo) {
     profile.sede = sedeInfo.codigo;
     profile.sedeNombre = sedeInfo.nombre;
@@ -255,8 +332,30 @@ function buildAuthProfile(row, sedeInfo = null) {
   return profile;
 }
 
+async function permissionsForRow(row) {
+  const role = normalizeRole(row?.role);
+  try {
+    const { getPermissionIdsForRole } = await import('./rolesService.js');
+    return await getPermissionIdsForRole(role);
+  } catch {
+    return isAdminRole(role) ? ['*'] : [];
+  }
+}
+
 function resolveLoginSede(requestedSede, row) {
-  const preferred = requestedSede || row?.sede_default || 'SED001';
+  const allowed = getAllowedSedesForUser(row);
+  let preferred = String(requestedSede || '').trim().toUpperCase();
+  if (!preferred) {
+    preferred =
+      (allowed === null
+        ? row?.sede_default
+        : allowed.includes(String(row?.sede_default || '').toUpperCase())
+          ? row.sede_default
+          : allowed[0]) || 'SED001';
+  }
+  if (allowed !== null) {
+    assertSedePermitida(row, preferred);
+  }
   return resolveSedeInfo(preferred);
 }
 
@@ -300,7 +399,8 @@ export async function authenticateUser(username, password, { sede } = {}) {
   if (!ok) return null;
 
   const sedeInfo = resolveLoginSede(sede, row);
-  const profile = buildAuthProfile(row, sedeInfo);
+  const permissions = await permissionsForRow(row);
+  const profile = buildAuthProfile(row, sedeInfo, permissions);
   await updateUserRow(row.id, {
     last_login_at: new Date().toISOString(),
     sede_default: sedeInfo.codigo,
@@ -311,6 +411,8 @@ export async function authenticateUser(username, password, { sede } = {}) {
       requiresPasswordChange: true,
       user: {
         ...mapUserPublic({ ...row, last_login_at: new Date().toISOString() }),
+        role: normalizeRole(row.role),
+        permissions,
         sede: sedeInfo.codigo,
         sedeNombre: sedeInfo.nombre,
       },
@@ -321,6 +423,8 @@ export async function authenticateUser(username, password, { sede } = {}) {
   return {
     user: {
       ...mapUserPublic({ ...row, last_login_at: new Date().toISOString(), sede_default: sedeInfo.codigo }),
+      role: normalizeRole(row.role),
+      permissions,
       sede: sedeInfo.codigo,
       sedeNombre: sedeInfo.nombre,
     },
@@ -357,10 +461,13 @@ export async function setUserPassword({ setupToken, token, newPassword, sede }) 
     sede_default: sedeInfo.codigo,
   });
 
-  const profile = buildAuthProfile(updated, sedeInfo);
+  const permissions = await permissionsForRow(updated);
+  const profile = buildAuthProfile(updated, sedeInfo, permissions);
   return {
     user: {
       ...mapUserPublic(updated),
+      role: normalizeRole(updated.role),
+      permissions,
       sede: sedeInfo.codigo,
       sedeNombre: sedeInfo.nombre,
     },
@@ -368,18 +475,34 @@ export async function setUserPassword({ setupToken, token, newPassword, sede }) 
   };
 }
 
-/** Cambia la sucursal de trabajo de la sesión (nuevo JWT). */
+/** Cambia la sucursal de trabajo de la sesión (nuevo JWT). Requiere admin o permiso. */
 export async function switchUserSede(userId, sede) {
   const row = await findById(userId);
   if (!row || row.is_active === false) {
     throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
   }
+  const permissions = await permissionsForRow(row);
+  const canSwitch =
+    isAdminRole(row.role) || permissions.includes('*') || permissions.includes('admin.cambiar_sede');
+  if (!canSwitch) {
+    throw Object.assign(
+      new Error(
+        'No tenés permiso para cambiar de sucursal. Pedile al admin el permiso o cerrá sesión e ingresá de nuevo.'
+      ),
+      { status: 403 }
+    );
+  }
+  if (!isAdminRole(row.role)) {
+    assertSedePermitida(row, sede);
+  }
   const sedeInfo = resolveSedeInfo(sede);
   await updateUserRow(userId, { sede_default: sedeInfo.codigo });
-  const profile = buildAuthProfile(row, sedeInfo);
+  const profile = buildAuthProfile(row, sedeInfo, permissions);
   return {
     user: {
       ...mapUserPublic({ ...row, sede_default: sedeInfo.codigo }),
+      role: normalizeRole(row.role),
+      permissions,
       sede: sedeInfo.codigo,
       sedeNombre: sedeInfo.nombre,
     },
@@ -475,10 +598,10 @@ export async function resetPasswordWithToken({ token, newPassword }) {
   };
 }
 
-export async function createUser({ username, displayName, role, email }) {
+export async function createUser({ username, displayName, role, email, sedesHabilitadas }) {
   const u = normalizeUsername(username);
   const name = String(displayName || '').trim();
-  const r = role === 'admin' ? 'admin' : 'operario';
+  const r = normalizeRole(role || 'operario');
 
   if (!u || u.length < 3) {
     throw Object.assign(new Error('El usuario debe tener al menos 3 caracteres'), { status: 400 });
@@ -494,6 +617,15 @@ export async function createUser({ username, displayName, role, email }) {
     throw Object.assign(new Error('El correo no es válido'), { status: 400 });
   }
 
+  const sedes = parseSedesHabilitadas(sedesHabilitadas);
+  for (const code of sedes) {
+    try {
+      resolveSedeInfo(code);
+    } catch {
+      throw Object.assign(new Error(`Sucursal inválida: ${code}`), { status: 400 });
+    }
+  }
+
   const row = {
     id: newId(),
     username: u,
@@ -506,6 +638,8 @@ export async function createUser({ username, displayName, role, email }) {
     last_login_at: null,
     reset_token: null,
     reset_token_expires: null,
+    sede_default: sedes[0] || 'SED001',
+    sedes_habilitadas: sedes,
     created_at: now,
     updated_at: now,
   };
@@ -518,7 +652,11 @@ export async function createUser({ username, displayName, role, email }) {
   }
 
   const supabase = getSupabase();
-  const { data, error } = await supabase.from('users').insert(row).select('*').single();
+  let { data, error } = await supabase.from('users').insert(row).select('*').single();
+  if (error && /sedes_habilitadas|sede_default|schema cache|column/i.test(error.message || '')) {
+    const { sedes_habilitadas, sede_default, ...rest } = row;
+    ({ data, error } = await supabase.from('users').insert(rest).select('*').single());
+  }
   if (error) throw Object.assign(new Error(error.message), { status: 500 });
   return mapUserAdmin(data);
 }
@@ -577,7 +715,7 @@ export async function deleteUser(id, { actorId } = {}) {
   return { ok: true, id };
 }
 
-export async function updateUser(id, { displayName, role, isActive }) {
+export async function updateUser(id, { displayName, role, isActive, sedesHabilitadas }) {
   const row = await findById(id);
   if (!row) throw Object.assign(new Error('Usuario no encontrado'), { status: 404 });
 
@@ -587,8 +725,31 @@ export async function updateUser(id, { displayName, role, isActive }) {
     if (!name) throw Object.assign(new Error('El nombre no puede estar vacío'), { status: 400 });
     patch.display_name = name;
   }
-  if (role !== undefined) patch.role = role === 'admin' ? 'admin' : 'operario';
+  if (role !== undefined) {
+    const nextRole = normalizeRole(role);
+    const { getRole } = await import('./rolesService.js');
+    const exists = await getRole(nextRole);
+    if (!exists && nextRole !== 'admin' && nextRole !== 'operario') {
+      throw Object.assign(new Error(`Rol desconocido: ${nextRole}`), { status: 400 });
+    }
+    patch.role = nextRole;
+  }
   if (isActive !== undefined) patch.is_active = !!isActive;
+  if (sedesHabilitadas !== undefined) {
+    const list = parseSedesHabilitadas(sedesHabilitadas);
+    for (const code of list) {
+      try {
+        resolveSedeInfo(code);
+      } catch {
+        throw Object.assign(new Error(`Sucursal inválida: ${code}`), { status: 400 });
+      }
+    }
+    patch.sedes_habilitadas = list;
+    const currentDefault = String(row.sede_default || '').trim().toUpperCase();
+    if (list.length && !list.includes(currentDefault)) {
+      patch.sede_default = list[0];
+    }
+  }
 
   const updated = await updateUserRow(id, patch);
   return mapUserAdmin(updated);

@@ -103,9 +103,6 @@ function NavGroups({ groups, onNavigate }) {
             </div>
             {isOpen && (
               <ul className="space-y-0.5 border-t border-border/60 px-2 py-2">
-                <li className="px-2 pb-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
-                  Accesos rápidos
-                </li>
                 {g.accesos.map((a) => (
                   <li key={`${g.id}-${a.to || a.label}`}>
                     <AccesoLink item={a} onNavigate={onNavigate} />
@@ -121,12 +118,16 @@ function NavGroups({ groups, onNavigate }) {
 }
 
 export default function Layout() {
-  const { user, logout, isAdmin, sede, sedeNombre, switchSede } = useAuth();
+  const { user, logout, isAdmin, permissions, sede, sedeNombre, switchSede } = useAuth();
   const location = useLocation();
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [sedes, setSedes] = useState([]);
   const [switching, setSwitching] = useState(false);
-  const groups = useMemo(() => filterNavGroups(isAdmin), [isAdmin]);
+  const groups = useMemo(() => filterNavGroups(user), [user]);
+  const canSwitchSede =
+    isAdmin ||
+    permissions?.includes('*') ||
+    permissions?.includes('admin.cambiar_sede');
 
   useEffect(() => {
     setDrawerOpen(false);
@@ -170,7 +171,7 @@ export default function Layout() {
   const sedeBlock = (
     <div className="min-w-0">
       <label className="text-[10px] font-semibold uppercase tracking-wide text-subtle">Sucursal</label>
-      {sedes.length > 1 ? (
+      {canSwitchSede && sedes.length > 1 ? (
         <select
           className="mt-0.5 w-full rounded-md border border-border bg-surface-muted px-2 py-1.5 text-sm font-semibold text-content"
           value={sede || ''}
@@ -184,7 +185,7 @@ export default function Layout() {
           ))}
         </select>
       ) : (
-        <p className="truncate text-sm font-semibold text-accent">
+        <p className="truncate text-sm font-semibold text-accent" title={sede || undefined}>
           {sedeNombre || sede || '—'}
         </p>
       )}
@@ -227,9 +228,9 @@ export default function Layout() {
           {sedeBlock}
           <div className="min-w-0">
             <p className="truncate text-sm font-semibold text-content">{user?.name}</p>
-            {isAdmin && (
-              <span className="mt-1 inline-block rounded bg-sky-100 px-2 py-0.5 text-xs font-semibold text-sky-800 dark:bg-sky-800 dark:text-sky-100">
-                Admin
+            {user?.role && (
+              <span className="mt-1 inline-block rounded bg-sky-100 px-2 py-0.5 text-xs font-semibold capitalize text-sky-800 dark:bg-sky-800 dark:text-sky-100">
+                {user.role}
               </span>
             )}
           </div>

@@ -182,6 +182,17 @@ export const api = {
       method: 'PUT',
       body: JSON.stringify(body),
     }),
+  rolesCatalogo: () => request('/api/admin/roles/catalogo'),
+  roles: () => request('/api/admin/roles'),
+  createRole: (body) =>
+    request('/api/admin/roles', { method: 'POST', body: JSON.stringify(body) }),
+  updateRole: (codigo, body) =>
+    request(`/api/admin/roles/${encodeURIComponent(codigo)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteRole: (codigo) =>
+    request(`/api/admin/roles/${encodeURIComponent(codigo)}`, { method: 'DELETE' }),
   adminDeleteUser: (id) =>
     request(`/api/admin/users/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   adminResetPassword: (id) =>
