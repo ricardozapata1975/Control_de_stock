@@ -338,17 +338,24 @@ export function normalizeArmario(armario, almacen = ALMACEN_DEFAULT) {
   return code;
 }
 
-/** Formatea A11 sin validar contra el catálogo (import SISCOM). */
+/** Formatea armario A00–A9999 (0–99 con 2 dígitos; 100–9999 sin relleno extra). */
 export function formatArmarioCode(armario) {
-  const code = String(armario || '')
+  // No usar `|| ''`: el número 0 es válido (A00).
+  const code = String(armario ?? '')
     .trim()
     .toUpperCase()
     .replace(/\s+/g, '');
-  const m = code.match(/^A?(\d{1,2})$/i);
+  const m = code.match(/^A?(\d{1,4})$/i);
   if (!m) {
-    throw Object.assign(new Error(`Código de armario inválido: ${armario}`), { status: 400 });
+    throw Object.assign(new Error(`Código de armario inválido: ${armario}. Usá A00–A9999`), {
+      status: 400,
+    });
   }
-  return `A${String(parseInt(m[1], 10)).padStart(2, '0')}`;
+  const n = parseInt(m[1], 10);
+  if (Number.isNaN(n) || n < 0 || n > 9999) {
+    throw Object.assign(new Error(`Armario fuera de rango (A00–A9999): ${armario}`), { status: 400 });
+  }
+  return n > 99 ? `A${n}` : `A${String(n).padStart(2, '0')}`;
 }
 
 /** Registra un armario en el mapa en memoria (sin tocar DB). */
@@ -506,15 +513,18 @@ export function buildCodigoCompleto({
   return `${s}-${a}-${suffix}`;
 }
 
+/** Token de armario en códigos: A00–A99 o A100–A9999 */
+const ARMARIO_TOKEN_RE = 'A\\d{1,4}';
+
 function parseWithAlmacen(s) {
   const fullBox = s.match(
-    new RegExp(`^(ALM\\d{2})-(A\\d{2})-(E\\d{2})-(${CONTENEDOR_SUFIJO_RE})$`)
+    new RegExp(`^(ALM\\d{2})-(${ARMARIO_TOKEN_RE})-(E\\d{2})-(${CONTENEDOR_SUFIJO_RE})$`, 'i')
   );
   if (fullBox) {
     const contenedor = normalizeContenedor(fullBox[4]);
-    const almacen = fullBox[1];
-    const armario = fullBox[2];
-    const estante = fullBox[3];
+    const almacen = fullBox[1].toUpperCase();
+    const armario = formatArmarioCode(fullBox[2]);
+    const estante = normalizeEstante(fullBox[3]);
     return {
       almacen,
       armario,
@@ -524,36 +534,43 @@ function parseWithAlmacen(s) {
     };
   }
 
-  const shelfOnly = s.match(/^(ALM\d{2})-(A\d{2})-(E\d{2})$/);
+  const shelfOnly = s.match(new RegExp(`^(ALM\\d{2})-(${ARMARIO_TOKEN_RE})-(E\\d{2})$`, 'i'));
   if (shelfOnly) {
+    const almacen = shelfOnly[1].toUpperCase();
+    const armario = formatArmarioCode(shelfOnly[2]);
+    const estante = normalizeEstante(shelfOnly[3]);
     return {
-      almacen: shelfOnly[1],
-      armario: shelfOnly[2],
-      estante: shelfOnly[3],
+      almacen,
+      armario,
+      estante,
       contenedor: null,
-      codigo: s,
+      codigo: `${almacen}-${armario}-${estante}`,
     };
   }
 
-  const armarioOnly = s.match(/^(ALM\d{2})-(A\d{2})$/);
-  if (armarioOnly && armarioExistsInAlmacen(armarioOnly[1], armarioOnly[2])) {
-    return {
-      almacen: armarioOnly[1],
-      armario: armarioOnly[2],
-      estante: null,
-      contenedor: null,
-      codigo: s,
-    };
+  const armarioOnly = s.match(new RegExp(`^(ALM\\d{2})-(${ARMARIO_TOKEN_RE})$`, 'i'));
+  if (armarioOnly) {
+    const almacen = armarioOnly[1].toUpperCase();
+    const armario = formatArmarioCode(armarioOnly[2]);
+    if (armarioExistsInAlmacen(almacen, armario)) {
+      return {
+        almacen,
+        armario,
+        estante: null,
+        contenedor: null,
+        codigo: `${almacen}-${armario}`,
+      };
+    }
   }
 
-  const almacenOnly = s.match(/^(ALM\d{2})$/);
-  if (almacenOnly && almacenesMap[almacenOnly[1]]) {
+  const almacenOnly = s.match(/^(ALM\d{2})$/i);
+  if (almacenOnly && almacenesMap[almacenOnly[1].toUpperCase()]) {
     return {
-      almacen: almacenOnly[1],
+      almacen: almacenOnly[1].toUpperCase(),
       armario: null,
       estante: null,
       contenedor: null,
-      codigo: almacenOnly[1],
+      codigo: almacenOnly[1].toUpperCase(),
     };
   }
 
@@ -561,61 +578,72 @@ function parseWithAlmacen(s) {
 }
 
 function parseLegacy(s) {
-  const withBox = s.match(new RegExp(`^(A\\d{2})-(E\\d{2})-(${CONTENEDOR_SUFIJO_RE})$`));
+  const withBox = s.match(new RegExp(`^(${ARMARIO_TOKEN_RE})-(E\\d{2})-(${CONTENEDOR_SUFIJO_RE})$`, 'i'));
   if (withBox) {
     const contenedor = normalizeContenedor(withBox[3]);
+    const armario = formatArmarioCode(withBox[1]);
+    const estante = normalizeEstante(withBox[2]);
     return {
       almacen: ALMACEN_DEFAULT,
-      armario: withBox[1],
-      estante: withBox[2],
+      armario,
+      estante,
       contenedor,
-      codigo: `${withBox[1]}-${withBox[2]}-${contenedor}`,
+      codigo: `${armario}-${estante}-${contenedor}`,
     };
   }
 
-  const shelfOnly = s.match(/^(A\d{2})-(E\d{2})$/);
+  const shelfOnly = s.match(new RegExp(`^(${ARMARIO_TOKEN_RE})-(E\\d{2})$`, 'i'));
   if (shelfOnly) {
+    const armario = formatArmarioCode(shelfOnly[1]);
+    const estante = normalizeEstante(shelfOnly[2]);
     return {
       almacen: ALMACEN_DEFAULT,
-      armario: shelfOnly[1],
-      estante: shelfOnly[2],
+      armario,
+      estante,
       contenedor: null,
-      codigo: s,
+      codigo: `${armario}-${estante}`,
     };
   }
 
-  const legacy = s.match(/^(A\d{2})-(E\d{1,2})-([A-Z]?\d{1,2}|SC)$/i);
+  const legacy = s.match(new RegExp(`^(${ARMARIO_TOKEN_RE})-(E\\d{1,2})-([A-Z]?\\d{1,2}|SC)$`, 'i'));
   if (legacy) {
     const contenedor = normalizeContenedor(legacy[3]);
+    const armario = formatArmarioCode(legacy[1]);
+    const estante = normalizeEstante(legacy[2]);
     return {
       almacen: ALMACEN_DEFAULT,
-      armario: legacy[1],
-      estante: normalizeEstante(legacy[2]),
+      armario,
+      estante,
       contenedor,
-      codigo: buildCodigo(legacy[1], legacy[2], legacy[3]),
+      codigo: buildCodigo(armario, estante, contenedor),
     };
   }
 
-  const legacyShelf = s.match(/^(A\d{2})-(E\d{1,2})$/);
+  const legacyShelf = s.match(new RegExp(`^(${ARMARIO_TOKEN_RE})-(E\\d{1,2})$`, 'i'));
   if (legacyShelf) {
+    const armario = formatArmarioCode(legacyShelf[1]);
+    const estante = normalizeEstante(legacyShelf[2]);
     return {
       almacen: ALMACEN_DEFAULT,
-      armario: legacyShelf[1],
-      estante: normalizeEstante(legacyShelf[2]),
+      armario,
+      estante,
       contenedor: null,
-      codigo: buildCodigo(legacyShelf[1], legacyShelf[2], null),
+      codigo: buildCodigo(armario, estante, null),
     };
   }
 
-  const armarioOnly = s.match(/^(A\d{2})$/);
-  if (armarioOnly && armarioExistsInAlmacen(ALMACEN_DEFAULT, armarioOnly[1])) {
-    return {
-      almacen: ALMACEN_DEFAULT,
-      armario: armarioOnly[1],
-      estante: null,
-      contenedor: null,
-      codigo: armarioOnly[1],
-    };
+  const armarioOnly = s.match(new RegExp(`^(${ARMARIO_TOKEN_RE})$`, 'i'));
+  if (armarioOnly) {
+    const armario = formatArmarioCode(armarioOnly[1]);
+    if (armarioExistsInAlmacen(ALMACEN_DEFAULT, armario)) {
+      return {
+        almacen: ALMACEN_DEFAULT,
+        armario,
+        estante: null,
+        contenedor: null,
+        codigo: armario,
+      };
+    }
   }
 
   return null;

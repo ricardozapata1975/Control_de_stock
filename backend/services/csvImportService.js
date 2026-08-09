@@ -76,7 +76,7 @@ export function getImportSpec() {
         obligatorio: false,
         ejemplo: 'A11',
         descripcion:
-          'Obligatorio en formato nativo (A00–A99). En SISCOM se deriva de DEPOSITO (11.41 → A11).',
+          'Obligatorio en formato nativo (A00–A9999). En SISCOM se deriva de DEPOSITO (11.41 → A11, 200.00 → A200).',
       },
       {
         nombre: 'estante',
@@ -262,7 +262,7 @@ function buildComentarioSiscom(row, base = '') {
 }
 
 function formatArmarioNum(n) {
-  return `A${String(n).padStart(2, '0')}`;
+  return formatArmarioCode(n);
 }
 
 function formatEstanteNum(n) {
@@ -270,8 +270,7 @@ function formatEstanteNum(n) {
 }
 
 /**
- * SISCOM DEPOSITO "11.41" → gabinete/estantería 11 + estante/gaveta 41 → A11 + E41.
- * Acepta "11.41", "11,41", "A11-E41".
+ * SISCOM DEPOSITO "11.41" → A11-E41; "200.00" → A200-E00.
  */
 export function parseDepositoSiscom(raw) {
   const s = String(raw ?? '')
@@ -280,33 +279,34 @@ export function parseDepositoSiscom(raw) {
     .replace(/\s+/g, '');
   if (!s || s === '-' || s === '.') return null;
 
-  const dotted = s.match(/^(\d{1,2})\.(\d{1,2})$/);
+  const dotted = s.match(/^(\d{1,4})\.(\d{1,2})$/);
   if (dotted) {
     const arm = parseInt(dotted[1], 10);
     const est = parseInt(dotted[2], 10);
-    if (arm < 0 || arm > 99 || est < 0 || est > 99) return null;
+    if (arm < 0 || arm > 9999 || est < 0 || est > 99) return null;
     return { armario: formatArmarioNum(arm), estante: formatEstanteNum(est), origen: s };
   }
 
-  const coded = s.match(/^A(\d{1,2})-E(\d{1,2})$/i);
+  const coded = s.match(/^A(\d{1,4})-E(\d{1,2})$/i);
   if (coded) {
     const arm = parseInt(coded[1], 10);
     const est = parseInt(coded[2], 10);
-    if (arm > 99 || est > 99) return null;
+    if (arm > 9999 || est > 99) return null;
     return { armario: formatArmarioNum(arm), estante: formatEstanteNum(est), origen: s };
   }
 
-  const slash = s.match(/^(\d{1,2})[\/_](\d{1,2})$/);
+  const slash = s.match(/^(\d{1,4})[\/_](\d{1,2})$/);
   if (slash) {
     const arm = parseInt(slash[1], 10);
     const est = parseInt(slash[2], 10);
-    if (arm > 99 || est > 99) return null;
+    if (arm > 9999 || est > 99) return null;
     return { armario: formatArmarioNum(arm), estante: formatEstanteNum(est), origen: s };
   }
 
-  const onlyInt = s.match(/^(\d{1,2})$/);
+  const onlyInt = s.match(/^(\d{1,4})$/);
   if (onlyInt) {
     const arm = parseInt(onlyInt[1], 10);
+    if (arm > 9999) return null;
     return { armario: formatArmarioNum(arm), estante: 'E00', origen: s };
   }
 
@@ -367,7 +367,7 @@ function extractArmarioEstanteFromRow(row) {
   const armRaw = String(row.armario || '').trim();
   const estRaw = String(row.estante || '').trim();
   if (armRaw && estRaw) {
-    const am = armRaw.toUpperCase().replace(/\s+/g, '').match(/^A?(\d{1,2})$/i);
+    const am = armRaw.toUpperCase().replace(/\s+/g, '').match(/^A?(\d{1,4})$/i);
     const em = estRaw.toUpperCase().replace(/\s+/g, '').match(/^E?(\d{1,2})$/i);
     if (am && em) {
       return {
@@ -529,9 +529,9 @@ async function ensureArmariosFromRows(rows, { sede, almacenDestino, forzarAduana
           .trim()
           .toUpperCase()
           .replace(/\s+/g, '');
-        const m = code.match(/^A?(\d{1,2})$/i);
+        const m = code.match(/^A?(\d{1,4})$/i);
         if (m) codes.add(formatArmarioNum(parseInt(m[1], 10)));
-        else if (/^A\d{2}$/i.test(code)) codes.add(code.toUpperCase());
+        else if (/^A\d{1,4}$/i.test(code)) codes.add(formatArmarioCode(code));
       }
     } catch {
       // fila inválida: se reporta en validate

@@ -10,6 +10,9 @@ export const QR_TYPES = {
   REMITO: 'remito',
 };
 
+/** Armario A00–A9999 (2–4 dígitos según número). */
+const ARM = 'A\\d{1,4}';
+
 export function buildQrPayload({ type, codigo, itemId, loteId, remitoId }) {
   const t = type || QR_TYPES.CONTENEDOR;
   if (t === QR_TYPES.ITEM && itemId) {
@@ -77,45 +80,48 @@ export function parseQrScan(text) {
   if (/^SED\d{3}$/i.test(codigo)) {
     return { type: QR_TYPES.SEDE, codigo };
   }
-  if (/^SED\d{3}-ALM\d{2}-[A-Z]\d{2}-E\d{2}$/i.test(codigo)) {
+  if (new RegExp(`^SED\\d{3}-ALM\\d{2}-${ARM}-E\\d{2}$`, 'i').test(codigo)) {
     return { type: QR_TYPES.ESTANTE, codigo };
   }
   if (
-    /^SED\d{3}-ALM\d{2}-[A-Z]\d{2}-E\d{2}-(?:C|B|H)\d{2}$/i.test(codigo) ||
-    /^SED\d{3}-ALM\d{2}-[A-Z]\d{2}-E\d{2}-SC$/i.test(codigo)
+    new RegExp(`^SED\\d{3}-ALM\\d{2}-${ARM}-E\\d{2}-(?:C|B|H)\\d{2}$`, 'i').test(codigo) ||
+    new RegExp(`^SED\\d{3}-ALM\\d{2}-${ARM}-E\\d{2}-SC$`, 'i').test(codigo)
   ) {
     return { type: QR_TYPES.CONTENEDOR, codigo };
   }
   if (/^SED\d{3}-ALM\d{2}$/i.test(codigo)) {
     return { type: QR_TYPES.ALMACEN, codigo };
   }
-  if (/^SED\d{3}-ALM\d{2}-[A-Z]\d{2}$/i.test(codigo)) {
+  if (new RegExp(`^SED\\d{3}-ALM\\d{2}-${ARM}$`, 'i').test(codigo)) {
     return { type: QR_TYPES.ARMARIO, codigo };
   }
 
   if (/^ALM\d{2}$/i.test(codigo)) {
     return { type: QR_TYPES.ALMACEN, codigo };
   }
-  if (/^ALM\d{2}-A\d{2}$/i.test(codigo)) {
+  if (new RegExp(`^ALM\\d{2}-${ARM}$`, 'i').test(codigo)) {
     return { type: QR_TYPES.ARMARIO, codigo };
   }
-  if (/^ALM\d{2}-A\d{2}-E\d{2}$/i.test(codigo)) {
+  if (new RegExp(`^ALM\\d{2}-${ARM}-E\\d{2}$`, 'i').test(codigo)) {
     return { type: QR_TYPES.ESTANTE, codigo };
   }
   if (
-    /^ALM\d{2}-A\d{2}-E\d{2}-(?:C|B|H)\d{2}$/i.test(codigo) ||
-    /^ALM\d{2}-A\d{2}-E\d{2}-SC$/i.test(codigo)
+    new RegExp(`^ALM\\d{2}-${ARM}-E\\d{2}-(?:C|B|H)\\d{2}$`, 'i').test(codigo) ||
+    new RegExp(`^ALM\\d{2}-${ARM}-E\\d{2}-SC$`, 'i').test(codigo)
   ) {
     return { type: QR_TYPES.CONTENEDOR, codigo };
   }
 
-  if (/^[A-Z]\d{2}$/.test(codigo)) {
+  if (new RegExp(`^${ARM}$`, 'i').test(codigo)) {
     return { type: QR_TYPES.ARMARIO, codigo };
   }
-  if (/^[A-Z]\d{2}-E\d{2}-(?:C|B|H)\d{2}$/.test(codigo) || /^[A-Z]\d{2}-E\d{2}-SC$/.test(codigo)) {
+  if (
+    new RegExp(`^${ARM}-E\\d{2}-(?:C|B|H)\\d{2}$`, 'i').test(codigo) ||
+    new RegExp(`^${ARM}-E\\d{2}-SC$`, 'i').test(codigo)
+  ) {
     return { type: QR_TYPES.CONTENEDOR, codigo };
   }
-  if (/^[A-Z]\d{2}-E\d{2}$/.test(codigo)) {
+  if (new RegExp(`^${ARM}-E\\d{2}$`, 'i').test(codigo)) {
     return { type: QR_TYPES.ESTANTE, codigo };
   }
   return { type: QR_TYPES.CONTENEDOR, codigo };
@@ -126,22 +132,23 @@ export function extractCodigoUbicacion(text) {
   const sufijo = '(?:C\\d{2}|B\\d{2}|H\\d{2}|SC)';
   const almPrefix = 'ALM\\d{2}';
   const sedePrefix = 'SED\\d{3}';
+  const arm = ARM;
 
   const urlMatch = s.match(
     new RegExp(
-      `(?:sede|almacen|contenedor|estante|armario)/((?:${sedePrefix}-)?(?:${almPrefix}-)?[A-Z]\\d{2}(?:-E\\d{2})?(?:-${sufijo})?)`,
+      `(?:sede|almacen|contenedor|estante|armario)/((?:${sedePrefix}-)?(?:${almPrefix}-)?${arm}(?:-E\\d{2})?(?:-${sufijo})?)`,
       'i'
     )
   );
   if (urlMatch) return urlMatch[1].toUpperCase();
 
   const sedeFull = s.match(
-    new RegExp(`\\b(${sedePrefix}-${almPrefix}-[A-Z]\\d{2}-E\\d{2}-${sufijo})\\b`, 'i')
+    new RegExp(`\\b(${sedePrefix}-${almPrefix}-${arm}-E\\d{2}-${sufijo})\\b`, 'i')
   );
   if (sedeFull) return sedeFull[1].toUpperCase();
 
   const sedeShelf = s.match(
-    new RegExp(`\\b(${sedePrefix}-${almPrefix}-[A-Z]\\d{2}-E\\d{2})\\b`, 'i')
+    new RegExp(`\\b(${sedePrefix}-${almPrefix}-${arm}-E\\d{2})\\b`, 'i')
   );
   if (sedeShelf) return sedeShelf[1].toUpperCase();
 
@@ -149,26 +156,26 @@ export function extractCodigoUbicacion(text) {
   if (almOnly && !s.includes('-')) return almOnly[1].toUpperCase();
 
   const almFull = s.match(
-    new RegExp(`\\b(${almPrefix}-[A-Z]\\d{2}-E\\d{2}-${sufijo})\\b`, 'i')
+    new RegExp(`\\b(${almPrefix}-${arm}-E\\d{2}-${sufijo})\\b`, 'i')
   );
   if (almFull) return almFull[1].toUpperCase();
 
-  const almShelf = s.match(new RegExp(`\\b(${almPrefix}-[A-Z]\\d{2}-E\\d{2})\\b`, 'i'));
+  const almShelf = s.match(new RegExp(`\\b(${almPrefix}-${arm}-E\\d{2})\\b`, 'i'));
   if (almShelf) return almShelf[1].toUpperCase();
 
-  const almArm = s.match(new RegExp(`\\b(${almPrefix}-[A-Z]\\d{2})\\b`, 'i'));
+  const almArm = s.match(new RegExp(`\\b(${almPrefix}-${arm})\\b`, 'i'));
   if (almArm) return almArm[1].toUpperCase();
 
-  const full = s.match(new RegExp(`\\b([A-Z]\\d{2}-E\\d{2}-${sufijo})\\b`, 'i'));
+  const full = s.match(new RegExp(`\\b(${arm}-E\\d{2}-${sufijo})\\b`, 'i'));
   if (full) return full[1].toUpperCase();
 
-  const shelf = s.match(/\b([A-Z]\d{2}-E\d{2})\b/i);
+  const shelf = s.match(new RegExp(`\\b(${arm}-E\\d{2})\\b`, 'i'));
   if (shelf) return shelf[1].toUpperCase();
 
-  const arm = s.match(/\b([A-Z]\d{2})\b/);
-  if (arm && !s.includes('-')) return arm[1].toUpperCase();
+  const armOnly = s.match(new RegExp(`\\b(${arm})\\b`, 'i'));
+  if (armOnly && !s.includes('-')) return armOnly[1].toUpperCase();
 
-  const legacy = s.match(new RegExp(`([A-Z]\\d{2}-E\\d{1,2}(?:-${sufijo}|[A-Z]?\\d{1,2})?)`, 'i'));
+  const legacy = s.match(new RegExp(`(${arm}-E\\d{1,2}(?:-${sufijo}|[A-Z]?\\d{1,2})?)`, 'i'));
   if (legacy) {
     const parts = legacy[1].toUpperCase().split('-');
     const a = parts[0];

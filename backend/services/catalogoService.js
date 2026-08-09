@@ -2,7 +2,13 @@ import fs from 'fs/promises';
 import path from 'path';
 import { fileURLToPath } from 'url';
 import { config } from '../config.js';
-import { ALMACEN_TIPOS, ARMARIO_TIPOS, applyCatalogo, migrateCatalogoStructure } from './ubicacionUtils.js';
+import {
+  ALMACEN_TIPOS,
+  ARMARIO_TIPOS,
+  applyCatalogo,
+  formatArmarioCode,
+  migrateCatalogoStructure,
+} from './ubicacionUtils.js';
 import {
   ensureCatalogoSeededInDb,
   insertAlmacenToDb,
@@ -220,7 +226,7 @@ export async function addArmario({ almacen, tipo, nombre }) {
   const alm = c.almacenes[almCode];
   alm.armarios = alm.armarios || {};
   const num = alm.nextArmarioNum ?? Object.keys(alm.armarios).length;
-  const codigo = `A${String(num).padStart(2, '0')}`;
+  const codigo = formatArmarioCode(num);
 
   if (alm.armarios[codigo]) {
     throw Object.assign(new Error(`Código ${codigo} ya existe en ${almCode}`), { status: 409 });
@@ -259,15 +265,10 @@ export async function ensureArmarioCodigo({
     .trim()
     .toUpperCase()
     .replace(/\s+/g, '');
-  if (!/^A\d{1,3}$/.test(armCode)) {
+  if (!/^A\d{1,4}$/i.test(armCode) && !/^\d{1,4}$/.test(armCode)) {
     throw Object.assign(new Error(`Código de armario inválido: ${codigo}`), { status: 400 });
   }
-  const padded = `A${String(parseInt(armCode.replace(/^A/i, ''), 10)).padStart(2, '0')}`;
-  // A100 stays A100 (padStart 2 on 100 = "100")
-  const finalCode =
-    parseInt(armCode.replace(/^A/i, ''), 10) > 99
-      ? `A${parseInt(armCode.replace(/^A/i, ''), 10)}`
-      : padded;
+  const finalCode = formatArmarioCode(armCode);
 
   const c = await loadCatalogo();
   c.almacenes = c.almacenes || {};
