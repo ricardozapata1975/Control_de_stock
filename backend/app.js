@@ -51,6 +51,12 @@ import {
 import { getEmpresasEmisoras, getProximoNumero, postEmpresaEmisora, putEmpresaEmisora, postEmpresaAsset, deleteEmpresaAssetHandler } from './controllers/empresasEmisorasController.js';
 import { getClientes, postClientes, putCliente, deleteClienteHandler } from './controllers/clientesController.js';
 import {
+  getProveedores,
+  postProveedor,
+  putProveedor,
+  deleteProveedorHandler,
+} from './controllers/proveedoresController.js';
+import {
   getRemito,
   getTransferenciasPendientes,
   postRecibirTransferencia,
@@ -260,11 +266,20 @@ app.post(
   postMoverAlPanol
 );
 
-// Remitos y clientes
+// Remitos, clientes y proveedores
 app.get('/api/clientes', requireAuth, getClientes);
 app.post('/api/clientes', requireAuth, postClientes);
 app.put('/api/clientes/:id', requireAuth, putCliente);
 app.delete('/api/clientes/:id', requireAuth, deleteClienteHandler);
+app.get('/api/proveedores', requireAuth, requirePermission('agenda.proveedores'), getProveedores);
+app.post('/api/proveedores', requireAuth, requirePermission('agenda.proveedores'), postProveedor);
+app.put('/api/proveedores/:id', requireAuth, requirePermission('agenda.proveedores'), putProveedor);
+app.delete(
+  '/api/proveedores/:id',
+  requireAuth,
+  requirePermission('agenda.proveedores'),
+  deleteProveedorHandler
+);
 app.get('/api/empresas-emisoras', requireAuth, getEmpresasEmisoras);
 app.get('/api/empresas-emisoras/proximo-numero', requireAuth, getProximoNumero);
 app.post('/api/empresas-emisoras', requireAuth, postEmpresaEmisora);

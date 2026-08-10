@@ -19,6 +19,7 @@ import AdminUsers from './pages/AdminUsers';
 import AdminRoles from './pages/AdminRoles';
 import ConsultaSucursales from './pages/ConsultaSucursales';
 import Agenda from './pages/Agenda';
+import Proveedores from './pages/Proveedores';
 import {
   ProyectosLayout,
   ProyectosDashboard,
@@ -109,6 +110,14 @@ export default function App() {
               <Route path="historial" element={<Historial />} />
               <Route path="consulta-sucursales" element={<ConsultaSucursales />} />
               <Route path="agenda" element={<Agenda />} />
+              <Route
+                path="agenda/proveedores"
+                element={
+                  <PermissionRoute permission="agenda.proveedores">
+                    <Proveedores />
+                  </PermissionRoute>
+                }
+              />
               <Route path="proyectos" element={<ProyectosLayout />}>
                 <Route index element={<ProyectosDashboard />} />
                 <Route path="lista" element={<ProyectosLista />} />

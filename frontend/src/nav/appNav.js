@@ -57,15 +57,16 @@ export const APP_NAV_GROUPS = [
     to: '/agenda',
     match: (path) =>
       path === '/agenda' ||
+      path.startsWith('/agenda/') ||
       path.startsWith('/admin/locaciones') ||
       path.startsWith('/admin/usuarios') ||
       path.startsWith('/admin/roles'),
     accesos: [
       { to: '/agenda', label: 'Empresas y clientes', permission: 'agenda.empresas' },
+      { to: '/agenda/proveedores', label: 'Proveedores', permission: 'agenda.proveedores' },
       { to: '/admin/locaciones', label: 'Locaciones', permission: 'agenda.locaciones' },
       { to: '/admin/usuarios', label: 'Usuarios', permission: 'agenda.usuarios' },
       { to: '/admin/roles', label: 'Roles y permisos', permission: 'admin.roles' },
-      { label: 'Proveedores', soon: true },
     ],
   },
   {

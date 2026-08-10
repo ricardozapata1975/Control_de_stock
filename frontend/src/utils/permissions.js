@@ -35,6 +35,7 @@ export const PATH_PERMISSION = {
   '/admin/editor-stock': 'inventario.editor_stock',
   '/admin/importar': 'inventario.importar',
   '/agenda': 'agenda.empresas',
+  '/agenda/proveedores': 'agenda.proveedores',
   '/admin/locaciones': 'agenda.locaciones',
   '/admin/usuarios': 'agenda.usuarios',
   '/admin/roles': 'admin.roles',

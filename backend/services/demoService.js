@@ -995,6 +995,7 @@ const DEMO_EMPRESAS = [
 ];
 
 const demoClientes = [];
+const demoProveedores = [];
 const demoRemitos = new Map();
 
 export async function demoListEmpresasEmisoras({ includeInactive = false } = {}) {
@@ -1169,6 +1170,73 @@ export async function demoUpdateCliente(id, payload) {
   if (payload?.razon_social !== undefined) cliente.razonSocial = payload.razon_social;
   if (payload?.v_ref !== undefined) cliente.vRef = payload.v_ref;
   return { ...cliente };
+}
+
+export async function demoSearchProveedores(q = '', { includeInactive = false, limit = 20 } = {}) {
+  const term = String(q || '').trim().toLowerCase();
+  let list = demoProveedores.filter((p) => includeInactive || p.activo !== false);
+  if (term) {
+    list = list.filter((p) =>
+      [p.nombre, p.razonSocial, p.cuit, p.localidad, p.rubro, p.contacto, p.email]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase()
+        .includes(term)
+    );
+  }
+  return list.slice(0, limit).map((p) => ({ ...p }));
+}
+
+export async function demoCreateProveedor(payload) {
+  const nombre = String(payload?.nombre || '').trim();
+  if (!nombre) throw Object.assign(new Error('Nombre del proveedor requerido'), { status: 400 });
+  const proveedor = {
+    id: `demo-prov-${Date.now()}`,
+    nombre,
+    razonSocial: payload.razonSocial || payload.razon_social || nombre,
+    iva: payload.iva || '',
+    domicilio: payload.domicilio || '',
+    localidad: payload.localidad || '',
+    vRef: payload.vRef || payload.v_ref || '',
+    cuit: payload.cuit || '',
+    rubro: payload.rubro || '',
+    telefono: payload.telefono || '',
+    email: payload.email || '',
+    contacto: payload.contacto || '',
+    web: payload.web || payload.pagina || '',
+    notas: payload.notas || '',
+    activo: payload.activo !== false,
+  };
+  demoProveedores.push(proveedor);
+  return { ...proveedor };
+}
+
+export async function demoUpdateProveedor(id, payload) {
+  const proveedor = demoProveedores.find((p) => p.id === id);
+  if (!proveedor) throw Object.assign(new Error('Proveedor no encontrado'), { status: 404 });
+  const keys = [
+    'nombre',
+    'razonSocial',
+    'iva',
+    'domicilio',
+    'localidad',
+    'vRef',
+    'cuit',
+    'rubro',
+    'telefono',
+    'email',
+    'contacto',
+    'web',
+    'notas',
+    'activo',
+  ];
+  for (const k of keys) {
+    if (payload?.[k] !== undefined) proveedor[k] = payload[k];
+  }
+  if (payload?.razon_social !== undefined) proveedor.razonSocial = payload.razon_social;
+  if (payload?.v_ref !== undefined) proveedor.vRef = payload.v_ref;
+  if (payload?.pagina !== undefined) proveedor.web = payload.pagina;
+  return { ...proveedor };
 }
 
 export async function demoCrearRemito(payload, createdBy) {

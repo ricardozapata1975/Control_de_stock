@@ -17,6 +17,7 @@ export const APP_PERMISSIONS = [
 
   // Agenda
   { id: 'agenda.empresas', label: 'Empresas y clientes', group: 'Agenda', path: '/agenda' },
+  { id: 'agenda.proveedores', label: 'Proveedores', group: 'Agenda', path: '/agenda/proveedores' },
   { id: 'agenda.locaciones', label: 'Locaciones', group: 'Agenda', path: '/admin/locaciones' },
   { id: 'agenda.usuarios', label: 'Usuarios', group: 'Agenda', path: '/admin/usuarios' },
 
@@ -88,6 +89,7 @@ export function defaultRolesSeed() {
     'inventario.etiquetas',
     'inventario.remito',
     'agenda.empresas',
+    'agenda.proveedores',
     'proyectos.dashboard',
     'proyectos.lista',
     'proyectos.tableros',
@@ -141,6 +143,7 @@ export function defaultRolesSeed() {
     'inventario.qr',
     'inventario.etiquetas',
     'inventario.remito',
+    'agenda.proveedores',
     'proyectos.dashboard',
     'proyectos.pedidos',
     'proyectos.reservas',
@@ -166,6 +169,8 @@ export function defaultRolesSeed() {
     'inventario.local',
     'inventario.sucursales',
     'inventario.historial',
+    'agenda.empresas',
+    'agenda.proveedores',
     'proyectos.dashboard',
     'proyectos.lista',
     'proyectos.materiales',

@@ -229,6 +229,22 @@ export const api = {
     }),
   deleteCliente: (id) =>
     request(`/api/clientes/${encodeURIComponent(id)}`, { method: 'DELETE' }),
+  proveedores: (q = '', opts = {}) => {
+    const params = new URLSearchParams();
+    if (q) params.set('q', q);
+    if (opts.agenda) params.set('agenda', '1');
+    const qs = params.toString();
+    return request(`/api/proveedores${qs ? `?${qs}` : ''}`);
+  },
+  createProveedor: (body) =>
+    request('/api/proveedores', { method: 'POST', body: JSON.stringify(body) }),
+  updateProveedor: (id, body) =>
+    request(`/api/proveedores/${encodeURIComponent(id)}`, {
+      method: 'PUT',
+      body: JSON.stringify(body),
+    }),
+  deleteProveedor: (id) =>
+    request(`/api/proveedores/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   empresasEmisoras: (opts = {}) => {
     const qs = opts.all ? '?all=1' : '';
     return request(`/api/empresas-emisoras${qs}`);
