@@ -16,6 +16,7 @@ export async function getMovimientos(req, res) {
     hasta: req.query.hasta,
     pendiente: req.query.pendiente,
     sede: req.query.sede || req.user?.sede || '',
+    almacen: req.query.almacen || '',
   });
   res.json({ movimientos, total: movimientos.length });
 }
@@ -23,6 +24,7 @@ export async function getMovimientos(req, res) {
 export async function getPendientes(req, res) {
   const movimientos = await listPendientes({
     sede: req.query.sede || req.user?.sede || '',
+    almacen: req.query.almacen || '',
   });
   res.json({ movimientos, total: movimientos.length });
 }

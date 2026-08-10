@@ -75,7 +75,8 @@ export async function listMovimientos(filters = {}) {
 
   const egresoRows = await enrichMovimientosRows(supabase, data || []);
   const sede = String(filters.sede || '').trim().toUpperCase();
-  const scopedRows = sede
+  const almacenFilter = String(filters.almacen || '').trim().toUpperCase();
+  let scopedRows = sede
     ? egresoRows.filter((row) => {
         const cont = row.contenedores;
         if (!cont) return false;
@@ -85,6 +86,11 @@ export async function listMovimientos(filters = {}) {
         return alms.includes(String(cont.almacen || '').toUpperCase());
       })
     : egresoRows;
+  if (almacenFilter) {
+    scopedRows = scopedRows.filter(
+      (row) => String(row.contenedores?.almacen || '').toUpperCase() === almacenFilter
+    );
+  }
 
   const egresoIds = scopedRows.map((r) => r.id);
   let ingresoByEgreso = {};
@@ -120,7 +126,8 @@ export async function listPendientes(filters = {}) {
   if (err2) throw Object.assign(new Error(err2.message), { status: 500 });
   const rows = await enrichMovimientosRows(supabase, data || []);
   const sede = String(filters.sede || '').trim().toUpperCase();
-  const scoped = sede
+  const almacenFilter = String(filters.almacen || '').trim().toUpperCase();
+  let scoped = sede
     ? rows.filter((row) => {
         const cont = row.contenedores;
         if (!cont) return false;
@@ -129,6 +136,11 @@ export async function listPendientes(filters = {}) {
         return alms.includes(String(cont.almacen || '').toUpperCase());
       })
     : rows;
+  if (almacenFilter) {
+    scoped = scoped.filter(
+      (row) => String(row.contenedores?.almacen || '').toUpperCase() === almacenFilter
+    );
+  }
   return scoped.map((m) => mapMovimiento(m, null));
 }
 
@@ -153,10 +165,13 @@ function mapMovimiento(row, ingresoRow = null) {
     estante: cont.estante,
     contenedor: cont.contenedor,
     contenedorCodigo: cont.codigo,
+    almacen: cont.almacen || null,
+    sede: cont.sede || null,
     pendiente: estado === 'pendiente',
     estado: row.estado || null,
     motivo: row.motivo,
     remitoId: row.remito_id,
+    egresoLoteId: row.egreso_lote_id || null,
     estadoHistorial: toEstadoHistorial(estado),
   };
 }

@@ -42,6 +42,15 @@ import {
   TransferenciasPage,
   PendientesCierrePage,
 } from './modules/proyectos';
+import {
+  HerramientasLayout,
+  HerramientasDashboard,
+  PanolStockPage,
+  PrestarPage,
+  DevolverPage,
+  HistorialPanolPage,
+  RecibirPanolPage,
+} from './modules/herramientas';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import { hasPermission, permissionForPath } from './utils/permissions';
@@ -122,6 +131,42 @@ export default function App() {
                 <Route path="transferencias" element={<TransferenciasPage />} />
                 <Route path="pendientes-cierre" element={<PendientesCierrePage />} />
                 <Route path=":id" element={<ProyectoDetail />} />
+              </Route>
+              <Route
+                path="herramientas"
+                element={
+                  <PermissionRoute permission="herramientas.ver">
+                    <HerramientasLayout />
+                  </PermissionRoute>
+                }
+              >
+                <Route index element={<HerramientasDashboard />} />
+                <Route path="stock" element={<PanolStockPage />} />
+                <Route
+                  path="recibir"
+                  element={
+                    <PermissionRoute permission="herramientas.recibir">
+                      <RecibirPanolPage />
+                    </PermissionRoute>
+                  }
+                />
+                <Route
+                  path="prestar"
+                  element={
+                    <PermissionRoute permission="herramientas.prestar">
+                      <PrestarPage />
+                    </PermissionRoute>
+                  }
+                />
+                <Route
+                  path="devolver"
+                  element={
+                    <PermissionRoute permission="herramientas.devolver">
+                      <DevolverPage />
+                    </PermissionRoute>
+                  }
+                />
+                <Route path="historial" element={<HistorialPanolPage />} />
               </Route>
               <Route path="escanear" element={<EscanearQR />} />
               <Route path="imprimir-qr" element={<ImprimirQR />} />

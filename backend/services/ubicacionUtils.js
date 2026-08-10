@@ -81,6 +81,7 @@ export function listSedes() {
     aduana: info?.aduana || null,
     reservados: info?.reservados || null,
     produccion: info?.produccion || null,
+    herramientas: info?.herramientas || null,
   }));
 }
 
@@ -95,6 +96,13 @@ export function getProduccionUbicacion(sede) {
   const code = canonicalSedeCode(sede || SEDE_DEFAULT) || SEDE_DEFAULT;
   const info = sedesMap[code];
   return info?.produccion || null;
+}
+
+/** Depósito Pañol / Herramientas por sede. */
+export function getHerramientasUbicacion(sede) {
+  const code = canonicalSedeCode(sede || SEDE_DEFAULT) || SEDE_DEFAULT;
+  const info = sedesMap[code];
+  return info?.herramientas || null;
 }
 
 export function getSedeInfo(sede) {
@@ -258,6 +266,7 @@ export function listAlmacenes(sedeFilter) {
       esAduana: Boolean(info?.esAduana),
       esReservados: Boolean(info?.esReservados),
       esProduccion: Boolean(info?.esProduccion),
+      esHerramientas: Boolean(info?.esHerramientas),
     }));
 }
 

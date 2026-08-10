@@ -10,6 +10,7 @@ const CONFIG_KEYS = [
   'contenedorReglas',
   'contenedorEspecial',
   'proyectosAlmacenes',
+  'herramientasAlmacenes',
 ];
 
 function isMissingTableError(error) {
@@ -95,6 +96,7 @@ function buildCatalogoFromRows(sedesRows, almacenesRows, armariosRows, configRow
       contenedorReglas: config.contenedorReglas,
       contenedorEspecial: config.contenedorEspecial ?? 'SC',
       proyectosAlmacenes: config.proyectosAlmacenes || {},
+      herramientasAlmacenes: config.herramientasAlmacenes || {},
     })
   );
 }
@@ -406,10 +408,12 @@ export async function ensureCatalogoSeededInDb(defaultCatalogo) {
       JSON.stringify(bootstrapped.sedes) !== JSON.stringify(current.sedes) ||
       JSON.stringify(bootstrapped.almacenes) !== JSON.stringify(current.almacenes) ||
       JSON.stringify(bootstrapped.proyectosAlmacenes || {}) !==
-        JSON.stringify(current.proyectosAlmacenes || {});
+        JSON.stringify(current.proyectosAlmacenes || {}) ||
+      JSON.stringify(bootstrapped.herramientasAlmacenes || {}) !==
+        JSON.stringify(current.herramientasAlmacenes || {});
     if (needsSave) {
       await saveCatalogoToDb(bootstrapped);
-      console.log('[Catalogo] Sedes/aduanas/proyectos bootstrap aplicado en Supabase');
+      console.log('[Catalogo] Sedes/aduanas/proyectos/herramientas bootstrap aplicado en Supabase');
     }
     return syncMissingFromContenedores(bootstrapped);
   }

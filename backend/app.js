@@ -102,6 +102,13 @@ import {
   postValidarItemRecepcion,
   postCerrarRecepcionParcial,
 } from './controllers/proyectosController.js';
+import {
+  getHerramientasHistorial,
+  getHerramientasPanol,
+  getHerramientasPendientes,
+  getHerramientasStock,
+  postMoverAlPanol,
+} from './controllers/herramientasController.js';
 import { loadCatalogo } from './services/catalogoService.js';
 import { applyCatalogo } from './services/ubicacionUtils.js';
 import path from 'path';
@@ -230,6 +237,28 @@ app.post('/api/egreso/lotes/:loteId/devolver', requireAuth, postIngresoLote);
 app.post('/api/ingreso/lote', requireAuth, postIngresoLote);
 app.post('/api/ingreso', requireAuth, postIngreso);
 app.post('/ingreso', requireAuth, postIngreso);
+
+// Pañol / Herramientas (préstamos con egreso-ingreso)
+app.get('/api/herramientas/panol', requireAuth, requirePermission('herramientas.ver'), getHerramientasPanol);
+app.get('/api/herramientas/stock', requireAuth, requirePermission('herramientas.ver'), getHerramientasStock);
+app.get(
+  '/api/herramientas/pendientes',
+  requireAuth,
+  requirePermission('herramientas.ver', 'herramientas.devolver'),
+  getHerramientasPendientes
+);
+app.get(
+  '/api/herramientas/historial',
+  requireAuth,
+  requirePermission('herramientas.ver'),
+  getHerramientasHistorial
+);
+app.post(
+  '/api/herramientas/mover-al-panol',
+  requireAuth,
+  requirePermission('herramientas.recibir'),
+  postMoverAlPanol
+);
 
 // Remitos y clientes
 app.get('/api/clientes', requireAuth, getClientes);

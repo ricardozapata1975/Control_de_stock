@@ -57,12 +57,19 @@ export const PATH_PERMISSION = {
   '/proyectos/prioridades': 'proyectos.prioridades',
   '/proyectos/reportes': 'proyectos.reportes',
   '/proyectos/configuracion': 'proyectos.configuracion',
+  '/herramientas': 'herramientas.ver',
+  '/herramientas/stock': 'herramientas.ver',
+  '/herramientas/prestar': 'herramientas.prestar',
+  '/herramientas/devolver': 'herramientas.devolver',
+  '/herramientas/historial': 'herramientas.ver',
+  '/herramientas/recibir': 'herramientas.recibir',
 };
 
 export function permissionForPath(pathname) {
   const path = String(pathname || '').split('?')[0];
   if (PATH_PERMISSION[path]) return PATH_PERMISSION[path];
   if (path.startsWith('/item/') || path.startsWith('/contenedor/')) return 'inventario.local';
+  if (path.startsWith('/herramientas')) return 'herramientas.ver';
   if (path.startsWith('/proyectos/') && path !== '/proyectos/lista') {
     const rest = path.slice('/proyectos/'.length);
     if (rest && !rest.includes('/')) return 'proyectos.lista';

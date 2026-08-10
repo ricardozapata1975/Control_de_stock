@@ -36,10 +36,16 @@ export const APP_PERMISSIONS = [
   { id: 'proyectos.pendientes_cierre', label: 'Pendientes de cierre', group: 'Proyectos', path: '/proyectos/pendientes-cierre' },
   { id: 'proyectos.devoluciones', label: 'Devoluciones', group: 'Proyectos', path: '/proyectos/devoluciones' },
   { id: 'proyectos.auditorias', label: 'Auditorías', group: 'Proyectos', path: '/proyectos/auditorias' },
-  { id: 'proyectos.herramientas', label: 'Herramientas', group: 'Proyectos', path: '/proyectos/herramientas' },
+  { id: 'proyectos.herramientas', label: 'Herramientas (legado proyectos)', group: 'Proyectos', path: '/proyectos/herramientas' },
   { id: 'proyectos.prioridades', label: 'Prioridades', group: 'Proyectos', path: '/proyectos/prioridades' },
   { id: 'proyectos.reportes', label: 'Reportes', group: 'Proyectos', path: '/proyectos/reportes' },
   { id: 'proyectos.configuracion', label: 'Config. módulo proyectos', group: 'Proyectos', path: '/proyectos/configuracion' },
+
+  // Herramientas / Pañol
+  { id: 'herramientas.ver', label: 'Pañol (ver stock e historial)', group: 'Herramientas', path: '/herramientas' },
+  { id: 'herramientas.prestar', label: 'Prestar herramientas', group: 'Herramientas', path: '/herramientas/prestar' },
+  { id: 'herramientas.devolver', label: 'Devolver herramientas', group: 'Herramientas', path: '/herramientas/devolver' },
+  { id: 'herramientas.recibir', label: 'Recibir en Pañol', group: 'Herramientas', path: '/herramientas/recibir' },
 
   // Admin / sistema
   { id: 'admin.roles', label: 'Roles y permisos del sitio', group: 'Administración', path: '/admin/roles' },
@@ -99,6 +105,10 @@ export function defaultRolesSeed() {
     'proyectos.herramientas',
     'proyectos.prioridades',
     'proyectos.reportes',
+    'herramientas.ver',
+    'herramientas.prestar',
+    'herramientas.devolver',
+    'herramientas.recibir',
   ]) {
     op[id] = true;
   }
@@ -114,6 +124,9 @@ export function defaultRolesSeed() {
     'proyectos.materiales',
     'proyectos.produccion',
     'proyectos.herramientas',
+    'herramientas.ver',
+    'herramientas.prestar',
+    'herramientas.devolver',
   ]) {
     taller[id] = true;
   }
@@ -140,6 +153,10 @@ export function defaultRolesSeed() {
     'proyectos.devoluciones',
     'proyectos.auditorias',
     'proyectos.reportes',
+    'herramientas.ver',
+    'herramientas.prestar',
+    'herramientas.devolver',
+    'herramientas.recibir',
   ]) {
     deposito[id] = true;
   }
@@ -154,8 +171,22 @@ export function defaultRolesSeed() {
     'proyectos.materiales',
     'proyectos.disponibles',
     'proyectos.reportes',
+    'herramientas.ver',
   ]) {
     consulta[id] = true;
+  }
+
+  const panolero = emptyPermMap();
+  for (const id of [
+    'inventario.local',
+    'inventario.qr',
+    'inventario.historial',
+    'herramientas.ver',
+    'herramientas.prestar',
+    'herramientas.devolver',
+    'herramientas.recibir',
+  ]) {
+    panolero[id] = true;
   }
 
   return [
@@ -188,6 +219,13 @@ export function defaultRolesSeed() {
       permisos: deposito,
     },
     {
+      codigo: 'panolero',
+      nombre: 'Pañolero',
+      descripcion: 'Gestión del Pañol: prestar, devolver y recibir herramientas.',
+      es_sistema: false,
+      permisos: panolero,
+    },
+    {
       codigo: 'consulta',
       nombre: 'Consulta',
       descripcion: 'Solo lectura / consulta.',
@@ -208,6 +246,7 @@ export function permissionForPath(pathname) {
     }
   }
   if (path.startsWith('/item/') || path.startsWith('/contenedor/')) return 'inventario.local';
+  if (path.startsWith('/herramientas')) return 'herramientas.ver';
 
   const exact = APP_PERMISSIONS.find((p) => p.path === path);
   if (exact) return exact.id;

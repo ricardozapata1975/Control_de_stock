@@ -7,6 +7,10 @@ export const ADUANA_CONTENEDOR = 'C01';
 export const PROYECTOS_ARMARIO = 'A00';
 export const PROYECTOS_ESTANTE = 'E00';
 
+export const HERRAMIENTAS_ARMARIO = 'A00';
+export const HERRAMIENTAS_ESTANTE = 'E00';
+export const HERRAMIENTAS_CONTENEDOR = 'C01';
+
 export function nextAlmacenCode(catalogo) {
   let num = catalogo.nextAlmacenNum || Object.keys(catalogo.almacenes || {}).length + 1;
   let code;
@@ -156,6 +160,56 @@ export function ensureProyectosAlmacenesForSede(catalogo, sedeCode, sedeNombre) 
   return { reservados: reservadosCode, produccion: produccionCode };
 }
 
+/**
+ * Depósito Pañol / Herramientas por sede (préstamos a operarios).
+ */
+export function ensureHerramientasAlmacenForSede(catalogo, sedeCode, sedeNombre) {
+  catalogo.almacenes = catalogo.almacenes || {};
+  catalogo.sedes = catalogo.sedes || {};
+  catalogo.herramientasAlmacenes = catalogo.herramientasAlmacenes || {};
+  const sedeInfo = catalogo.sedes[sedeCode] || { nombre: sedeNombre || sedeCode };
+  catalogo.sedes[sedeCode] = sedeInfo;
+
+  let herramientasCode =
+    catalogo.herramientasAlmacenes[sedeCode] ||
+    sedeInfo.herramientas?.almacen ||
+    findAlmacenByFlag(catalogo, sedeCode, 'esHerramientas') ||
+    findAlmacenByNombreHint(catalogo, sedeCode, ['herramientas / pañol', 'pañol', 'panol']);
+
+  if (!herramientasCode || !catalogo.almacenes[herramientasCode]) {
+    herramientasCode = nextAlmacenCode(catalogo);
+    catalogo.almacenes[herramientasCode] = {
+      sede: sedeCode,
+      tipo: 'Depósito',
+      nombre: `Herramientas / Pañol — ${sedeNombre || sedeCode}`,
+      esHerramientas: true,
+      armarios: {
+        [HERRAMIENTAS_ARMARIO]: {
+          nombre: 'Pañol de herramientas',
+          tipo: 'gabinete',
+        },
+      },
+      nextArmarioNum: 1,
+    };
+  } else {
+    catalogo.almacenes[herramientasCode].esHerramientas = true;
+    catalogo.almacenes[herramientasCode].sede = sedeCode;
+    if (!catalogo.almacenes[herramientasCode].nombre) {
+      catalogo.almacenes[herramientasCode].nombre = `Herramientas / Pañol — ${sedeNombre || sedeCode}`;
+    }
+  }
+
+  sedeInfo.herramientas = {
+    almacen: herramientasCode,
+    armario: HERRAMIENTAS_ARMARIO,
+    estante: HERRAMIENTAS_ESTANTE,
+    contenedor: HERRAMIENTAS_CONTENEDOR,
+  };
+  catalogo.herramientasAlmacenes[sedeCode] = herramientasCode;
+
+  return { herramientas: herramientasCode };
+}
+
 /** Marca flags especiales según refs de sede (tras cargar desde DB sin columnas extra). */
 export function annotateSpecialAlmacenes(catalogo) {
   const c = catalogo;
@@ -174,6 +228,11 @@ export function annotateSpecialAlmacenes(catalogo) {
     if (prodAlm && c.almacenes[prodAlm]) {
       c.almacenes[prodAlm].esProduccion = true;
     }
+    const herrAlm =
+      sedeInfo?.herramientas?.almacen || c.herramientasAlmacenes?.[sedeCode];
+    if (herrAlm && c.almacenes[herrAlm]) {
+      c.almacenes[herrAlm].esHerramientas = true;
+    }
   }
   return c;
 }
@@ -184,6 +243,7 @@ export function bootstrapSedesCatalog(catalogo) {
   c.sedes = c.sedes || {};
   c.almacenes = c.almacenes || {};
   c.proyectosAlmacenes = c.proyectosAlmacenes || {};
+  c.herramientasAlmacenes = c.herramientasAlmacenes || {};
   if (!c.nextSedeNum) {
     c.nextSedeNum = Math.max(2, Object.keys(c.sedes).length + 1);
   }
@@ -206,6 +266,7 @@ export function bootstrapSedesCatalog(catalogo) {
       createAduanaForSede(c, sedeCode, sedeInfo.nombre || sedeCode);
     }
     ensureProyectosAlmacenesForSede(c, sedeCode, sedeInfo.nombre || sedeCode);
+    ensureHerramientasAlmacenForSede(c, sedeCode, sedeInfo.nombre || sedeCode);
   }
 
   return annotateSpecialAlmacenes(c);

@@ -432,7 +432,7 @@ export const api = {
     const q = new URLSearchParams(params).toString();
     return request(`/api/proyectos/remitos-pendientes-cierre${q ? `?${q}` : ''}`);
   },
-  proyectoTransferencia: (id) =>
+    proyectoTransferencia: (id) =>
     request(`/api/proyectos/transferencias/${encodeURIComponent(id)}`),
   validarItemTransferencia: (id, body) =>
     request(`/api/proyectos/transferencias/${encodeURIComponent(id)}/validar-item`, {
@@ -444,6 +444,33 @@ export const api = {
       method: 'POST',
       body: JSON.stringify(body),
     }),
+
+  herramientasPanol: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && String(v).trim() !== ''))
+    ).toString();
+    return request(`/api/herramientas/panol${qs ? `?${qs}` : ''}`);
+  },
+  herramientasStock: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && String(v).trim() !== ''))
+    ).toString();
+    return request(`/api/herramientas/stock${qs ? `?${qs}` : ''}`);
+  },
+  herramientasPendientes: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && String(v).trim() !== ''))
+    ).toString();
+    return request(`/api/herramientas/pendientes${qs ? `?${qs}` : ''}`);
+  },
+  herramientasHistorial: (params = {}) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(Object.entries(params).filter(([, v]) => v != null && String(v).trim() !== ''))
+    ).toString();
+    return request(`/api/herramientas/historial${qs ? `?${qs}` : ''}`);
+  },
+  herramientasMoverAlPanol: (body) =>
+    request('/api/herramientas/mover-al-panol', { method: 'POST', body: JSON.stringify(body) }),
 
   downloadPlantilla: async () => {
     const token = getToken();

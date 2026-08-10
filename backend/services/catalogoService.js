@@ -21,11 +21,10 @@ import {
   updateNextSedeNumInDb,
 } from './catalogoDb.js';
 import {
-  ADUANA_ARMARIO,
-  ADUANA_CONTENEDOR,
-  ADUANA_ESTANTE,
   bootstrapSedesCatalog,
   createAduanaForSede,
+  ensureHerramientasAlmacenForSede,
+  ensureProyectosAlmacenesForSede,
   nextSedeCode,
 } from './sedeBootstrap.js';
 
@@ -334,26 +333,11 @@ export async function addSede({ nombre }) {
 
   c.sedes[codigo] = { nombre: nombreNorm };
   const aduana = createAduanaForSede(c, codigo, nombreNorm);
+  ensureProyectosAlmacenesForSede(c, codigo, nombreNorm);
+  ensureHerramientasAlmacenForSede(c, codigo, nombreNorm);
 
   if (useSupabaseCatalogo()) {
-    await insertSedeToDb({ codigo, nombre: nombreNorm, aduana });
-    const alm = c.almacenes[aduana.almacen];
-    await insertAlmacenToDb({
-      codigo: aduana.almacen,
-      tipo: alm.tipo,
-      nombre: alm.nombre,
-      sedeCodigo: codigo,
-      nextArmarioNum: alm.nextArmarioNum,
-      esAduana: true,
-    });
-    await insertArmarioToDb({
-      almacen: aduana.almacen,
-      codigo: ADUANA_ARMARIO,
-      nombre: alm.armarios[ADUANA_ARMARIO].nombre,
-      tipo: alm.armarios[ADUANA_ARMARIO].tipo,
-    });
-    await updateNextAlmacenNumInDb(c.nextAlmacenNum);
-    await updateNextSedeNumInDb(c.nextSedeNum);
+    await saveCatalogoToDb(c);
     invalidateCatalogoCache();
     const fresh = await loadCatalogo();
     applyCatalogo(fresh);
@@ -363,7 +347,12 @@ export async function addSede({ nombre }) {
     applyCatalogo(c);
   }
 
-  return { codigo, nombre: nombreNorm, aduana };
+  return {
+    codigo,
+    nombre: nombreNorm,
+    aduana,
+    herramientas: c.sedes[codigo]?.herramientas || null,
+  };
 }
 
 export async function assignAlmacenSede({ almacen, sede }) {

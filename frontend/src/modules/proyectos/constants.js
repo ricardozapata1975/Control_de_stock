@@ -53,7 +53,7 @@ export const PROYECTOS_NAV = [
   { to: '/proyectos/pendientes-cierre', label: 'Pendientes de cierre', desc: 'Recepciones parciales', icon: '📝' },
   { to: '/proyectos/devoluciones', label: 'Devoluciones', desc: 'Desde proyecto / reserva', icon: '↩️' },
   { to: '/proyectos/auditorias', label: 'Auditorías', desc: 'Físico vs sistema', icon: '🔎' },
-  { to: '/proyectos/herramientas', label: 'Herramientas', desc: 'Préstamos a operarios', icon: '🛠️' },
+  { to: '/proyectos/herramientas', label: 'Préstamos (legado)', desc: 'Bitácora sin stock', icon: '🛠️' },
   { to: '/proyectos/prioridades', label: 'Prioridades', desc: 'Criticidad', icon: '🎯' },
   { to: '/proyectos/reportes', label: 'Reportes', desc: 'Indicadores y movimientos', icon: '📊' },
   { to: '/proyectos/configuracion', label: 'Configuración', desc: 'Roles (diseño)', icon: '⚙️' },

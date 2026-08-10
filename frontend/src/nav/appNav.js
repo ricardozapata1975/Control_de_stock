@@ -1,8 +1,9 @@
 import { PROYECTOS_NAV } from '../modules/proyectos/constants';
+import { HERRAMIENTAS_NAV } from '../modules/herramientas/constants';
 import { hasPermission, PATH_PERMISSION } from '../utils/permissions';
 
 /**
- * Menú principal (Inventario / Agenda / Proyectos).
+ * Menú principal (Inventario / Agenda / Proyectos / Herramientas).
  * Cada acceso lleva `permission` para filtrar por rol.
  */
 export const APP_NAV_GROUPS = [
@@ -37,6 +38,18 @@ export const APP_NAV_GROUPS = [
       { to: '/admin/editor-stock', label: 'Editor de Stock', permission: 'inventario.editor_stock' },
       { to: '/admin/importar', label: 'Importar CSV', permission: 'inventario.importar' },
     ],
+  },
+  {
+    id: 'herramientas',
+    label: 'Herramientas',
+    to: '/herramientas',
+    match: (path) => path === '/herramientas' || path.startsWith('/herramientas/'),
+    accesos: HERRAMIENTAS_NAV.map((item) => ({
+      to: item.to,
+      label: item.label,
+      desc: item.desc,
+      permission: item.permission || PATH_PERMISSION[item.to] || 'herramientas.ver',
+    })),
   },
   {
     id: 'agenda',

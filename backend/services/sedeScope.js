@@ -26,11 +26,11 @@ export function almacenesCodigosDeSede(sedeCodigo) {
   return listAlmacenes(code).map((a) => a.codigo);
 }
 
-/** Stock “disponible general”: excluye aduana, reservados y producción. */
+/** Stock “disponible general”: excluye aduana, reservados, producción y pañol. */
 export function almacenesGeneralesCodigosDeSede(sedeCodigo) {
   const code = canonicalSedeCode(sedeCodigo || SEDE_DEFAULT) || SEDE_DEFAULT;
   return listAlmacenes(code)
-    .filter((a) => !a.esAduana && !a.esReservados && !a.esProduccion)
+    .filter((a) => !a.esAduana && !a.esReservados && !a.esProduccion && !a.esHerramientas)
     .map((a) => a.codigo);
 }
 
@@ -40,6 +40,12 @@ export function getProyectosAlmacenesSede(sedeCodigo) {
   const reservados = list.find((a) => a.esReservados)?.codigo || null;
   const produccion = list.find((a) => a.esProduccion)?.codigo || null;
   return { reservados, produccion };
+}
+
+export function getHerramientasAlmacenSede(sedeCodigo) {
+  const code = canonicalSedeCode(sedeCodigo || SEDE_DEFAULT) || SEDE_DEFAULT;
+  const list = listAlmacenes(code);
+  return list.find((a) => a.esHerramientas)?.codigo || null;
 }
 
 /** Extrae sede de query/body/usuario de sesión (prioridad: explícito → sesión). */
