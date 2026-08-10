@@ -5,6 +5,7 @@ export const DEFAULT_FILTERS = {
   q: '',
   almacen: '',
   armario: '',
+  estante: '',
   contenedor: '',
   tipo: '',
   familia: '',
@@ -36,6 +37,7 @@ export function hasActiveInventoryFilters(filters = DEFAULT_FILTERS) {
     filters.q?.trim() ||
     filters.almacen ||
     filters.armario ||
+    filters.estante ||
     filters.contenedor ||
     filters.tipo ||
     filters.familia?.trim() ||
@@ -50,6 +52,7 @@ function buildInventarioParams(filters) {
   if (q) params.q = q;
   if (filters.almacen) params.almacen = filters.almacen;
   if (filters.armario) params.armario = filters.armario;
+  if (filters.estante) params.estante = filters.estante;
   if (filters.contenedor) params.contenedor = filters.contenedor;
   if (filters.tipo) params.tipo = filters.tipo;
   if (filters.familia?.trim()) params.familia = filters.familia.trim();

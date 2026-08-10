@@ -112,6 +112,7 @@ export default function Dashboard() {
     if (filters.almacen && !validAlmacenes.has(filters.almacen)) {
       patch.almacen = '';
       patch.armario = '';
+      patch.estante = '';
       patch.contenedor = '';
     }
 
@@ -120,6 +121,7 @@ export default function Dashboard() {
       const validArmarios = new Set(armarios.map((a) => a.codigo));
       if (!validArmarios.has(filters.armario)) {
         patch.armario = '';
+        patch.estante = '';
         patch.contenedor = '';
       }
     }
@@ -135,19 +137,19 @@ export default function Dashboard() {
 
   useEffect(() => {
     setPage(1);
-  }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.familia, filters.tema, filters.codigo, filters.scanType, pageSize]);
+  }, [filters.q, filters.almacen, filters.armario, filters.estante, filters.contenedor, filters.tipo, filters.familia, filters.tema, filters.codigo, filters.scanType, pageSize]);
 
   useEffect(() => {
     const codigo = searchParams.get('codigo');
     const tipoUbicacion = searchParams.get('tipoUbicacion') || '';
     if (codigo) {
-      setFilters({ codigo, scanType: tipoUbicacion, armario: '', contenedor: '' });
+      setFilters({ codigo, scanType: tipoUbicacion, armario: '', estante: '', contenedor: '' });
     }
   }, [searchParams, setFilters]);
 
   useEffect(() => {
     fetchInventario();
-  }, [filters.q, filters.almacen, filters.armario, filters.contenedor, filters.tipo, filters.familia, filters.tema, filters.codigo, filters.sede]);
+  }, [filters.q, filters.almacen, filters.armario, filters.estante, filters.contenedor, filters.tipo, filters.familia, filters.tema, filters.codigo, filters.sede]);
 
   useEffect(() => {
     const codigo = resolveCodigoContenedorFiltrado({
@@ -321,6 +323,7 @@ export default function Dashboard() {
           if (
             (f.armario !== undefined && f.armario) ||
             (f.almacen !== undefined && f.almacen) ||
+            (f.estante !== undefined && f.estante) ||
             (f.contenedor !== undefined && f.contenedor)
           ) {
             setFilters({ ...f, codigo: '', scanType: '' });

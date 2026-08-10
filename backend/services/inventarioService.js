@@ -102,6 +102,9 @@ export async function listInventario(filters = {}) {
         q = q.eq('armario', filters.armario);
         if (filters.almacen) q = q.eq('almacen', filters.almacen);
       }
+      if (filters.estante) {
+        q = q.eq('estante', String(filters.estante).trim().toUpperCase());
+      }
       const cont = String(filters.contenedor || '').trim().toUpperCase();
       if (cont) {
         q = q.eq('contenedor', cont);
@@ -144,6 +147,9 @@ export async function listInventario(filters = {}) {
       fallback = applySedeViaAlmacenes(fallback, sede);
       if (filters.almacen) fallback = fallback.eq('almacen', filters.almacen);
       if (filters.armario) fallback = fallback.eq('armario', filters.armario);
+      if (filters.estante) {
+        fallback = fallback.eq('estante', String(filters.estante).trim().toUpperCase());
+      }
       const contFb = String(filters.contenedor || '').trim().toUpperCase();
       if (contFb) fallback = fallback.eq('contenedor', contFb);
       if (filters.tipo) fallback = fallback.ilike('tipo', filters.tipo);

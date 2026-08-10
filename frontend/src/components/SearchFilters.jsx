@@ -1,5 +1,5 @@
 import { useMemo } from 'react';
-import { ALMACENES, ARMARIOS, getArmarioNombre, getArmariosForAlmacen } from '../utils/ubicacion';
+import { ALMACENES, ARMARIOS, ESTANTES, getArmarioNombre, getArmariosForAlmacen } from '../utils/ubicacion';
 
 export default function SearchFilters({
   filters,
@@ -10,6 +10,7 @@ export default function SearchFilters({
   armariosPorAlmacen,
   contenedores,
   tipos,
+  estantes,
   variant = 'full',
 }) {
   const ubicacionOnly = variant === 'ubicacion';
@@ -24,9 +25,31 @@ export default function SearchFilters({
 
   const selectedAlmacen = filters.almacen || '';
   const selectedArmario = filters.armario || '';
+  const selectedEstante = filters.estante || '';
   const armarioList = selectedAlmacen
     ? getArmariosForAlmacen({ armariosPorAlmacen }, selectedAlmacen)
     : Object.entries(ARMARIOS).map(([codigo, nombre]) => ({ codigo, nombre }));
+
+  const estanteList = useMemo(() => {
+    const catalog = Array.isArray(estantes) && estantes.length ? estantes : ESTANTES;
+    const list = Array.isArray(contenedores) ? contenedores : [];
+    const fromCont = new Set();
+    for (const c of list) {
+      if (selectedAlmacen && c.almacen && c.almacen !== selectedAlmacen) continue;
+      if (selectedArmario && c.armario && c.armario !== selectedArmario) continue;
+      const code = String(c.estante || '').trim().toUpperCase();
+      if (code) fromCont.add(code);
+    }
+    if (fromCont.size) {
+      return [...fromCont]
+        .sort((a, b) => a.localeCompare(b, 'es', { numeric: true }))
+        .map((codigo) => {
+          const found = catalog.find((e) => e.codigo === codigo);
+          return { codigo, nombre: found?.nombre || codigo };
+        });
+    }
+    return catalog;
+  }, [contenedores, estantes, selectedAlmacen, selectedArmario]);
 
   const contenedorOptions = useMemo(() => {
     const list = Array.isArray(contenedores) ? contenedores : [];
@@ -34,18 +57,23 @@ export default function SearchFilters({
     for (const c of list) {
       if (selectedAlmacen && c.almacen && c.almacen !== selectedAlmacen) continue;
       if (selectedArmario && c.armario && c.armario !== selectedArmario) continue;
+      if (selectedEstante && c.estante && c.estante !== selectedEstante) continue;
       const code = String(c.contenedor || '').trim().toUpperCase();
       if (code) codes.add(code);
     }
     return [...codes].sort((a, b) => a.localeCompare(b, 'es', { numeric: true }));
-  }, [contenedores, selectedAlmacen, selectedArmario]);
+  }, [contenedores, selectedAlmacen, selectedArmario, selectedEstante]);
 
   const handleAlmacenChange = (almacen) => {
-    onChange({ almacen, armario: '', contenedor: '' });
+    onChange({ almacen, armario: '', estante: '', contenedor: '' });
   };
 
   const handleArmarioChange = (armario) => {
-    onChange({ armario, contenedor: '' });
+    onChange({ armario, estante: '', contenedor: '' });
+  };
+
+  const handleEstanteChange = (estante) => {
+    onChange({ estante, contenedor: '' });
   };
 
   return (
@@ -59,7 +87,7 @@ export default function SearchFilters({
       )}
       <div
         className={`card grid min-w-0 max-w-full gap-3 overflow-hidden ${
-          ubicacionOnly ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5'
+          ubicacionOnly ? 'sm:grid-cols-2' : 'sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6'
         }`}
       >
       {!ubicacionOnly && (
@@ -104,6 +132,25 @@ export default function SearchFilters({
           ))}
         </select>
       </div>
+      {!ubicacionOnly && (
+        <div className="min-w-0">
+          <label className="text-label">Estante</label>
+          <select
+            className="input-field max-w-full"
+            value={filters.estante || ''}
+            onChange={(e) => handleEstanteChange(e.target.value)}
+            disabled={!selectedAlmacen}
+          >
+            <option value="">{selectedAlmacen ? 'Todos' : 'Elegí almacén primero'}</option>
+            {estanteList.map((e) => (
+              <option key={e.codigo} value={e.codigo}>
+                {e.codigo}
+                {e.nombre && e.nombre !== e.codigo ? ` — ${e.nombre}` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       {!ubicacionOnly && (
         <div className="min-w-0">
           <label className="text-label">Contenedor</label>
