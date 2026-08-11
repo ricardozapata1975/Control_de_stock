@@ -127,7 +127,22 @@ export async function listDisponiblesNetos(filters = {}) {
         marca: row.marca,
         modelo: row.modelo,
         tipo: row.tipo,
+        detalle: row.detalle || '',
         codigoFabricante: row.codigoFabricante || '',
+        imagenUrl: row.imagenUrl || '',
+        familia: row.familia || '',
+        subfamilia: row.subfamilia || '',
+        tema: row.tema || '',
+        unidad: row.unidad || '',
+        packing: row.packing || '',
+        precioLista: row.precioLista ?? null,
+        moneda: row.moneda || '',
+        pesoKg: row.pesoKg ?? null,
+        calibracion: row.calibracion || '',
+        comentario: row.comentario || '',
+        fechaRelevamiento: row.fechaRelevamiento || '',
+        catalogoFuente: row.catalogoFuente || '',
+        catalogoVigencia: row.catalogoVigencia || '',
         sede: sede || row.sede || null,
         cantidadFisica: 0,
         cantidadReservada: reservadoByItem[id] || 0,
@@ -147,6 +162,70 @@ export async function listDisponiblesNetos(filters = {}) {
   }
 
   // Ítems solo reservados (sin físico en sede) también aparecen con neto negativo o 0
+  const missingIds = Object.keys(reservadoByItem).filter((id) => !byItem[id] || !byItem[id].nombre);
+  if (missingIds.length) {
+    const { data: metaRows } = await supabase
+      .from('items')
+      .select(
+        'id, nombre, marca, modelo, tipo, detalle, codigo_fabricante, familia, subfamilia, tema, unidad, packing, precio_lista, moneda, peso_kg, calibracion, comentario, fecha_relevamiento, catalogo_fuente, catalogo_vigencia, imagen_path'
+      )
+      .in('id', missingIds);
+    for (const meta of metaRows || []) {
+      const qty = reservadoByItem[meta.id] || 0;
+      if (!byItem[meta.id]) {
+        byItem[meta.id] = {
+          itemId: meta.id,
+          nombre: meta.nombre,
+          marca: meta.marca,
+          modelo: meta.modelo,
+          tipo: meta.tipo,
+          detalle: meta.detalle || '',
+          codigoFabricante: meta.codigo_fabricante || '',
+          imagenUrl: '',
+          familia: meta.familia || '',
+          subfamilia: meta.subfamilia || '',
+          tema: meta.tema || '',
+          unidad: meta.unidad || '',
+          packing: meta.packing || '',
+          precioLista: meta.precio_lista != null ? Number(meta.precio_lista) : null,
+          moneda: meta.moneda || '',
+          pesoKg: meta.peso_kg != null ? Number(meta.peso_kg) : null,
+          calibracion: meta.calibracion || '',
+          comentario: meta.comentario || '',
+          fechaRelevamiento: meta.fecha_relevamiento || '',
+          catalogoFuente: meta.catalogo_fuente || '',
+          catalogoVigencia: meta.catalogo_vigencia || '',
+          sede,
+          cantidadFisica: 0,
+          cantidadReservada: qty,
+          ubicaciones: [],
+        };
+      } else if (!byItem[meta.id].nombre) {
+        Object.assign(byItem[meta.id], {
+          nombre: meta.nombre,
+          marca: meta.marca,
+          modelo: meta.modelo,
+          tipo: meta.tipo,
+          detalle: meta.detalle || byItem[meta.id].detalle,
+          codigoFabricante: meta.codigo_fabricante || byItem[meta.id].codigoFabricante,
+          familia: meta.familia || '',
+          subfamilia: meta.subfamilia || '',
+          tema: meta.tema || '',
+          unidad: meta.unidad || '',
+          packing: meta.packing || '',
+          precioLista: meta.precio_lista != null ? Number(meta.precio_lista) : null,
+          moneda: meta.moneda || '',
+          pesoKg: meta.peso_kg != null ? Number(meta.peso_kg) : null,
+          calibracion: meta.calibracion || '',
+          comentario: meta.comentario || '',
+          fechaRelevamiento: meta.fecha_relevamiento || '',
+          catalogoFuente: meta.catalogo_fuente || '',
+          catalogoVigencia: meta.catalogo_vigencia || '',
+        });
+      }
+    }
+  }
+
   for (const [itemId, qty] of Object.entries(reservadoByItem)) {
     if (!byItem[itemId]) {
       byItem[itemId] = {

@@ -71,7 +71,7 @@ function mapMaterial(row) {
   };
 }
 
-function mapReserva(row) {
+function mapReserva(row, itemMeta = {}, extras = {}) {
   return {
     id: row.id,
     proyectoId: row.proyecto_id,
@@ -87,6 +87,19 @@ function mapReserva(row) {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    nombre: itemMeta.nombre || extras.nombre || null,
+    marca: itemMeta.marca || null,
+    modelo: itemMeta.modelo || null,
+    tipo: itemMeta.tipo || null,
+    codigoFabricante:
+      itemMeta.codigo_fabricante ||
+      itemMeta.codigoFabricante ||
+      extras.codigoArticulo ||
+      null,
+    detalle: itemMeta.detalle || null,
+    tableroNombre: extras.tableroNombre || null,
+    codigoArticulo: extras.codigoArticulo || null,
+    contenedorCodigo: extras.contenedorCodigo || null,
   };
 }
 
@@ -530,7 +543,49 @@ export async function listReservas(filters) {
     const ids = new Set((proyectos || []).map((p) => p.id));
     rows = rows.filter((r) => ids.has(r.proyecto_id));
   }
-  return rows.map(mapReserva);
+
+  const itemIds = [...new Set(rows.map((r) => r.item_id).filter(Boolean))];
+  const tableroIds = [...new Set(rows.map((r) => r.tablero_id).filter(Boolean))];
+  const materialIds = [...new Set(rows.map((r) => r.material_id).filter(Boolean))];
+  const contenedorIds = [...new Set(rows.map((r) => r.contenedor_id).filter(Boolean))];
+
+  const [itemsRes, tablerosRes, matsRes, contRes] = await Promise.all([
+    itemIds.length
+      ? supabase
+          .from('items')
+          .select('id, nombre, marca, modelo, tipo, detalle, codigo_fabricante')
+          .in('id', itemIds)
+      : Promise.resolve({ data: [] }),
+    tableroIds.length
+      ? supabase.from('proyecto_tableros').select('id, nombre, codigo').in('id', tableroIds)
+      : Promise.resolve({ data: [] }),
+    materialIds.length
+      ? supabase
+          .from('proyecto_materiales')
+          .select('id, codigo_articulo, descripcion')
+          .in('id', materialIds)
+      : Promise.resolve({ data: [] }),
+    contenedorIds.length
+      ? supabase.from('contenedores').select('id, codigo').in('id', contenedorIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const itemsById = Object.fromEntries((itemsRes.data || []).map((i) => [i.id, i]));
+  const tablerosById = Object.fromEntries((tablerosRes.data || []).map((t) => [t.id, t]));
+  const matsById = Object.fromEntries((matsRes.data || []).map((m) => [m.id, m]));
+  const contById = Object.fromEntries((contRes.data || []).map((c) => [c.id, c]));
+
+  return rows.map((row) => {
+    const tab = tablerosById[row.tablero_id];
+    const mat = matsById[row.material_id];
+    const cont = contById[row.contenedor_id];
+    return mapReserva(row, itemsById[row.item_id] || {}, {
+      tableroNombre: tab ? tab.nombre || tab.codigo || null : null,
+      codigoArticulo: mat?.codigo_articulo || null,
+      nombre: mat?.descripcion || null,
+      contenedorCodigo: cont?.codigo || null,
+    });
+  });
 }
 
 export async function listFaltantes(filters) {

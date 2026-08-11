@@ -109,7 +109,7 @@ function mapMaterial(row) {
   };
 }
 
-function mapReserva(row) {
+function mapReserva(row, itemMeta = {}, extras = {}) {
   return {
     id: row.id,
     proyectoId: row.proyecto_id,
@@ -125,6 +125,21 @@ function mapReserva(row) {
     createdBy: row.created_by,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    nombre: itemMeta.nombre || row.nombre || extras.nombre || null,
+    marca: itemMeta.marca || row.marca || null,
+    modelo: itemMeta.modelo || row.modelo || null,
+    tipo: itemMeta.tipo || row.tipo || null,
+    codigoFabricante:
+      itemMeta.codigo_fabricante ||
+      itemMeta.codigoFabricante ||
+      row.codigo_fabricante ||
+      row.codigoFabricante ||
+      extras.codigoArticulo ||
+      null,
+    detalle: itemMeta.detalle || row.detalle || null,
+    tableroNombre: extras.tableroNombre || row.tablero_nombre || null,
+    codigoArticulo: extras.codigoArticulo || row.codigo_articulo || null,
+    contenedorCodigo: extras.contenedorCodigo || row.contenedor_codigo || null,
   };
 }
 

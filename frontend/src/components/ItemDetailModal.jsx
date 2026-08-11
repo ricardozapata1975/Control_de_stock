@@ -57,6 +57,8 @@ export default function ItemDetailModal({
   onDelete,
   onAssignBarcode,
   onAssignPhoto,
+  viewOnly = false,
+  stockBreakdown = null,
 }) {
   useEffect(() => {
     if (!item) return undefined;
@@ -69,7 +71,8 @@ export default function ItemDetailModal({
 
   if (!item) return null;
 
-  const canEgreso = item.cantidad > 0;
+  const canEgreso = !viewOnly && typeof onEgreso === 'function' && item.cantidad > 0;
+  const showActions = !viewOnly;
 
   return (
     <div
@@ -111,20 +114,55 @@ export default function ItemDetailModal({
         <dl className="space-y-4 text-sm">
           <DetailRow label="Herramienta" value={herramientaLabel(item)} />
           <DetailRow label="Ubicación" value={formatUbicacionLabel(item)} multiline />
-          <DetailRow
-            label="Stock"
-            value={
-              <span
-                className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
-                  item.cantidad <= 2
-                    ? 'bg-amber-800 text-amber-100'
-                    : 'bg-emerald-800 text-emerald-100'
-                }`}
-              >
-                {item.cantidad}
-              </span>
-            }
-          />
+          {stockBreakdown ? (
+            <>
+              <DetailRow label="Físico" value={display(stockBreakdown.fisico)} />
+              <DetailRow label="Reservado" value={display(stockBreakdown.reservado)} />
+              <DetailRow
+                label="Neto"
+                value={
+                  <span
+                    className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                      Number(stockBreakdown.neto) < 0
+                        ? 'bg-red-900 text-red-100'
+                        : Number(stockBreakdown.neto) === 0
+                          ? 'bg-slate-700 text-slate-100'
+                          : 'bg-emerald-800 text-emerald-100'
+                    }`}
+                  >
+                    {stockBreakdown.neto}
+                  </span>
+                }
+              />
+            </>
+          ) : (
+            <DetailRow
+              label="Stock"
+              value={
+                <span
+                  className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                    item.cantidad <= 2
+                      ? 'bg-amber-800 text-amber-100'
+                      : 'bg-emerald-800 text-emerald-100'
+                  }`}
+                >
+                  {item.cantidad}
+                </span>
+              }
+            />
+          )}
+          {Array.isArray(item.ubicaciones) && item.ubicaciones.length > 0 ? (
+            <DetailRow
+              label="Ubicaciones"
+              multiline
+              value={item.ubicaciones
+                .map(
+                  (u) =>
+                    `${u.contenedorCodigo || [u.almacen, u.armario, u.estante, u.contenedor].filter(Boolean).join('-') || '—'} (${u.cantidad})`
+                )
+                .join('\n')}
+            />
+          ) : null}
           <DetailRow label="Tipo" value={display(item.tipo)} />
           <DetailRow label="Detalle" value={display(item.detalle)} multiline />
           <DetailRow
@@ -162,45 +200,51 @@ export default function ItemDetailModal({
           <DetailRow label="Vigencia" value={display(item.catalogoVigencia)} />
         </dl>
 
-        <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {canEgreso && (
-            <button type="button" className="btn-primary min-h-[44px] flex-1 sm:flex-none" onClick={() => onEgreso(item)}>
-              Egreso
+        {showActions && (
+          <div className="mt-6 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+            {canEgreso && (
+              <button
+                type="button"
+                className="btn-primary min-h-[44px] flex-1 sm:flex-none"
+                onClick={() => onEgreso(item)}
+              >
+                Egreso
+              </button>
+            )}
+            <button
+              type="button"
+              className="btn-secondary min-h-[44px] flex-1 sm:flex-none"
+              onClick={() => onAssignPhoto?.(item)}
+            >
+              {item.imagenUrl ? 'Cambiar foto' : 'Agregar foto'}
             </button>
-          )}
-          <button
-            type="button"
-            className="btn-secondary min-h-[44px] flex-1 sm:flex-none"
-            onClick={() => onAssignPhoto?.(item)}
-          >
-            {item.imagenUrl ? 'Cambiar foto' : 'Agregar foto'}
-          </button>
-          <button
-            type="button"
-            className="btn-secondary min-h-[44px] flex-1 sm:flex-none"
-            onClick={() => onAssignBarcode?.(item)}
-          >
-            {item.codigoFabricante ? 'Cambiar código de barras' : 'Agregar código de barras'}
-          </button>
-          {isAdmin && (
-            <>
-              <button
-                type="button"
-                className="btn-secondary min-h-[44px] flex-1 sm:flex-none"
-                onClick={() => onEdit(item)}
-              >
-                Editar
-              </button>
-              <button
-                type="button"
-                className="min-h-[44px] flex-1 rounded-lg border border-red-700 px-4 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-950 sm:flex-none"
-                onClick={() => onDelete(item)}
-              >
-                Eliminar
-              </button>
-            </>
-          )}
-        </div>
+            <button
+              type="button"
+              className="btn-secondary min-h-[44px] flex-1 sm:flex-none"
+              onClick={() => onAssignBarcode?.(item)}
+            >
+              {item.codigoFabricante ? 'Cambiar código de barras' : 'Agregar código de barras'}
+            </button>
+            {isAdmin && (
+              <>
+                <button
+                  type="button"
+                  className="btn-secondary min-h-[44px] flex-1 sm:flex-none"
+                  onClick={() => onEdit(item)}
+                >
+                  Editar
+                </button>
+                <button
+                  type="button"
+                  className="min-h-[44px] flex-1 rounded-lg border border-red-700 px-4 py-2 text-sm font-semibold text-red-200 transition hover:bg-red-950 sm:flex-none"
+                  onClick={() => onDelete(item)}
+                >
+                  Eliminar
+                </button>
+              </>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );

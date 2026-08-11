@@ -3,6 +3,14 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 
+function itemTitle(r) {
+  return r.nombre || r.codigoArticulo || r.codigoFabricante || 'Ítem sin nombre';
+}
+
+function itemSubtitle(r) {
+  return [r.marca, r.modelo, r.tipo].filter(Boolean).join(' · ');
+}
+
 export default function ReservasPage() {
   const { sede } = useAuth();
   const [params] = useSearchParams();
@@ -71,15 +79,37 @@ export default function ReservasPage() {
 
       <ul className="space-y-2">
         {reservas.map((r) => (
-          <li key={r.id} className="card flex flex-wrap items-center justify-between gap-2">
-            <div className="text-sm">
-              <p className="font-semibold text-content">{nombreProyecto(r.proyectoId)}</p>
-              <p className="font-mono text-xs text-muted">item {r.itemId}</p>
-              <p>
-                Cantidad: <strong className="text-accent">{r.cantidad}</strong>
+          <li key={r.id} className="card flex flex-wrap items-start justify-between gap-3">
+            <div className="min-w-0 flex-1 space-y-1 text-sm">
+              <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
+                {nombreProyecto(r.proyectoId)}
+                {r.tableroNombre ? ` · ${r.tableroNombre}` : ''}
               </p>
+              <p className="font-semibold text-content">{itemTitle(r)}</p>
+              {itemSubtitle(r) ? <p className="text-xs text-muted">{itemSubtitle(r)}</p> : null}
+              <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
+                {(r.codigoFabricante || r.codigoArticulo) && (
+                  <span>
+                    Código:{' '}
+                    <span className="font-mono text-content">
+                      {r.codigoFabricante || r.codigoArticulo}
+                    </span>
+                  </span>
+                )}
+                {r.contenedorCodigo && (
+                  <span>
+                    Ubicación: <span className="font-mono text-content">{r.contenedorCodigo}</span>
+                  </span>
+                )}
+                <span>
+                  Cantidad: <strong className="text-accent">{r.cantidad}</strong>
+                </span>
+              </div>
+              {r.detalle ? (
+                <p className="line-clamp-2 text-xs text-muted">{r.detalle}</p>
+              ) : null}
             </div>
-            <div className="flex gap-2">
+            <div className="flex shrink-0 gap-2">
               <button type="button" className="btn-secondary text-sm" onClick={() => liberar(r.id)}>
                 Liberar
               </button>
