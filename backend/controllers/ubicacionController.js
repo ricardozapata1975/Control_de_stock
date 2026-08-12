@@ -1,5 +1,11 @@
 import { getCatalogoUbicacion } from '../services/ubicacionService.js';
-import { addAlmacen, addArmario, addSede, assignAlmacenSede } from '../services/catalogoService.js';
+import {
+  addAlmacen,
+  addArmario,
+  addSede,
+  assignAlmacenSede,
+  setAlmacenVisibleOtrasSedes,
+} from '../services/catalogoService.js';
 import { almacenesCodigosDeSede } from '../services/sedeScope.js';
 import { normalizeAlmacen } from '../services/ubicacionUtils.js';
 
@@ -50,6 +56,17 @@ export async function postSede(req, res) {
 export async function patchAlmacenSede(req, res) {
   const { almacen, sede } = req.body || {};
   const result = await assignAlmacenSede({ almacen, sede });
+  res.json({
+    ok: true,
+    ...result,
+    catalogo: getCatalogoUbicacion(undefined, req.user?.sede || undefined),
+  });
+}
+
+export async function patchAlmacenVisibleOtrasSedes(req, res) {
+  const { almacen, visible, visibleOtrasSedes } = req.body || {};
+  const flag = visible !== undefined ? visible : visibleOtrasSedes;
+  const result = await setAlmacenVisibleOtrasSedes({ almacen, visible: flag });
   res.json({
     ok: true,
     ...result,

@@ -47,6 +47,7 @@ export default function ConsultaSucursales() {
       const data = await api.inventario({
         sede: target,
         q: opts.q !== undefined ? opts.q : q,
+        visiblesOtrasSedes: 1,
       });
       setItems(data.items || []);
     } catch (e) {
@@ -110,8 +111,10 @@ export default function ConsultaSucursales() {
         <h2 className="page-title">Consulta otras sucursales</h2>
         <p className="mt-1 text-sm text-muted">
           Solo lectura. Tu sucursal activa es{' '}
-          <strong className="text-content">{sedeNombre || sede || '—'}</strong>. Podés pedir envío
-          por correo; el stock no se mueve solo.
+          <strong className="text-content">{sedeNombre || sede || '—'}</strong>. Se muestra el stock
+          de depósitos habilitados para otras sucursales (no aduana, reservados, producción ni
+          pañol, salvo que los actives en Locaciones). Podés pedir envío por correo; el stock no se
+          mueve solo.
         </p>
       </div>
 

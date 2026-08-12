@@ -214,6 +214,7 @@ export function ensureHerramientasAlmacenForSede(catalogo, sedeCode, sedeNombre)
 export function annotateSpecialAlmacenes(catalogo) {
   const c = catalogo;
   c.almacenes = c.almacenes || {};
+  c.almacenesVisibleOtrasSedes = c.almacenesVisibleOtrasSedes || {};
   for (const [sedeCode, sedeInfo] of Object.entries(c.sedes || {})) {
     const aduanaAlm = sedeInfo?.aduana?.almacen;
     if (aduanaAlm && c.almacenes[aduanaAlm]) {
@@ -232,6 +233,20 @@ export function annotateSpecialAlmacenes(catalogo) {
       sedeInfo?.herramientas?.almacen || c.herramientasAlmacenes?.[sedeCode];
     if (herrAlm && c.almacenes[herrAlm]) {
       c.almacenes[herrAlm].esHerramientas = true;
+    }
+  }
+
+  // Visibilidad en “otras sucursales”: por defecto solo depósitos generales.
+  for (const [code, info] of Object.entries(c.almacenes)) {
+    const special =
+      Boolean(info?.esAduana) ||
+      Boolean(info?.esReservados) ||
+      Boolean(info?.esProduccion) ||
+      Boolean(info?.esHerramientas);
+    if (Object.prototype.hasOwnProperty.call(c.almacenesVisibleOtrasSedes, code)) {
+      info.visibleOtrasSedes = Boolean(c.almacenesVisibleOtrasSedes[code]);
+    } else {
+      info.visibleOtrasSedes = !special;
     }
   }
   return c;

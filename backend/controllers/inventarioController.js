@@ -20,6 +20,7 @@ export async function getInventario(req, res) {
       typeof req.query.subfamilia === 'string' ? req.query.subfamilia.trim() : req.query.subfamilia,
     tema: typeof req.query.tema === 'string' ? req.query.tema.trim() : req.query.tema,
     sede: req.query.sede || req.user?.sede || '',
+    visiblesOtrasSedes: req.query.visiblesOtrasSedes,
   });
   res.json(data);
 }

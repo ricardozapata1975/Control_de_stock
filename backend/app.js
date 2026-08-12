@@ -28,7 +28,7 @@ import {
 } from './controllers/rolesController.js';
 import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, getStockByAlmacen, postAltaStock, postBajaItem, postPurgeAlmacenStock, putUpdateItem, postItemImagen, deleteItemImagen } from './controllers/adminController.js';
-import { getCatalogo, postAlmacen, postArmario, postSede, patchAlmacenSede } from './controllers/ubicacionController.js';
+import { getCatalogo, postAlmacen, postArmario, postSede, patchAlmacenSede, patchAlmacenVisibleOtrasSedes } from './controllers/ubicacionController.js';
 import { getTipos } from './controllers/tiposController.js';
 import docsRouter from './routes/docs.js';
 import {
@@ -223,6 +223,12 @@ app.patch(
   requireAuth,
   requirePermission('agenda.locaciones'),
   patchAlmacenSede
+);
+app.patch(
+  '/api/admin/catalogo/almacen-visible-otras-sedes',
+  requireAuth,
+  requirePermission('agenda.locaciones'),
+  patchAlmacenVisibleOtrasSedes
 );
 
 // Contenedores / QR

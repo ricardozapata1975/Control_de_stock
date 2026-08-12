@@ -11,6 +11,7 @@ const CONFIG_KEYS = [
   'contenedorEspecial',
   'proyectosAlmacenes',
   'herramientasAlmacenes',
+  'almacenesVisibleOtrasSedes',
 ];
 
 function isMissingTableError(error) {
@@ -97,6 +98,7 @@ function buildCatalogoFromRows(sedesRows, almacenesRows, armariosRows, configRow
       contenedorEspecial: config.contenedorEspecial ?? 'SC',
       proyectosAlmacenes: config.proyectosAlmacenes || {},
       herramientasAlmacenes: config.herramientasAlmacenes || {},
+      almacenesVisibleOtrasSedes: config.almacenesVisibleOtrasSedes || {},
     })
   );
 }

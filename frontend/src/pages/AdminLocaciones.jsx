@@ -34,6 +34,7 @@ export default function AdminLocaciones() {
   const [mapAlmacen, setMapAlmacen] = useState(ALMACEN_DEFAULT);
   const [mapSede, setMapSede] = useState(SEDE_DEFAULT);
   const [almacenArmario, setAlmacenArmario] = useState(ALMACEN_DEFAULT);
+  const [togglingAlmacen, setTogglingAlmacen] = useState('');
 
   const almacenes = catalogo.almacenes?.length
     ? catalogo.almacenes
@@ -115,6 +116,28 @@ export default function AdminLocaciones() {
       setError(err.message);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const toggleVisibleOtrasSedes = async (almacen, visible) => {
+    setError('');
+    setSuccess('');
+    setTogglingAlmacen(almacen.codigo);
+    try {
+      const result = await api.adminSetAlmacenVisibleOtrasSedes({
+        almacen: almacen.codigo,
+        visible,
+      });
+      setSuccess(
+        visible
+          ? `${result.almacen} visible desde otras sucursales`
+          : `${result.almacen} oculto en otras sucursales`
+      );
+      setCatalogo(mergeCatalogo(result.catalogo));
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setTogglingAlmacen('');
     }
   };
 
@@ -379,23 +402,52 @@ export default function AdminLocaciones() {
 
       <div className="card">
         <h3 className="section-title mb-3">Almacenes de la sucursal</h3>
+        <p className="mb-3 text-sm text-muted">
+          «Visible otras sucursales» controla qué stock aparece en Inventario → Otras sucursales.
+          Por defecto solo depósitos generales; aduana, reservados, producción y pañol quedan
+          ocultos.
+        </p>
         {loading && !almacenes.length ? (
           <p className="text-muted">Cargando…</p>
         ) : (
           <ul className="space-y-2 text-sm">
             {almacenes.map((a) => {
               const arms = catalogo.armariosPorAlmacen?.[a.codigo] || [];
+              const tags = [
+                a.esAduana && 'Aduana',
+                a.esReservados && 'Reservados',
+                a.esProduccion && 'Producción',
+                a.esHerramientas && 'Pañol',
+              ].filter(Boolean);
               return (
                 <li key={a.codigo} className="rounded-lg border border-border p-3">
-                  <p className="font-semibold">
-                    {a.codigo} — {a.nombre}{' '}
-                    <span className="font-normal text-muted">({a.tipo})</span>
-                  </p>
-                  <p className="mt-1 text-xs text-muted">
-                    {arms.length
-                      ? `Armarios: ${arms.map((x) => x.codigo).join(', ')}`
-                      : 'Sin armarios aún'}
-                  </p>
+                  <div className="flex flex-wrap items-start justify-between gap-3">
+                    <div className="min-w-0 flex-1">
+                      <p className="font-semibold">
+                        {a.codigo} — {a.nombre}{' '}
+                        <span className="font-normal text-muted">({a.tipo})</span>
+                      </p>
+                      {tags.length > 0 && (
+                        <p className="mt-1 text-xs text-amber-600 dark:text-amber-300">
+                          {tags.join(' · ')}
+                        </p>
+                      )}
+                      <p className="mt-1 text-xs text-muted">
+                        {arms.length
+                          ? `Armarios: ${arms.map((x) => x.codigo).join(', ')}`
+                          : 'Sin armarios aún'}
+                      </p>
+                    </div>
+                    <label className="flex cursor-pointer items-center gap-2 text-xs sm:text-sm">
+                      <input
+                        type="checkbox"
+                        checked={a.visibleOtrasSedes !== false}
+                        disabled={togglingAlmacen === a.codigo}
+                        onChange={(e) => toggleVisibleOtrasSedes(a, e.target.checked)}
+                      />
+                      <span>Visible otras sucursales</span>
+                    </label>
+                  </div>
                 </li>
               );
             })}

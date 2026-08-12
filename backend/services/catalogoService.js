@@ -380,3 +380,41 @@ export async function assignAlmacenSede({ almacen, sede }) {
 
   return { almacen: almCode, sede: sedeCode };
 }
+
+/**
+ * Habilita/deshabilita que el stock de un almacén se vea en “Consulta otras sucursales”.
+ * Por defecto: solo depósitos generales (no aduana / reservados / producción / pañol).
+ */
+export async function setAlmacenVisibleOtrasSedes({ almacen, visible }) {
+  const almCode = String(almacen || '').trim().toUpperCase();
+  if (!almCode) {
+    throw Object.assign(new Error('Almacén requerido'), { status: 400 });
+  }
+
+  const c = await loadCatalogo();
+  if (!c.almacenes?.[almCode]) {
+    throw Object.assign(new Error(`Almacén no registrado: ${almCode}`), { status: 404 });
+  }
+
+  c.almacenesVisibleOtrasSedes = c.almacenesVisibleOtrasSedes || {};
+  const flag = Boolean(visible);
+  c.almacenesVisibleOtrasSedes[almCode] = flag;
+  c.almacenes[almCode].visibleOtrasSedes = flag;
+
+  if (useSupabaseCatalogo()) {
+    await saveCatalogoToDb(c);
+    invalidateCatalogoCache();
+    const fresh = await loadCatalogo();
+    applyCatalogo(fresh);
+  } else {
+    await saveCatalogoToFile(c);
+    cache = c;
+    applyCatalogo(c);
+  }
+
+  return {
+    almacen: almCode,
+    visibleOtrasSedes: flag,
+    nombre: c.almacenes[almCode].nombre || almCode,
+  };
+}

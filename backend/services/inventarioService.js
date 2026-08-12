@@ -4,7 +4,7 @@ import * as demo from './demoService.js';
 import { mapUbicacionFields, parseCodigo, codigoLookupVariants } from './ubicacionUtils.js';
 import { mapItemCampos } from './itemFields.js';
 import { publicItemImageUrl } from './itemImageService.js';
-import { almacenesCodigosDeSede } from './sedeScope.js';
+import { almacenesCodigosDeSede, almacenesVisiblesOtrasSedesCodigosDeSede } from './sedeScope.js';
 
 function mapInventarioRow(row) {
   const ubi = mapUbicacionFields({
@@ -40,9 +40,11 @@ function mapInventarioRow(row) {
   };
 }
 
-function applySedeViaAlmacenes(query, sede) {
+function applySedeViaAlmacenes(query, sede, { soloVisiblesOtrasSedes = false } = {}) {
   if (!sede) return query;
-  const alms = almacenesCodigosDeSede(sede);
+  const alms = soloVisiblesOtrasSedes
+    ? almacenesVisiblesOtrasSedesCodigosDeSede(sede)
+    : almacenesCodigosDeSede(sede);
   if (!alms.length) return query.eq('almacen', '__ninguno__');
   return query.in('almacen', alms);
 }
@@ -69,12 +71,19 @@ export async function listInventario(filters = {}) {
 
   const supabase = getSupabase();
   const sede = String(filters.sede || '').trim().toUpperCase();
+  const soloVisiblesOtrasSedes =
+    filters.visiblesOtrasSedes === true ||
+    filters.visiblesOtrasSedes === '1' ||
+    filters.visiblesOtrasSedes === 'true';
+  const visiblesSet = soloVisiblesOtrasSedes
+    ? new Set(almacenesVisiblesOtrasSedesCodigosDeSede(sede))
+    : null;
 
   const applyFilters = (query) => {
     let q = query;
     if (sede) {
       // Filtrar por almacenes de la sede (más confiable que la columna sede suelta)
-      q = applySedeViaAlmacenes(q, sede);
+      q = applySedeViaAlmacenes(q, sede, { soloVisiblesOtrasSedes });
     }
 
     if (filters.codigo) {
@@ -96,7 +105,14 @@ export async function listInventario(filters = {}) {
         }
       }
     } else {
-      if (filters.almacen) q = q.eq('almacen', filters.almacen);
+      if (filters.almacen) {
+        const alm = String(filters.almacen).trim().toUpperCase();
+        if (visiblesSet && !visiblesSet.has(alm)) {
+          q = q.eq('almacen', '__ninguno__');
+        } else {
+          q = q.eq('almacen', alm);
+        }
+      }
       if (filters.ubicacion) q = q.ilike('ubicacion', filters.ubicacion);
       if (filters.armario) {
         q = q.eq('armario', filters.armario);
@@ -144,7 +160,7 @@ export async function listInventario(filters = {}) {
   if (error && sede && /sede|schema cache|column/i.test(error.message || '')) {
     ({ data, error } = await fetchInventarioPaged(() => {
       let fallback = supabase.from('v_inventario').select('*').order('nombre');
-      fallback = applySedeViaAlmacenes(fallback, sede);
+      fallback = applySedeViaAlmacenes(fallback, sede, { soloVisiblesOtrasSedes });
       if (filters.almacen) fallback = fallback.eq('almacen', filters.almacen);
       if (filters.armario) fallback = fallback.eq('armario', filters.armario);
       if (filters.estante) {
@@ -171,7 +187,7 @@ export async function listInventario(filters = {}) {
     if (filters.q && /codigo_fabricante/i.test(error.message || '') && !codigoFab) {
       const { data: data2, error: err2 } = await fetchInventarioPaged(() => {
         let fallback = supabase.from('v_inventario').select('*').order('nombre');
-        if (sede) fallback = applySedeViaAlmacenes(fallback, sede);
+        if (sede) fallback = applySedeViaAlmacenes(fallback, sede, { soloVisiblesOtrasSedes });
         if (filters.tipo) fallback = fallback.ilike('tipo', filters.tipo);
         if (filters.almacen) fallback = fallback.eq('almacen', filters.almacen);
         const term = `%${filters.q}%`;

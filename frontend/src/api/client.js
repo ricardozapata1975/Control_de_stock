@@ -114,6 +114,11 @@ export const api = {
     request('/api/admin/catalogo/sede', { method: 'POST', body: JSON.stringify(body) }),
   adminAssignAlmacenSede: (body) =>
     request('/api/admin/catalogo/almacen-sede', { method: 'PATCH', body: JSON.stringify(body) }),
+  adminSetAlmacenVisibleOtrasSedes: (body) =>
+    request('/api/admin/catalogo/almacen-visible-otras-sedes', {
+      method: 'PATCH',
+      body: JSON.stringify(body),
+    }),
   egreso: (body) => request('/api/egreso', { method: 'POST', body: JSON.stringify(body) }),
   egresoContenedor: (body) =>
     request('/api/egreso/contenedor', { method: 'POST', body: JSON.stringify(body) }),

@@ -267,6 +267,15 @@ export function listAlmacenes(sedeFilter) {
       esReservados: Boolean(info?.esReservados),
       esProduccion: Boolean(info?.esProduccion),
       esHerramientas: Boolean(info?.esHerramientas),
+      visibleOtrasSedes:
+        info?.visibleOtrasSedes !== undefined
+          ? Boolean(info.visibleOtrasSedes)
+          : !(
+              info?.esAduana ||
+              info?.esReservados ||
+              info?.esProduccion ||
+              info?.esHerramientas
+            ),
     }));
 }
 

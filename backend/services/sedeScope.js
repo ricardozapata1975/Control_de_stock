@@ -34,6 +34,14 @@ export function almacenesGeneralesCodigosDeSede(sedeCodigo) {
     .map((a) => a.codigo);
 }
 
+/** Almacenes habilitados para verse desde “Consulta otras sucursales”. */
+export function almacenesVisiblesOtrasSedesCodigosDeSede(sedeCodigo) {
+  const code = canonicalSedeCode(sedeCodigo || SEDE_DEFAULT) || SEDE_DEFAULT;
+  return listAlmacenes(code)
+    .filter((a) => a.visibleOtrasSedes)
+    .map((a) => a.codigo);
+}
+
 export function getProyectosAlmacenesSede(sedeCodigo) {
   const code = canonicalSedeCode(sedeCodigo || SEDE_DEFAULT) || SEDE_DEFAULT;
   const list = listAlmacenes(code);
