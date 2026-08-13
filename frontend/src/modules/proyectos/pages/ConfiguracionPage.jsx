@@ -1,5 +1,6 @@
 import { Link } from 'react-router-dom';
 import { ROLES_MODULO } from '../constants';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 /**
  * Vista de referencia del módulo. La matriz editable del sitio está en Admin → Roles.
@@ -22,7 +23,7 @@ export default function ConfiguracionPage() {
         <table className="w-full min-w-[640px] text-left text-sm">
           <thead>
             <tr className="border-b border-border text-muted">
-              <th className="py-2">Función</th>
+              <th className="py-2">{fieldLabel('permisos')}</th>
               {ROLES_MODULO.map((r) => (
                 <th key={r.id} className="px-2 py-2">
                   {r.label}

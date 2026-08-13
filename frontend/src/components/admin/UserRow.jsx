@@ -1,5 +1,6 @@
 import { normalizeRole } from '../../utils/role';
 import UserIconButton from './UserIconButton';
+import { fieldLabel } from '../../utils/fieldLabels';
 
 const ROLE_LABELS = {
   admin: 'Administrador',
@@ -325,12 +326,14 @@ export function UserRowCard({
       <div className="mb-2 flex flex-wrap items-center gap-2">
         <RoleSelect user={user} onUpdateRole={onUpdateRole} roles={roles} />
         <StatusBadge isActive={user.isActive} />
-        <span className="text-[10px] text-subtle" title="Estado de contraseña">
-          Clave: {passwordLabel(user)}
+        <span className="text-[10px] text-subtle" title={fieldLabel('mustChangePassword')}>
+          {fieldLabel('mustChangePassword')}: {passwordLabel(user)}
         </span>
       </div>
       <div className="mb-2">
-        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">Sucursales</p>
+        <p className="mb-1 text-[10px] font-semibold uppercase tracking-wide text-subtle">
+          {fieldLabel('sedesHabilitadas')}
+        </p>
         <SedesMultiSelect user={user} sedes={sedes} onUpdateSedes={onUpdateSedes} />
       </div>
       <UserActions

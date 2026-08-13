@@ -102,19 +102,21 @@ function RemitoDetalleModal({ remitoId, onClose }) {
           <div className="space-y-3 text-sm">
             <div className="grid gap-1 sm:grid-cols-2">
               <p>
-                <span className="font-semibold text-content">N° remito:</span> {remito.numero}
+                <span className="font-semibold text-content">{fieldLabel('numero')}:</span>{' '}
+                {remito.numero}
               </p>
               <p>
-                <span className="font-semibold text-content">Fecha:</span>{' '}
+                <span className="font-semibold text-content">{fieldLabel('fecha')}:</span>{' '}
                 {formatFechaDmy(remito.fecha)}
               </p>
               {esTransferencia && (
                 <>
                   <p>
-                    <span className="font-semibold text-content">Tipo:</span> Transferencia
+                    <span className="font-semibold text-content">{fieldLabel('tipo')}:</span>{' '}
+                    Transferencia
                   </p>
                   <p>
-                    <span className="font-semibold text-content">Estado:</span>{' '}
+                    <span className="font-semibold text-content">{fieldLabel('estado')}:</span>{' '}
                     {remito.estado === 'en_transito'
                       ? 'En tránsito'
                       : remito.estado === 'recibido'
@@ -133,7 +135,7 @@ function RemitoDetalleModal({ remitoId, onClose }) {
                 </p>
                 {remito.ubicacionDestino && (
                   <p className="text-muted">
-                    Ubicación destino: {formatUbicacionDestino(remito.ubicacionDestino)}
+                    {fieldLabel('ubicacionDestino')}: {formatUbicacionDestino(remito.ubicacionDestino)}
                   </p>
                 )}
                 {remito.recibidoPor && (
@@ -149,7 +151,11 @@ function RemitoDetalleModal({ remitoId, onClose }) {
               <div className="rounded-lg border border-border p-3">
                 <p className="font-semibold text-content">Cliente</p>
                 <p>{remito.cliente.nombre}</p>
-                {remito.cliente.cuit && <p className="text-muted">CUIT: {remito.cliente.cuit}</p>}
+                {remito.cliente.cuit && (
+                  <p className="text-muted">
+                    {fieldLabel('cuit')}: {remito.cliente.cuit}
+                  </p>
+                )}
                 {remito.cliente.domicilio && <p className="text-muted">{remito.cliente.domicilio}</p>}
                 {remito.cliente.localidad && <p className="text-muted">{remito.cliente.localidad}</p>}
               </div>

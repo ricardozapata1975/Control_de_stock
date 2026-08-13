@@ -1,3 +1,5 @@
+import { fieldLabel } from '../utils/fieldLabels';
+
 const PRESET_DOMAINS = ['@systelec.com', '@pxcontrol.com'];
 
 function normalizeDomain(value) {
@@ -27,7 +29,7 @@ export default function UserFilters({ filters, onChange, domains = [] }) {
           />
         </div>
         <div>
-          <label className="text-label">Estado</label>
+          <label className="text-label">{fieldLabel('isActive')}</label>
           <select
             className="input-field"
             value={filters.status}

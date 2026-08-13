@@ -1,6 +1,7 @@
 import { Fragment, useEffect, useMemo, useState } from 'react';
 import FocusedPage from '../components/FocusedPage';
 import { api } from '../api/client';
+import { fieldLabel } from '../utils/fieldLabels';
 
 export default function AdminRoles() {
   const [roles, setRoles] = useState([]);
@@ -162,7 +163,7 @@ export default function AdminRoles() {
           <div className="card space-y-4">
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-label">Nombre</label>
+                <label className="text-label">{fieldLabel('nombre')}</label>
                 <input
                   className="input-field"
                   value={draft.nombre}
@@ -171,11 +172,11 @@ export default function AdminRoles() {
                 />
               </div>
               <div>
-                <label className="text-label">Código</label>
+                <label className="text-label">{fieldLabel('codigo')}</label>
                 <input className="input-field font-mono" value={draft.codigo} disabled />
               </div>
               <div className="sm:col-span-2">
-                <label className="text-label">Descripción</label>
+                <label className="text-label">{fieldLabel('descripcion')}</label>
                 <input
                   className="input-field"
                   value={draft.descripcion || ''}
@@ -192,8 +193,8 @@ export default function AdminRoles() {
               <table className="w-full min-w-[480px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-border text-muted">
-                    <th className="py-2">Función / página</th>
-                    <th className="w-20 px-2 py-2 text-center">Acceso</th>
+                    <th className="py-2">{fieldLabel('permisos')}</th>
+                    <th className="w-20 px-2 py-2 text-center">{fieldLabel('activo')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -250,7 +251,7 @@ export default function AdminRoles() {
         <h3 className="section-title">Crear rol nuevo</h3>
         <div className="grid gap-3 sm:grid-cols-2">
           <div>
-            <label className="text-label">Código</label>
+            <label className="text-label">{fieldLabel('codigo', { required: true })}</label>
             <input
               className="input-field font-mono"
               placeholder="ej: supervisor"
@@ -260,7 +261,7 @@ export default function AdminRoles() {
             />
           </div>
           <div>
-            <label className="text-label">Nombre</label>
+            <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
             <input
               className="input-field"
               placeholder="ej: Supervisor"
@@ -271,7 +272,7 @@ export default function AdminRoles() {
           </div>
         </div>
         <div>
-          <label className="text-label">Descripción</label>
+          <label className="text-label">{fieldLabel('descripcion')}</label>
           <input
             className="input-field"
             value={newRole.descripcion}

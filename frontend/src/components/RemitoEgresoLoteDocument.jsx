@@ -2,6 +2,7 @@ import { useEffect, useRef } from 'react';
 import QRCode from 'qrcode';
 import { formatRemitoFecha } from '../utils/remitoStorage';
 import { buildQrPayload, QR_TYPES } from '../utils/qrPayload';
+import { fieldLabel } from '../utils/fieldLabels';
 
 function formatFechaHora(iso) {
   if (!iso) return '—';
@@ -83,9 +84,9 @@ export default function RemitoEgresoLoteDocument({ lote }) {
           <thead>
             <tr className="border-b border-black bg-black/5">
               <th className="border-r border-black/30 px-2 py-1.5">#</th>
-              <th className="border-r border-black/30 px-2 py-1.5">Herramienta</th>
-              <th className="border-r border-black/30 px-2 py-1.5">Detalle</th>
-              <th className="px-2 py-1.5 text-right">Cant.</th>
+              <th className="border-r border-black/30 px-2 py-1.5">{fieldLabel('nombre')}</th>
+              <th className="border-r border-black/30 px-2 py-1.5">{fieldLabel('detalle')}</th>
+              <th className="px-2 py-1.5 text-right">{fieldLabel('cantidad')}</th>
             </tr>
           </thead>
           <tbody>

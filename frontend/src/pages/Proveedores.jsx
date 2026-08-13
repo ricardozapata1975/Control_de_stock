@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import FocusedPage from '../components/FocusedPage';
 import { api } from '../api/client';
+import { fieldLabel } from '../utils/fieldLabels';
 
 const PROVEEDOR_EMPTY = {
   nombre: '',
@@ -27,10 +28,10 @@ const IVA_OPTIONS = [
   'Consumidor Final',
 ];
 
-function Field({ label, children, className = '' }) {
+function Field({ field, required, children, className = '' }) {
   return (
     <div className={className}>
-      <label className="text-label">{label}</label>
+      <label className="text-label">{fieldLabel(field, { required })}</label>
       {children}
     </div>
   );
@@ -191,12 +192,12 @@ export default function Proveedores() {
         <table className="w-full min-w-[860px] text-left text-sm">
           <thead className="table-head">
             <tr>
-              <th className="px-3 py-2">Proveedor</th>
-              <th className="px-3 py-2">Rubro</th>
-              <th className="px-3 py-2">CUIT</th>
-              <th className="px-3 py-2">Localidad</th>
-              <th className="px-3 py-2">Contacto</th>
-              <th className="px-3 py-2">Estado</th>
+              <th className="px-3 py-2">{fieldLabel('nombre')}</th>
+              <th className="px-3 py-2">{fieldLabel('rubro')}</th>
+              <th className="px-3 py-2">{fieldLabel('cuit')}</th>
+              <th className="px-3 py-2">{fieldLabel('localidad')}</th>
+              <th className="px-3 py-2">{fieldLabel('contacto')}</th>
+              <th className="px-3 py-2">{fieldLabel('activo')}</th>
               <th className="px-3 py-2" />
             </tr>
           </thead>
@@ -271,7 +272,7 @@ export default function Proveedores() {
             {editingId === 'new' ? 'Nuevo proveedor' : 'Editar proveedor'}
           </h3>
           <div className="grid gap-3 sm:grid-cols-2">
-            <Field label="Nombre / Señor(es) *">
+            <Field field="nombre" required>
               <input
                 className="input-field"
                 required
@@ -279,14 +280,14 @@ export default function Proveedores() {
                 onChange={(e) => setForm((f) => ({ ...f, nombre: e.target.value }))}
               />
             </Field>
-            <Field label="Razón social">
+            <Field field="razonSocial">
               <input
                 className="input-field"
                 value={form.razonSocial}
                 onChange={(e) => setForm((f) => ({ ...f, razonSocial: e.target.value }))}
               />
             </Field>
-            <Field label="Rubro">
+            <Field field="rubro">
               <input
                 className="input-field"
                 placeholder="Ej. Electricidad, Ferretería…"
@@ -294,7 +295,7 @@ export default function Proveedores() {
                 onChange={(e) => setForm((f) => ({ ...f, rubro: e.target.value }))}
               />
             </Field>
-            <Field label="Condición IVA">
+            <Field field="iva">
               <select
                 className="input-field"
                 value={form.iva}
@@ -307,35 +308,35 @@ export default function Proveedores() {
                 ))}
               </select>
             </Field>
-            <Field label="CUIT">
+            <Field field="cuit">
               <input
                 className="input-field font-mono"
                 value={form.cuit}
                 onChange={(e) => setForm((f) => ({ ...f, cuit: e.target.value }))}
               />
             </Field>
-            <Field label="V. Ref.">
+            <Field field="vRef">
               <input
                 className="input-field"
                 value={form.vRef}
                 onChange={(e) => setForm((f) => ({ ...f, vRef: e.target.value }))}
               />
             </Field>
-            <Field label="Domicilio" className="sm:col-span-2">
+            <Field field="domicilio" className="sm:col-span-2">
               <input
                 className="input-field"
                 value={form.domicilio}
                 onChange={(e) => setForm((f) => ({ ...f, domicilio: e.target.value }))}
               />
             </Field>
-            <Field label="Localidad">
+            <Field field="localidad">
               <input
                 className="input-field"
                 value={form.localidad}
                 onChange={(e) => setForm((f) => ({ ...f, localidad: e.target.value }))}
               />
             </Field>
-            <Field label="Página / Web">
+            <Field field="web">
               <input
                 className="input-field"
                 placeholder="www.ejemplo.com"
@@ -343,21 +344,21 @@ export default function Proveedores() {
                 onChange={(e) => setForm((f) => ({ ...f, web: e.target.value }))}
               />
             </Field>
-            <Field label="Contacto (persona)">
+            <Field field="contacto">
               <input
                 className="input-field"
                 value={form.contacto}
                 onChange={(e) => setForm((f) => ({ ...f, contacto: e.target.value }))}
               />
             </Field>
-            <Field label="Teléfono">
+            <Field field="telefono">
               <input
                 className="input-field"
                 value={form.telefono}
                 onChange={(e) => setForm((f) => ({ ...f, telefono: e.target.value }))}
               />
             </Field>
-            <Field label="Mail">
+            <Field field="email">
               <input
                 className="input-field"
                 type="email"
@@ -365,7 +366,7 @@ export default function Proveedores() {
                 onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               />
             </Field>
-            <Field label="Notas / Etc." className="sm:col-span-2">
+            <Field field="notas" className="sm:col-span-2">
               <textarea
                 className="input-field min-h-[60px]"
                 value={form.notas}
@@ -378,7 +379,7 @@ export default function Proveedores() {
                 checked={form.activo !== false}
                 onChange={(e) => setForm((f) => ({ ...f, activo: e.target.checked }))}
               />
-              Activo
+              {fieldLabel('activo')}
             </label>
           </div>
           <div className="flex flex-wrap gap-2">

@@ -5,6 +5,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import QrScanner from '../../../components/QrScanner';
 import { formatUbicacionLabel } from '../../../utils/ubicacion';
 import { resolveScanToInventario } from '../../../utils/resolveScan';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 /**
  * Armado / Producción: elegir tablero, escanear piezas (consume reserva → ALM producción)
@@ -212,7 +213,7 @@ export default function ProduccionPage() {
 
       <div className="card grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="text-label">Proyecto *</label>
+          <label className="text-label">{fieldLabel('proyecto', { required: true })}</label>
           <select
             className="input-field"
             value={proyectoId}
@@ -227,7 +228,7 @@ export default function ProduccionPage() {
           </select>
         </div>
         <div>
-          <label className="text-label">Tablero *</label>
+          <label className="text-label">{fieldLabel('tablero', { required: true })}</label>
           <select
             className="input-field"
             value={tableroId}
@@ -249,7 +250,7 @@ export default function ProduccionPage() {
           <div className="flex flex-wrap items-end gap-3">
             <form className="flex flex-wrap items-end gap-2 flex-1" onSubmit={onManual}>
               <div className="min-w-[160px] flex-1">
-                <label className="text-label">MLFB / código</label>
+                <label className="text-label">{fieldLabel('codigoFabricante')}</label>
                 <input
                   className="input-field"
                   value={manualCode}
@@ -259,7 +260,7 @@ export default function ProduccionPage() {
                 />
               </div>
               <div className="w-24">
-                <label className="text-label">Cant.</label>
+                <label className="text-label">{fieldLabel('cantidad')}</label>
                 <input
                   type="number"
                   min={1}
@@ -333,13 +334,13 @@ export default function ProduccionPage() {
               <table className="w-full text-left text-sm">
                 <thead className="bg-surface-2 text-xs uppercase text-content-muted">
                   <tr>
-                    <th className="px-3 py-2">Código</th>
-                    <th className="px-3 py-2">Descripción</th>
-                    <th className="px-3 py-2 text-right">Pedido</th>
-                    <th className="px-3 py-2 text-right">Reservado</th>
-                    <th className="px-3 py-2 text-right">Entregado</th>
-                    <th className="px-3 py-2 text-right">Pendiente</th>
-                    <th className="px-3 py-2 text-right">Costo</th>
+                    <th className="px-3 py-2">{fieldLabel('codigo')}</th>
+                    <th className="px-3 py-2">{fieldLabel('descripcion')}</th>
+                    <th className="px-3 py-2 text-right">{fieldLabel('cantidadRequerida')}</th>
+                    <th className="px-3 py-2 text-right">{fieldLabel('cantidadReservada')}</th>
+                    <th className="px-3 py-2 text-right">{fieldLabel('cantidadEntregada')}</th>
+                    <th className="px-3 py-2 text-right">{fieldLabel('pendiente')}</th>
+                    <th className="px-3 py-2 text-right">{fieldLabel('costo')}</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -395,10 +396,10 @@ export default function ProduccionPage() {
             <table className="w-full text-left text-sm">
               <thead className="bg-surface-2 text-xs uppercase text-content-muted">
                 <tr>
-                  <th className="px-3 py-2">Artículo</th>
-                  <th className="px-3 py-2">Código</th>
-                  <th className="px-3 py-2">Ubicación</th>
-                  <th className="px-3 py-2 text-right">Cantidad</th>
+                  <th className="px-3 py-2">{fieldLabel('nombre')}</th>
+                  <th className="px-3 py-2">{fieldLabel('codigoFabricante')}</th>
+                  <th className="px-3 py-2">{fieldLabel('ubicacion')}</th>
+                  <th className="px-3 py-2 text-right">{fieldLabel('cantidad')}</th>
                 </tr>
               </thead>
               <tbody>

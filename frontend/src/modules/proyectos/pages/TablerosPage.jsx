@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { prioridadClass } from '../constants';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 export default function TablerosPage() {
   const { sede } = useAuth();
@@ -65,10 +66,10 @@ export default function TablerosPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-surface-2 text-xs uppercase text-content-muted">
               <tr>
-                <th className="px-3 py-2">Tablero</th>
-                <th className="px-3 py-2">Proyecto</th>
-                <th className="px-3 py-2">Estado</th>
-                <th className="px-3 py-2">Prioridad</th>
+                <th className="px-3 py-2">{fieldLabel('tablero')}</th>
+                <th className="px-3 py-2">{fieldLabel('proyecto')}</th>
+                <th className="px-3 py-2">{fieldLabel('estado')}</th>
+                <th className="px-3 py-2">{fieldLabel('prioridad')}</th>
                 <th className="px-3 py-2" />
               </tr>
             </thead>

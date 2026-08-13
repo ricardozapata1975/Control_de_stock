@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { exportReportesProyectosExcel } from '../utils/exportReportes';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 function ReportesPrintDocument({ data, meta }) {
   const r = data?.resumen || {};
@@ -43,8 +44,8 @@ function ReportesPrintDocument({ data, meta }) {
         <table className="mt-2 w-full border-collapse text-sm">
           <thead>
             <tr className="border-b border-zinc-400 text-left">
-              <th className="py-1">Tipo</th>
-              <th className="py-1 text-right">Cantidad</th>
+              <th className="py-1">{fieldLabel('tipo')}</th>
+              <th className="py-1 text-right">{fieldLabel('cantidad')}</th>
             </tr>
           </thead>
           <tbody>
@@ -65,12 +66,12 @@ function ReportesPrintDocument({ data, meta }) {
         <table className="mt-2 w-full border-collapse text-xs">
           <thead>
             <tr className="border-b border-zinc-400 text-left">
-              <th className="py-1 pr-2">Fecha</th>
-              <th className="py-1 pr-2">Tipo</th>
-              <th className="py-1 pr-2 text-right">Cant.</th>
-              <th className="py-1 pr-2">Estado</th>
-              <th className="py-1 pr-2">Usuario</th>
-              <th className="py-1">Notas</th>
+              <th className="py-1 pr-2">{fieldLabel('fecha')}</th>
+              <th className="py-1 pr-2">{fieldLabel('tipo')}</th>
+              <th className="py-1 pr-2 text-right">{fieldLabel('cantidad')}</th>
+              <th className="py-1 pr-2">{fieldLabel('estado')}</th>
+              <th className="py-1 pr-2">{fieldLabel('usuario')}</th>
+              <th className="py-1">{fieldLabel('notas')}</th>
             </tr>
           </thead>
           <tbody>
@@ -177,7 +178,7 @@ export default function ReportesPage() {
 
       <div className="card grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div>
-          <label className="text-label">Proyecto</label>
+          <label className="text-label">{fieldLabel('proyecto')}</label>
           <select
             className="input-field"
             value={proyectoId}
@@ -192,11 +193,11 @@ export default function ReportesPage() {
           </select>
         </div>
         <div>
-          <label className="text-label">Desde</label>
+          <label className="text-label">{fieldLabel('desde')}</label>
           <input type="date" className="input-field" value={desde} onChange={(e) => setDesde(e.target.value)} />
         </div>
         <div>
-          <label className="text-label">Hasta</label>
+          <label className="text-label">{fieldLabel('hasta')}</label>
           <input type="date" className="input-field" value={hasta} onChange={(e) => setHasta(e.target.value)} />
         </div>
         <div className="flex items-end">

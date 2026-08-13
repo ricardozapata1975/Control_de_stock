@@ -7,6 +7,7 @@ import {
   getArmariosForAlmacen,
   getSedesFromCatalog,
 } from '../utils/ubicacion';
+import { fieldLabel } from '../utils/fieldLabels';
 
 export default function UbicacionSelector({
   catalogo,
@@ -56,7 +57,7 @@ export default function UbicacionSelector({
       <div className={`grid gap-2 ${compact ? 'grid-cols-2 sm:grid-cols-5' : 'sm:grid-cols-2'}`}>
         {showSede && (
           <div className={compact ? '' : 'sm:col-span-2'}>
-            <label className="text-label">{lbl('Sede')}</label>
+            <label className="text-label">{lbl(fieldLabel('sede'))}</label>
             <select
               className="input-field text-base"
               value={sedeActual}
@@ -72,7 +73,7 @@ export default function UbicacionSelector({
           </div>
         )}
         <div>
-          <label className="text-label">{lbl('Almacén')}</label>
+          <label className="text-label">{lbl(fieldLabel('almacen'))}</label>
           <select
             className="input-field text-base"
             value={almacen}
@@ -87,7 +88,7 @@ export default function UbicacionSelector({
           </select>
         </div>
         <div>
-          <label className="text-label">{lbl('Armario')}</label>
+          <label className="text-label">{lbl(fieldLabel('armario'))}</label>
           <select
             className="input-field text-base"
             value={armario}
@@ -106,7 +107,7 @@ export default function UbicacionSelector({
           </select>
         </div>
         <div>
-          <label className="text-label">{lbl('Estante')}</label>
+          <label className="text-label">{lbl(fieldLabel('estante'))}</label>
           <select
             className="input-field text-base"
             value={estante}
@@ -120,7 +121,7 @@ export default function UbicacionSelector({
           </select>
         </div>
         <div>
-          <label className="text-label">{lbl('Contenedor')}</label>
+          <label className="text-label">{lbl(fieldLabel('contenedor'))}</label>
           <input
             className="input-field text-base"
             placeholder="Opcional (C01, B02…)"

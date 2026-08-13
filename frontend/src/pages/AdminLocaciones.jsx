@@ -10,6 +10,7 @@ import {
   buildCodigoCompletoPreview,
   getSedesFromCatalog,
 } from '../utils/ubicacion';
+import { fieldLabel } from '../utils/fieldLabels';
 
 /**
  * Administración de la estructura física: sedes, almacenes y armarios/gabinetes.
@@ -242,7 +243,7 @@ export default function AdminLocaciones() {
           )}
           <form onSubmit={submitNuevoSede} className="grid gap-3 sm:grid-cols-3">
             <div className="sm:col-span-2">
-              <label className="text-label">Nueva sede *</label>
+              <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
               <input
                 className="input-field"
                 placeholder="Ej: Oficina Santa Fe, Oficina Torcuato"
@@ -266,7 +267,7 @@ export default function AdminLocaciones() {
             className="grid gap-3 border-t border-border pt-4 sm:grid-cols-3"
           >
             <div>
-              <label className="text-label">Almacén</label>
+              <label className="text-label">{fieldLabel('almacen')}</label>
               <select
                 className="input-field"
                 value={mapAlmacen}
@@ -280,7 +281,7 @@ export default function AdminLocaciones() {
               </select>
             </div>
             <div>
-              <label className="text-label">Sede</label>
+              <label className="text-label">{fieldLabel('sede')}</label>
               <select className="input-field" value={mapSede} onChange={(e) => setMapSede(e.target.value)}>
                 {sedes.map((s) => (
                   <option key={s.codigo} value={s.codigo}>
@@ -304,7 +305,7 @@ export default function AdminLocaciones() {
         </summary>
         <form onSubmit={submitNuevoAlmacen} className="mt-4 grid gap-3 sm:grid-cols-3">
           <div>
-            <label className="text-label">Tipo *</label>
+            <label className="text-label">{fieldLabel('tipo', { required: true })}</label>
             <select
               className="input-field"
               value={nuevoAlmTipo}
@@ -319,7 +320,7 @@ export default function AdminLocaciones() {
             </select>
           </div>
           <div className="sm:col-span-2">
-            <label className="text-label">Nombre descriptivo *</label>
+            <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
             <input
               className="input-field"
               placeholder="Ej: Depósito norte, Oficina planta baja"
@@ -348,7 +349,7 @@ export default function AdminLocaciones() {
         </summary>
         <form onSubmit={submitNuevoArmario} className="mt-4 grid gap-3 sm:grid-cols-3">
           <div>
-            <label className="text-label">Almacén destino</label>
+            <label className="text-label">{fieldLabel('almacen')}</label>
             <select
               className="input-field"
               value={almacenArmario}
@@ -363,7 +364,7 @@ export default function AdminLocaciones() {
             </select>
           </div>
           <div>
-            <label className="text-label">Tipo *</label>
+            <label className="text-label">{fieldLabel('tipo', { required: true })}</label>
             <select
               className="input-field"
               value={nuevoArmTipo}
@@ -378,7 +379,7 @@ export default function AdminLocaciones() {
             </select>
           </div>
           <div>
-            <label className="text-label">Nombre descriptivo *</label>
+            <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
             <input
               className="input-field"
               placeholder="Ej: Estantería repuestos, Gabinete llaves"
@@ -445,7 +446,7 @@ export default function AdminLocaciones() {
                         disabled={togglingAlmacen === a.codigo}
                         onChange={(e) => toggleVisibleOtrasSedes(a, e.target.checked)}
                       />
-                      <span>Visible otras sucursales</span>
+                      <span>{fieldLabel('visibleOtrasSedes')}</span>
                     </label>
                   </div>
                 </li>

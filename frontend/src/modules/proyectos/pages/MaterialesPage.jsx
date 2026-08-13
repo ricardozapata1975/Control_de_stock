@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 export default function MaterialesPage() {
   const { sede } = useAuth();
@@ -74,7 +75,7 @@ export default function MaterialesPage() {
 
       <div className="card grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <div>
-          <label className="text-label">Proyecto</label>
+          <label className="text-label">{fieldLabel('proyecto')}</label>
           <select
             className="input-field"
             value={proyectoId}
@@ -89,7 +90,7 @@ export default function MaterialesPage() {
           </select>
         </div>
         <div>
-          <label className="text-label">Tablero</label>
+          <label className="text-label">{fieldLabel('tablero')}</label>
           <select
             className="input-field"
             value={tableroId}
@@ -140,15 +141,15 @@ export default function MaterialesPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-surface-2 text-xs uppercase text-content-muted">
               <tr>
-                <th className="px-3 py-2">Código</th>
-                <th className="px-3 py-2">Descripción</th>
-                <th className="px-3 py-2">Proyecto</th>
-                <th className="px-3 py-2">Tablero</th>
-                <th className="px-3 py-2 text-right">Req.</th>
-                <th className="px-3 py-2 text-right">Reserv.</th>
-                <th className="px-3 py-2 text-right">Falta</th>
-                <th className="px-3 py-2 text-right">Entreg.</th>
-                <th className="px-3 py-2">Estado</th>
+                <th className="px-3 py-2">{fieldLabel('codigo')}</th>
+                <th className="px-3 py-2">{fieldLabel('descripcion')}</th>
+                <th className="px-3 py-2">{fieldLabel('proyecto')}</th>
+                <th className="px-3 py-2">{fieldLabel('tablero')}</th>
+                <th className="px-3 py-2 text-right">{fieldLabel('cantidadRequerida')}</th>
+                <th className="px-3 py-2 text-right">{fieldLabel('cantidadReservada')}</th>
+                <th className="px-3 py-2 text-right">{fieldLabel('cantidadFaltante')}</th>
+                <th className="px-3 py-2 text-right">{fieldLabel('cantidadEntregada')}</th>
+                <th className="px-3 py-2">{fieldLabel('estado')}</th>
               </tr>
             </thead>
             <tbody>

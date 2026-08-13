@@ -4,6 +4,7 @@ import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
 import { isAdminRole } from '../utils/role';
 import ThemeToggle from '../components/ThemeToggle';
+import { fieldLabel } from '../utils/fieldLabels';
 
 export default function Login() {
   const { login, beginFirstLogin, completeLogin, setPassword: savePassword, isLoggedIn, isAdmin } =
@@ -153,7 +154,7 @@ export default function Login() {
   const sedeSelect = (
     <div>
       <label className="text-label" htmlFor="login-sede">
-        Sucursal *
+        {fieldLabel('sede', { required: true })}
       </label>
       <select
         id="login-sede"
@@ -216,7 +217,7 @@ export default function Login() {
                 {sedeSelect}
                 <div>
                   <label className="text-label" htmlFor="login-username">
-                    Usuario
+                    {fieldLabel('username')}
                   </label>
                   <input
                     id="login-username"
@@ -229,7 +230,7 @@ export default function Login() {
                 </div>
                 <div>
                   <label className="text-label" htmlFor="login-password">
-                    Contraseña
+                    {fieldLabel('password')}
                   </label>
                   <input
                     id="login-password"
@@ -278,7 +279,7 @@ export default function Login() {
               {sedeSelect}
               <div>
                 <label className="text-label" htmlFor="first-login-username">
-                  Usuario
+                  {fieldLabel('username')}
                 </label>
                 <input
                   id="first-login-username"
@@ -313,7 +314,7 @@ export default function Login() {
               {sedeSelect}
               <div>
                 <label className="text-label" htmlFor="new-password">
-                  Nueva contraseña
+                  {fieldLabel('password')}
                 </label>
                 <input
                   id="new-password"
@@ -329,7 +330,7 @@ export default function Login() {
               </div>
               <div>
                 <label className="text-label" htmlFor="confirm-password">
-                  Confirmar contraseña
+                  {fieldLabel('confirmPassword')}
                 </label>
                 <input
                   id="confirm-password"

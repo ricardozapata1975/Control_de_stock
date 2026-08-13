@@ -4,6 +4,7 @@ import * as XLSX from 'xlsx';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { parsePedidoCsv, parsePedidoRows, pedidoLineasToCsv } from '../constants';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 function sheetToPedidoRows(workbook) {
   const name = workbook.SheetNames?.[0];
@@ -142,7 +143,7 @@ export default function PedidosMasivos() {
 
       <div className="card grid gap-3 sm:grid-cols-2">
         <div>
-          <label className="text-label">Proyecto *</label>
+          <label className="text-label">{fieldLabel('proyecto', { required: true })}</label>
           <select
             className="input-field"
             value={proyectoId}
@@ -157,7 +158,7 @@ export default function PedidosMasivos() {
           </select>
         </div>
         <div>
-          <label className="text-label">Tablero (opcional)</label>
+          <label className="text-label">{fieldLabel('tablero')}</label>
           <select
             className="input-field"
             value={tableroId}
@@ -262,13 +263,13 @@ export default function PedidosMasivos() {
             <table className="w-full text-left text-xs">
               <thead className="bg-surface-2 sticky top-0">
                 <tr>
-                  <th className="px-2 py-1">Código</th>
-                  <th className="px-2 py-1">Artículo</th>
-                  <th className="px-2 py-1 text-right">Ped.</th>
-                  <th className="px-2 py-1 text-right">Disp.</th>
-                  <th className="px-2 py-1 text-right">Res.</th>
-                  <th className="px-2 py-1 text-right">Fal.</th>
-                  <th className="px-2 py-1">Estado</th>
+                  <th className="px-2 py-1">{fieldLabel('codigo')}</th>
+                  <th className="px-2 py-1">{fieldLabel('nombre')}</th>
+                  <th className="px-2 py-1 text-right">{fieldLabel('cantidad')}</th>
+                  <th className="px-2 py-1 text-right">{fieldLabel('neto')}</th>
+                  <th className="px-2 py-1 text-right">{fieldLabel('reservado')}</th>
+                  <th className="px-2 py-1 text-right">{fieldLabel('faltante')}</th>
+                  <th className="px-2 py-1">{fieldLabel('estado')}</th>
                 </tr>
               </thead>
               <tbody>

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 export default function DevolucionesPage() {
   const { sede, user } = useAuth();
@@ -112,7 +113,7 @@ export default function DevolucionesPage() {
           <form className="card w-full max-w-md space-y-3" onSubmit={submit}>
             <h3 className="section-title">Registrar devolución</h3>
             <div>
-              <label className="text-label">Proyecto *</label>
+              <label className="text-label">{fieldLabel('proyecto', { required: true })}</label>
               <select
                 className="input-field"
                 required
@@ -128,7 +129,7 @@ export default function DevolucionesPage() {
               </select>
             </div>
             <div>
-              <label className="text-label">Reserva (recomendado)</label>
+              <label className="text-label">{fieldLabel('reserva')}</label>
               <select
                 className="input-field"
                 value={form.reservaId}
@@ -151,7 +152,7 @@ export default function DevolucionesPage() {
               </select>
             </div>
             <div>
-              <label className="text-label">Cantidad *</label>
+              <label className="text-label">{fieldLabel('cantidad', { required: true })}</label>
               <input
                 type="number"
                 min={1}
@@ -162,7 +163,7 @@ export default function DevolucionesPage() {
               />
             </div>
             <div>
-              <label className="text-label">Motivo</label>
+              <label className="text-label">{fieldLabel('motivo')}</label>
               <input
                 className="input-field"
                 value={form.motivo}

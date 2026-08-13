@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import FocusedPage from '../components/FocusedPage';
 import { api } from '../api/client';
+import { fieldLabel } from '../utils/fieldLabels';
 
 const EMPRESA_EMPTY = {
   nombre: '',
@@ -52,10 +53,10 @@ function fileToBase64(file) {
   });
 }
 
-function Field({ label, children, className = '' }) {
+function Field({ field, required, children, className = '' }) {
   return (
     <div className={className}>
-      <label className="text-label">{label}</label>
+      <label className="text-label">{fieldLabel(field, { required })}</label>
       {children}
     </div>
   );
@@ -378,12 +379,12 @@ export default function Agenda() {
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="table-head">
                 <tr>
-                  <th className="px-3 py-2">Logo</th>
-                  <th className="px-3 py-2">Oficina</th>
-                  <th className="px-3 py-2">CUIT</th>
-                  <th className="px-3 py-2">Sede stock</th>
-                  <th className="px-3 py-2">Contacto</th>
-                  <th className="px-3 py-2">Estado</th>
+                  <th className="px-3 py-2">{fieldLabel('logo')}</th>
+                  <th className="px-3 py-2">{fieldLabel('nombre')}</th>
+                  <th className="px-3 py-2">{fieldLabel('cuit')}</th>
+                  <th className="px-3 py-2">{fieldLabel('sedeCodigo')}</th>
+                  <th className="px-3 py-2">{fieldLabel('telefono')}</th>
+                  <th className="px-3 py-2">{fieldLabel('activo')}</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -438,7 +439,7 @@ export default function Agenda() {
                 {editingEmpresa === 'new' ? 'Nueva oficina' : 'Editar oficina / membrete'}
               </h3>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Nombre corto *">
+                <Field field="nombre" required>
                   <input
                     className="input-field"
                     required
@@ -446,7 +447,7 @@ export default function Agenda() {
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, nombre: e.target.value }))}
                   />
                 </Field>
-                <Field label="Razón social *">
+                <Field field="razonSocial" required>
                   <input
                     className="input-field"
                     required
@@ -454,35 +455,35 @@ export default function Agenda() {
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, razonSocial: e.target.value }))}
                   />
                 </Field>
-                <Field label="CUIT">
+                <Field field="cuit">
                   <input
                     className="input-field font-mono"
                     value={empresaForm.cuit}
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, cuit: e.target.value }))}
                   />
                 </Field>
-                <Field label="Ing. Brutos">
+                <Field field="ingBrutos">
                   <input
                     className="input-field"
                     value={empresaForm.ingBrutos}
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, ingBrutos: e.target.value }))}
                   />
                 </Field>
-                <Field label="Domicilio" className="sm:col-span-2">
+                <Field field="domicilio" className="sm:col-span-2">
                   <input
                     className="input-field"
                     value={empresaForm.domicilio}
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, domicilio: e.target.value }))}
                   />
                 </Field>
-                <Field label="Localidad">
+                <Field field="localidad">
                   <input
                     className="input-field"
                     value={empresaForm.localidad}
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, localidad: e.target.value }))}
                   />
                 </Field>
-                <Field label="Sede de stock">
+                <Field field="sedeCodigo">
                   <select
                     className="input-field"
                     value={empresaForm.sedeCodigo}
@@ -496,21 +497,21 @@ export default function Agenda() {
                     ))}
                   </select>
                 </Field>
-                <Field label="Teléfono">
+                <Field field="telefono">
                   <input
                     className="input-field"
                     value={empresaForm.telefono}
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, telefono: e.target.value }))}
                   />
                 </Field>
-                <Field label="Fax">
+                <Field field="fax">
                   <input
                     className="input-field"
                     value={empresaForm.fax}
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, fax: e.target.value }))}
                   />
                 </Field>
-                <Field label="Email">
+                <Field field="email">
                   <input
                     className="input-field"
                     type="email"
@@ -518,14 +519,14 @@ export default function Agenda() {
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, email: e.target.value }))}
                   />
                 </Field>
-                <Field label="Web">
+                <Field field="web">
                   <input
                     className="input-field"
                     value={empresaForm.web}
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, web: e.target.value }))}
                   />
                 </Field>
-                <Field label="Inicio actividades">
+                <Field field="fechaInicioActividades">
                   <input
                     className="input-field"
                     type="date"
@@ -535,7 +536,7 @@ export default function Agenda() {
                     }
                   />
                 </Field>
-                <Field label="Código documento">
+                <Field field="codigoDocumento">
                   <input
                     className="input-field"
                     value={empresaForm.codigoDocumento}
@@ -544,7 +545,7 @@ export default function Agenda() {
                     }
                   />
                 </Field>
-                <Field label="Notas" className="sm:col-span-2">
+                <Field field="notas" className="sm:col-span-2">
                   <textarea
                     className="input-field min-h-[60px]"
                     value={empresaForm.notas}
@@ -557,13 +558,13 @@ export default function Agenda() {
                     checked={empresaForm.activo !== false}
                     onChange={(e) => setEmpresaForm((f) => ({ ...f, activo: e.target.checked }))}
                   />
-                  Activa (aparece al emitir remitos)
+                  {fieldLabel('activo')}
                 </label>
               </div>
 
               <div className="grid gap-4 border-t border-border pt-4 sm:grid-cols-2">
                 <div>
-                  <p className="text-label mb-2">Logo (membrete)</p>
+                  <p className="text-label mb-2">{fieldLabel('logo')}</p>
                   <div className="mb-2 flex h-20 w-20 items-center justify-center overflow-hidden rounded border border-border bg-surface-muted">
                     {empresaForm.logoUrl ? (
                       <img src={empresaForm.logoUrl} alt="" className="max-h-full max-w-full object-contain" />
@@ -589,7 +590,7 @@ export default function Agenda() {
                   )}
                 </div>
                 <div>
-                  <p className="text-label mb-2">Firma / sello empresa</p>
+                  <p className="text-label mb-2">{fieldLabel('firma')}</p>
                   <div className="mb-2 flex h-20 w-28 items-center justify-center overflow-hidden rounded border border-border bg-surface-muted">
                     {empresaForm.firmaUrl ? (
                       <img src={empresaForm.firmaUrl} alt="" className="max-h-full max-w-full object-contain" />
@@ -645,11 +646,11 @@ export default function Agenda() {
             <table className="w-full min-w-[720px] text-left text-sm">
               <thead className="table-head">
                 <tr>
-                  <th className="px-3 py-2">Cliente</th>
-                  <th className="px-3 py-2">CUIT</th>
-                  <th className="px-3 py-2">Localidad</th>
-                  <th className="px-3 py-2">Contacto</th>
-                  <th className="px-3 py-2">Estado</th>
+                  <th className="px-3 py-2">{fieldLabel('nombre')}</th>
+                  <th className="px-3 py-2">{fieldLabel('cuit')}</th>
+                  <th className="px-3 py-2">{fieldLabel('localidad')}</th>
+                  <th className="px-3 py-2">{fieldLabel('contacto')}</th>
+                  <th className="px-3 py-2">{fieldLabel('activo')}</th>
                   <th className="px-3 py-2" />
                 </tr>
               </thead>
@@ -710,7 +711,7 @@ export default function Agenda() {
                 {editingCliente === 'new' ? 'Nuevo cliente' : 'Editar cliente'}
               </h3>
               <div className="grid gap-3 sm:grid-cols-2">
-                <Field label="Nombre / Señor(es) *">
+                <Field field="nombre" required>
                   <input
                     className="input-field"
                     required
@@ -718,14 +719,14 @@ export default function Agenda() {
                     onChange={(e) => setClienteForm((f) => ({ ...f, nombre: e.target.value }))}
                   />
                 </Field>
-                <Field label="Razón social">
+                <Field field="razonSocial">
                   <input
                     className="input-field"
                     value={clienteForm.razonSocial}
                     onChange={(e) => setClienteForm((f) => ({ ...f, razonSocial: e.target.value }))}
                   />
                 </Field>
-                <Field label="Condición IVA">
+                <Field field="iva">
                   <select
                     className="input-field"
                     value={clienteForm.iva}
@@ -738,49 +739,49 @@ export default function Agenda() {
                     ))}
                   </select>
                 </Field>
-                <Field label="CUIT">
+                <Field field="cuit">
                   <input
                     className="input-field font-mono"
                     value={clienteForm.cuit}
                     onChange={(e) => setClienteForm((f) => ({ ...f, cuit: e.target.value }))}
                   />
                 </Field>
-                <Field label="Domicilio" className="sm:col-span-2">
+                <Field field="domicilio" className="sm:col-span-2">
                   <input
                     className="input-field"
                     value={clienteForm.domicilio}
                     onChange={(e) => setClienteForm((f) => ({ ...f, domicilio: e.target.value }))}
                   />
                 </Field>
-                <Field label="Localidad">
+                <Field field="localidad">
                   <input
                     className="input-field"
                     value={clienteForm.localidad}
                     onChange={(e) => setClienteForm((f) => ({ ...f, localidad: e.target.value }))}
                   />
                 </Field>
-                <Field label="V. Ref.">
+                <Field field="vRef">
                   <input
                     className="input-field"
                     value={clienteForm.vRef}
                     onChange={(e) => setClienteForm((f) => ({ ...f, vRef: e.target.value }))}
                   />
                 </Field>
-                <Field label="Contacto">
+                <Field field="contacto">
                   <input
                     className="input-field"
                     value={clienteForm.contacto}
                     onChange={(e) => setClienteForm((f) => ({ ...f, contacto: e.target.value }))}
                   />
                 </Field>
-                <Field label="Teléfono">
+                <Field field="telefono">
                   <input
                     className="input-field"
                     value={clienteForm.telefono}
                     onChange={(e) => setClienteForm((f) => ({ ...f, telefono: e.target.value }))}
                   />
                 </Field>
-                <Field label="Email">
+                <Field field="email">
                   <input
                     className="input-field"
                     type="email"
@@ -788,7 +789,7 @@ export default function Agenda() {
                     onChange={(e) => setClienteForm((f) => ({ ...f, email: e.target.value }))}
                   />
                 </Field>
-                <Field label="Notas" className="sm:col-span-2">
+                <Field field="notas" className="sm:col-span-2">
                   <textarea
                     className="input-field min-h-[60px]"
                     value={clienteForm.notas}
@@ -801,7 +802,7 @@ export default function Agenda() {
                     checked={clienteForm.activo !== false}
                     onChange={(e) => setClienteForm((f) => ({ ...f, activo: e.target.checked }))}
                   />
-                  Activo
+                  {fieldLabel('activo')}
                 </label>
               </div>
               <div className="flex flex-wrap gap-2">

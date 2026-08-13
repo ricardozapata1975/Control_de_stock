@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 export default function AuditoriasPage() {
   const { sede, user } = useAuth();
@@ -205,7 +206,7 @@ export default function AuditoriasPage() {
             <h3 className="section-title">Nueva auditoría</h3>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-label">Almacén</label>
+                <label className="text-label">{fieldLabel('almacen')}</label>
                 <input
                   className="input-field"
                   value={form.almacen}
@@ -214,7 +215,7 @@ export default function AuditoriasPage() {
                 />
               </div>
               <div>
-                <label className="text-label">Armario</label>
+                <label className="text-label">{fieldLabel('armario')}</label>
                 <input
                   className="input-field"
                   value={form.armario}
@@ -223,7 +224,7 @@ export default function AuditoriasPage() {
                 />
               </div>
               <div>
-                <label className="text-label">Estante</label>
+                <label className="text-label">{fieldLabel('estante')}</label>
                 <input
                   className="input-field"
                   value={form.estante}
@@ -232,7 +233,7 @@ export default function AuditoriasPage() {
                 />
               </div>
               <div>
-                <label className="text-label">Contenedor</label>
+                <label className="text-label">{fieldLabel('contenedor')}</label>
                 <input
                   className="input-field"
                   value={form.contenedorCodigo}
@@ -242,7 +243,7 @@ export default function AuditoriasPage() {
               </div>
             </div>
             <div>
-              <label className="text-label">Notas</label>
+              <label className="text-label">{fieldLabel('notas')}</label>
               <input
                 className="input-field"
                 value={form.notas}

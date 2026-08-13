@@ -4,6 +4,7 @@ import { LaserBarcodeCapture } from './AssignBarcodeModal';
 import { formatUbicacionLabel } from '../utils/contenedor';
 import { resolveScanToInventario } from '../utils/resolveScan';
 import { useAuth } from '../auth/AuthProvider';
+import { fieldLabel } from '../utils/fieldLabels';
 
 /**
  * Carga múltiple de ítems al remito por cámara o lector láser.
@@ -118,7 +119,9 @@ export default function RemitoScanLoader({ mode, onAddItem, onClose }) {
                         >
                           <span className="block font-semibold">{item.nombre}</span>
                           <span className="block text-xs text-muted">{formatUbicacionLabel(item)}</span>
-                          <span className="text-xs font-bold">Stock: {item.cantidad}</span>
+                          <span className="text-xs font-bold">
+                            {fieldLabel('cantidad')}: {item.cantidad}
+                          </span>
                         </button>
                       </li>
                     ))}
@@ -134,10 +137,12 @@ export default function RemitoScanLoader({ mode, onAddItem, onClose }) {
                   <div className="rounded-lg border border-border bg-surface-muted p-3">
                     <p className="font-semibold text-content">{selected.nombre}</p>
                     <p className="text-xs text-muted">{formatUbicacionLabel(selected)}</p>
-                    <p className="mt-1 text-xs">Stock disponible: {selected.cantidad}</p>
+                    <p className="mt-1 text-xs">
+                      {fieldLabel('cantidad')}: {selected.cantidad}
+                    </p>
                   </div>
                   <div>
-                    <label className="text-label">Cantidad</label>
+                    <label className="text-label">{fieldLabel('cantidad')}</label>
                     <input
                       type="number"
                       min={1}

@@ -4,6 +4,7 @@ import ThemeToggle from '../components/ThemeToggle';
 import { useAuth } from '../auth/AuthProvider';
 import { api } from '../api/client';
 import { isAdminRole } from '../utils/role';
+import { fieldLabel } from '../utils/fieldLabels';
 
 export default function ResetPassword() {
   const [searchParams] = useSearchParams();
@@ -56,7 +57,7 @@ export default function ResetPassword() {
 
         <form onSubmit={submit} className="space-y-4">
           <div>
-            <label className="text-label">Nueva contraseña</label>
+            <label className="text-label">{fieldLabel('password')}</label>
             <input
               type="password"
               className="input-field"
@@ -68,7 +69,7 @@ export default function ResetPassword() {
             />
           </div>
           <div>
-            <label className="text-label">Confirmar contraseña</label>
+            <label className="text-label">{fieldLabel('confirmPassword')}</label>
             <input
               type="password"
               className="input-field"

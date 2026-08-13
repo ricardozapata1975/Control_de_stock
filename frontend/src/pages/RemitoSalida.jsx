@@ -16,6 +16,7 @@ import {
   SEDE_DEFAULT,
 } from '../utils/ubicacion';
 import { todayIsoDate } from '../utils/remitoStorage';
+import { fieldLabel } from '../utils/fieldLabels';
 
 const EMPTY_FORM = {
   numero: '',
@@ -614,7 +615,7 @@ export default function RemitoSalida() {
       </div>
 
       <div className="card mb-4 print:hidden">
-        <label className="text-label">Tipo de remito</label>
+        <label className="text-label">{fieldLabel('tipo')}</label>
         <div className="mt-1 flex flex-wrap gap-2">
           {[
             { id: 'venta', label: 'Venta' },
@@ -694,11 +695,11 @@ export default function RemitoSalida() {
                       {formatUbicacionLabel(item)}
                     </span>
                     <span className="mt-1 inline-block max-w-full rounded bg-surface-muted px-2 py-0.5 text-xs font-bold">
-                      Stock: {item.cantidad}
+                      {fieldLabel('cantidad')}: {item.cantidad}
                     </span>
                     {item.codigoFabricante && (
                       <span className="mt-1 block truncate font-mono text-[11px] text-subtle">
-                        Fab: {item.codigoFabricante}
+                        {fieldLabel('codigoFabricante')}: {item.codigoFabricante}
                       </span>
                     )}
                   </span>
@@ -819,7 +820,7 @@ export default function RemitoSalida() {
               <h4 className="font-bold text-content">Datos del remito</h4>
 
               <div>
-                <label className="text-label">Razón social emisora (rótulo / numeración)</label>
+                <label className="text-label">{fieldLabel('razonSocial')}</label>
                 <select
                   className="input-field text-base"
                   value={empresaId}
@@ -836,7 +837,7 @@ export default function RemitoSalida() {
 
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-label">N° remito</label>
+                  <label className="text-label">{fieldLabel('numero')}</label>
                   <input
                     className="input-field text-base"
                     value={form.numero}
@@ -845,7 +846,7 @@ export default function RemitoSalida() {
                   />
                 </div>
                 <div>
-                  <label className="text-label">Fecha</label>
+                  <label className="text-label">{fieldLabel('fecha')}</label>
                   <input
                     type="date"
                     className="input-field text-base"
@@ -866,7 +867,7 @@ export default function RemitoSalida() {
                   </p>
 
                   <div>
-                    <label className="text-label">Cede origen</label>
+                    <label className="text-label">{fieldLabel('sede')}</label>
                     <input
                       className="input-field text-base"
                       value={form.cedeOrigen || sedeOrigenNombre}
@@ -880,7 +881,7 @@ export default function RemitoSalida() {
                   </div>
 
                   <div>
-                    <label className="text-label">Cede destino (sede)</label>
+                    <label className="text-label">{fieldLabel('sede')}</label>
                     <select
                       className="input-field text-base"
                       value={sedeDestino}
@@ -897,10 +898,11 @@ export default function RemitoSalida() {
                         </option>
                       ))}
                     </select>
+                    <p className="mt-1 text-xs text-muted">Sede que recibe la transferencia.</p>
                   </div>
 
                   <div>
-                    <label className="text-label">Razón social destino (Señor/es)</label>
+                    <label className="text-label">{fieldLabel('razonSocial')}</label>
                     <select
                       className="input-field text-base"
                       value={empresaDestinoId}
@@ -923,16 +925,28 @@ export default function RemitoSalida() {
 
                   {(form.domicilio || form.localidad || form.cuit) && (
                     <div className="rounded-lg border border-border bg-surface-muted/40 p-3 text-sm text-muted">
-                      {form.domicilio && <p>Domicilio: {form.domicilio}</p>}
-                      {form.localidad && <p>Localidad: {form.localidad}</p>}
-                      {form.cuit && <p>CUIT: {form.cuit}</p>}
+                      {form.domicilio && (
+                        <p>
+                          {fieldLabel('domicilio')}: {form.domicilio}
+                        </p>
+                      )}
+                      {form.localidad && (
+                        <p>
+                          {fieldLabel('localidad')}: {form.localidad}
+                        </p>
+                      )}
+                      {form.cuit && (
+                        <p>
+                          {fieldLabel('cuit')}: {form.cuit}
+                        </p>
+                      )}
                     </div>
                   )}
                 </>
               ) : (
               <>
               <div>
-                <label className="text-label">Señor(es)</label>
+                <label className="text-label">{fieldLabel('nombre')}</label>
                 <ClienteAutocomplete
                   value={form.destinatario}
                   onChange={patchForm}
@@ -941,7 +955,7 @@ export default function RemitoSalida() {
                 />
               </div>
               <div>
-                <label className="text-label">IVA</label>
+                <label className="text-label">{fieldLabel('iva')}</label>
                 <input
                   className="input-field text-base"
                   value={form.iva}
@@ -950,7 +964,7 @@ export default function RemitoSalida() {
                 />
               </div>
               <div>
-                <label className="text-label">Domicilio</label>
+                <label className="text-label">{fieldLabel('domicilio')}</label>
                 <input
                   className="input-field text-base"
                   value={form.domicilio}
@@ -960,7 +974,7 @@ export default function RemitoSalida() {
               </div>
               <div className="grid gap-3 sm:grid-cols-2">
                 <div>
-                  <label className="text-label">Localidad</label>
+                  <label className="text-label">{fieldLabel('localidad')}</label>
                   <input
                     className="input-field text-base"
                     value={form.localidad}
@@ -969,7 +983,7 @@ export default function RemitoSalida() {
                   />
                 </div>
                 <div>
-                  <label className="text-label">V. Ref.</label>
+                  <label className="text-label">{fieldLabel('vRef')}</label>
                   <input
                     className="input-field text-base"
                     value={form.vRef}
@@ -979,7 +993,7 @@ export default function RemitoSalida() {
                 </div>
               </div>
               <div>
-                <label className="text-label">C.U.I.T.</label>
+                <label className="text-label">{fieldLabel('cuit')}</label>
                 <input
                   className="input-field text-base"
                   value={form.cuit}
@@ -993,7 +1007,7 @@ export default function RemitoSalida() {
               <hr className="border-border" />
               <h4 className="font-bold text-content">Transporte</h4>
               <div>
-                <label className="text-label">Cant. de bultos</label>
+                <label className="text-label">{fieldLabel('cantBultos')}</label>
                 <input
                   className="input-field text-base"
                   value={form.bultos}
@@ -1002,7 +1016,7 @@ export default function RemitoSalida() {
                 />
               </div>
               <div>
-                <label className="text-label">Transportista / Razón social</label>
+                <label className="text-label">{fieldLabel('transportista')}</label>
                 <input
                   className="input-field text-base"
                   value={form.transportista}
@@ -1011,7 +1025,7 @@ export default function RemitoSalida() {
                 />
               </div>
               <div>
-                <label className="text-label">C.U.I.T. transportista</label>
+                <label className="text-label">{fieldLabel('transportistaCuit')}</label>
                 <input
                   className="input-field text-base"
                   value={form.cuitTransportista}
@@ -1020,7 +1034,7 @@ export default function RemitoSalida() {
                 />
               </div>
               <div>
-                <label className="text-label">Domicilio transportista</label>
+                <label className="text-label">{fieldLabel('transportistaDomicilio')}</label>
                 <input
                   className="input-field text-base"
                   value={form.domicilioTransportista}
@@ -1032,7 +1046,7 @@ export default function RemitoSalida() {
               <hr className="border-border" />
               <h4 className="font-bold text-content">Recepción</h4>
               <div>
-                <label className="text-label">Aclaración</label>
+                <label className="text-label">{fieldLabel('aclaracion')}</label>
                 <input
                   className="input-field text-base"
                   value={form.aclaracion}
@@ -1041,7 +1055,7 @@ export default function RemitoSalida() {
                 />
               </div>
               <div>
-                <label className="text-label">D.N.I.</label>
+                <label className="text-label">{fieldLabel('dni')}</label>
                 <input
                   className="input-field text-base"
                   value={form.dni}

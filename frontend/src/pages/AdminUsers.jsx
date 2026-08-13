@@ -5,6 +5,7 @@ import { useAuth } from '../auth/AuthProvider';
 import UserFilters from '../components/UserFilters';
 import { UserRowCard, UserRowTable } from '../components/admin/UserRow';
 import { normalizeRole } from '../utils/role';
+import { fieldLabel } from '../utils/fieldLabels';
 
 const DEFAULT_FILTERS = { q: '', domain: '', status: 'all' };
 
@@ -437,7 +438,7 @@ export default function AdminUsers() {
         <h3 className="section-title">Nuevo usuario</h3>
         <div className="grid gap-4 sm:grid-cols-2">
           <div>
-            <label className="text-label">Usuario (login)</label>
+            <label className="text-label">{fieldLabel('username', { required: true })}</label>
             <input
               className="input-field"
               value={form.username}
@@ -448,7 +449,7 @@ export default function AdminUsers() {
             />
           </div>
           <div>
-            <label className="text-label">Nombre para mostrar</label>
+            <label className="text-label">{fieldLabel('displayName', { required: true })}</label>
             <input
               className="input-field"
               value={form.displayName}
@@ -459,7 +460,7 @@ export default function AdminUsers() {
           </div>
         </div>
         <div>
-          <label className="text-label">Rol</label>
+          <label className="text-label">{fieldLabel('role')}</label>
           <select
             className="input-field max-w-xs"
             value={form.role}
@@ -482,7 +483,7 @@ export default function AdminUsers() {
           </p>
         </div>
         <div>
-          <label className="text-label">Correo (opcional, para recuperar contraseña)</label>
+          <label className="text-label">{fieldLabel('email')}</label>
           <input
             type="email"
             className="input-field"
@@ -490,10 +491,11 @@ export default function AdminUsers() {
             onChange={(e) => setForm({ ...form, email: e.target.value })}
             placeholder="usuario@empresa.com"
           />
+          <p className="mt-1 text-xs text-muted">Opcional. Se usa para recuperar contraseña.</p>
         </div>
         {form.role !== 'admin' && (
           <div>
-            <label className="text-label">Sucursales habilitadas</label>
+            <label className="text-label">{fieldLabel('sedesHabilitadas')}</label>
             <p className="mb-2 text-xs text-muted">
               El operario solo podrá ingresar a las sucursales marcadas (puede ser más de una).
             </p>
@@ -674,12 +676,14 @@ export default function AdminUsers() {
                   />
                 )}
               </th>
-              <th className="w-[14%] px-2 py-2">Usuario</th>
-              <th className="w-[16%] px-2 py-2">Correo</th>
-              <th className="w-[9%] px-1.5 py-2">Rol</th>
-              <th className="w-[16%] px-1.5 py-2">Sucursales</th>
-              <th className="w-[8%] px-1.5 py-2">Estado</th>
-              <th className="hidden w-[8%] px-1.5 py-2 sm:table-cell">Clave</th>
+              <th className="w-[14%] px-2 py-2">{fieldLabel('username')}</th>
+              <th className="w-[16%] px-2 py-2">{fieldLabel('email')}</th>
+              <th className="w-[9%] px-1.5 py-2">{fieldLabel('role')}</th>
+              <th className="w-[16%] px-1.5 py-2">{fieldLabel('sedesHabilitadas')}</th>
+              <th className="w-[8%] px-1.5 py-2">{fieldLabel('isActive')}</th>
+              <th className="hidden w-[8%] px-1.5 py-2 sm:table-cell">
+                {fieldLabel('mustChangePassword')}
+              </th>
               <th className="px-1.5 py-2">Acciones</th>
             </tr>
           </thead>

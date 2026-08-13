@@ -3,6 +3,7 @@ import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { parsePedidoCsv, prioridadClass } from '../constants';
 import { todayIsoDate } from '../../../utils/remitoStorage';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 export default function RecepcionesPage() {
   const { sede, user } = useAuth();
@@ -242,7 +243,7 @@ export default function RecepcionesPage() {
             <h3 className="section-title">Nueva recepción</h3>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-label">Tipo</label>
+                <label className="text-label">{fieldLabel('tipo')}</label>
                 <select
                   className="input-field"
                   value={form.tipo}
@@ -254,7 +255,7 @@ export default function RecepcionesPage() {
                 </select>
               </div>
               <div>
-                <label className="text-label">Fecha</label>
+                <label className="text-label">{fieldLabel('fecha')}</label>
                 <input
                   type="date"
                   className="input-field"
@@ -264,7 +265,7 @@ export default function RecepcionesPage() {
               </div>
             </div>
             <div>
-              <label className="text-label">Proveedor</label>
+              <label className="text-label">{fieldLabel('proveedor')}</label>
               <input
                 className="input-field"
                 value={form.proveedor}
@@ -272,7 +273,7 @@ export default function RecepcionesPage() {
               />
             </div>
             <div>
-              <label className="text-label">Documento / N°</label>
+              <label className="text-label">{fieldLabel('documento')}</label>
               <input
                 className="input-field"
                 value={form.documento}
@@ -292,7 +293,7 @@ export default function RecepcionesPage() {
               )}
             </div>
             <div>
-              <label className="text-label">Notas</label>
+              <label className="text-label">{fieldLabel('notas')}</label>
               <input
                 className="input-field"
                 value={form.notas}

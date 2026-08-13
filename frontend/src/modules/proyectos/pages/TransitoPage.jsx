@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 export default function TransitoPage() {
   const { sede } = useAuth();
@@ -71,11 +72,11 @@ export default function TransitoPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-surface-2 text-xs uppercase text-content-muted">
               <tr>
-                <th className="px-3 py-2">Remito</th>
-                <th className="px-3 py-2">Ítem</th>
-                <th className="px-3 py-2">Origen → Destino</th>
-                <th className="px-3 py-2 text-right">Pendiente</th>
-                <th className="px-3 py-2">Estado</th>
+                <th className="px-3 py-2">{fieldLabel('numero')}</th>
+                <th className="px-3 py-2">{fieldLabel('nombre')}</th>
+                <th className="px-3 py-2">{fieldLabel('almacenOrigen')}</th>
+                <th className="px-3 py-2 text-right">{fieldLabel('cantidadPendiente')}</th>
+                <th className="px-3 py-2">{fieldLabel('estado')}</th>
               </tr>
             </thead>
             <tbody>

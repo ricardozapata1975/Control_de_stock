@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { ESTADOS_PROYECTO, PRIORIDADES, prioridadClass } from '../constants';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 const EMPTY = {
   codigo: '',
@@ -122,7 +123,7 @@ export default function ProyectosLista() {
           <form className="card w-full max-w-lg space-y-3" onSubmit={submit}>
             <h3 className="section-title">Nuevo proyecto</h3>
             <div>
-              <label className="text-label">Código</label>
+              <label className="text-label">{fieldLabel('codigo')}</label>
               <input
                 className="input-field"
                 value={form.codigo}
@@ -130,7 +131,7 @@ export default function ProyectosLista() {
               />
             </div>
             <div>
-              <label className="text-label">Nombre *</label>
+              <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
               <input
                 className="input-field"
                 required
@@ -139,7 +140,7 @@ export default function ProyectosLista() {
               />
             </div>
             <div>
-              <label className="text-label">Descripción</label>
+              <label className="text-label">{fieldLabel('descripcion')}</label>
               <textarea
                 className="input-field"
                 rows={2}
@@ -149,7 +150,7 @@ export default function ProyectosLista() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-label">Prioridad</label>
+                <label className="text-label">{fieldLabel('prioridad')}</label>
                 <select
                   className="input-field"
                   value={form.prioridad}
@@ -163,7 +164,7 @@ export default function ProyectosLista() {
                 </select>
               </div>
               <div>
-                <label className="text-label">Estado</label>
+                <label className="text-label">{fieldLabel('estado')}</label>
                 <select
                   className="input-field"
                   value={form.estado}
@@ -179,7 +180,7 @@ export default function ProyectosLista() {
             </div>
             <div className="grid gap-3 sm:grid-cols-2">
               <div>
-                <label className="text-label">Fecha objetivo</label>
+                <label className="text-label">{fieldLabel('fechaObjetivo')}</label>
                 <input
                   type="date"
                   className="input-field"
@@ -188,7 +189,7 @@ export default function ProyectosLista() {
                 />
               </div>
               <div>
-                <label className="text-label">Responsable</label>
+                <label className="text-label">{fieldLabel('responsable')}</label>
                 <input
                   className="input-field"
                   value={form.responsable}

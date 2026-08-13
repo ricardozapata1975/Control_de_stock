@@ -5,6 +5,7 @@ import { api } from '../api/client';
 import { filterNavGroups } from '../nav/appNav';
 import OfflineStatus from './OfflineStatus';
 import ThemeToggle from './ThemeToggle';
+import { fieldLabel } from '../utils/fieldLabels';
 
 function AccesoLink({ item, onNavigate }) {
   if (item.soon || !item.to) {
@@ -170,7 +171,9 @@ export default function Layout() {
 
   const sedeBlock = (
     <div className="min-w-0">
-      <label className="text-[10px] font-semibold uppercase tracking-wide text-subtle">Sucursal</label>
+      <label className="text-[10px] font-semibold uppercase tracking-wide text-subtle">
+        {fieldLabel('sede')}
+      </label>
       {canSwitchSede && sedes.length > 1 ? (
         <select
           className="mt-0.5 w-full rounded-md border border-border bg-surface-muted px-2 py-1.5 text-sm font-semibold text-content"

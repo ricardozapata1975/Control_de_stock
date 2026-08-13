@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 function itemTitle(r) {
   return r.nombre || r.codigoArticulo || r.codigoFabricante || 'Ítem sin nombre';
@@ -90,7 +91,7 @@ export default function ReservasPage() {
               <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted">
                 {(r.codigoFabricante || r.codigoArticulo) && (
                   <span>
-                    Código:{' '}
+                    {fieldLabel('codigo')}:{' '}
                     <span className="font-mono text-content">
                       {r.codigoFabricante || r.codigoArticulo}
                     </span>
@@ -98,11 +99,11 @@ export default function ReservasPage() {
                 )}
                 {r.contenedorCodigo && (
                   <span>
-                    Ubicación: <span className="font-mono text-content">{r.contenedorCodigo}</span>
+                    {fieldLabel('ubicacion')}: <span className="font-mono text-content">{r.contenedorCodigo}</span>
                   </span>
                 )}
                 <span>
-                  Cantidad: <strong className="text-accent">{r.cantidad}</strong>
+                  {fieldLabel('cantidad')}: <strong className="text-accent">{r.cantidad}</strong>
                 </span>
               </div>
               {r.detalle ? (

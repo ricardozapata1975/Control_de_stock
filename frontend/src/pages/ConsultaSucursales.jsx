@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import InventoryTable from '../components/InventoryTable';
 import ItemThumb from '../components/ItemThumb';
 import { formatUbicacionLabel } from '../utils/contenedor';
+import { fieldLabel } from '../utils/fieldLabels';
 
 export default function ConsultaSucursales() {
   const { sede, sedeNombre, user } = useAuth();
@@ -129,7 +130,7 @@ export default function ConsultaSucursales() {
             className="card mb-4 flex flex-col gap-3 sm:flex-row sm:items-end"
           >
             <div className="min-w-0 flex-1">
-              <label className="text-label">Sucursal a consultar</label>
+              <label className="text-label">{fieldLabel('sede')}</label>
               <select
                 className="input-field"
                 value={sedeConsulta}
@@ -193,7 +194,7 @@ export default function ConsultaSucursales() {
                 <p className="break-words font-medium text-content">{selected.nombre}</p>
                 <p className="text-xs text-muted">{formatUbicacionLabel(selected)}</p>
                 <p className="mt-1 text-sm">
-                  Stock en {sedeConsultaInfo?.nombre || sedeConsulta}:{' '}
+                  {fieldLabel('cantidad')} en {sedeConsultaInfo?.nombre || sedeConsulta}:{' '}
                   <strong>{selected.cantidad}</strong>
                 </p>
               </div>
@@ -201,7 +202,7 @@ export default function ConsultaSucursales() {
 
             <form onSubmit={submitSolicitud} className="space-y-3">
               <div>
-                <label className="text-label">Cantidad a solicitar *</label>
+                <label className="text-label">{fieldLabel('cantidad', { required: true })}</label>
                 <input
                   type="number"
                   min={1}
@@ -213,7 +214,7 @@ export default function ConsultaSucursales() {
                 />
               </div>
               <div>
-                <label className="text-label">Mensaje (opcional)</label>
+                <label className="text-label">{fieldLabel('mensaje')}</label>
                 <textarea
                   className="input-field min-h-[80px]"
                   placeholder={`Ej: Necesitamos para obra, retirar de ${sedeNombre || sede}`}

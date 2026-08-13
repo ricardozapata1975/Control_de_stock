@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { ESTADOS_TABLERO, PRIORIDADES, prioridadClass } from '../constants';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 export default function ProyectoDetail() {
   const { id } = useParams();
@@ -139,12 +140,12 @@ export default function ProyectoDetail() {
           <table className="w-full text-left text-sm">
             <thead>
               <tr className="border-b border-border text-muted">
-                <th className="py-1">Código</th>
-                <th>Descripción</th>
-                <th className="text-right">Req.</th>
-                <th className="text-right">Reserv.</th>
-                <th className="text-right">Falta</th>
-                <th>Estado</th>
+                <th className="py-1">{fieldLabel('codigo')}</th>
+                <th>{fieldLabel('descripcion')}</th>
+                <th className="text-right">{fieldLabel('cantidadRequerida')}</th>
+                <th className="text-right">{fieldLabel('cantidadReservada')}</th>
+                <th className="text-right">{fieldLabel('cantidadFaltante')}</th>
+                <th>{fieldLabel('estado')}</th>
               </tr>
             </thead>
             <tbody>
@@ -207,7 +208,7 @@ export default function ProyectoDetail() {
           <form className="card w-full max-w-md space-y-3" onSubmit={crearTablero}>
             <h3 className="section-title">Nuevo tablero</h3>
             <div>
-              <label className="text-label">Nombre *</label>
+              <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
               <input
                 className="input-field"
                 required
@@ -216,7 +217,7 @@ export default function ProyectoDetail() {
               />
             </div>
             <div>
-              <label className="text-label">Código</label>
+              <label className="text-label">{fieldLabel('codigo')}</label>
               <input
                 className="input-field"
                 value={tableroForm.codigo}
@@ -225,7 +226,7 @@ export default function ProyectoDetail() {
             </div>
             <div className="grid grid-cols-2 gap-2">
               <div>
-                <label className="text-label">Prioridad</label>
+                <label className="text-label">{fieldLabel('prioridad')}</label>
                 <select
                   className="input-field"
                   value={tableroForm.prioridad}
@@ -239,7 +240,7 @@ export default function ProyectoDetail() {
                 </select>
               </div>
               <div>
-                <label className="text-label">Fecha objetivo</label>
+                <label className="text-label">{fieldLabel('fechaObjetivo')}</label>
                 <input
                   type="date"
                   className="input-field"

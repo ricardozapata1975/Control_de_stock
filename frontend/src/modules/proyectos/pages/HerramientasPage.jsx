@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 const EVENTOS = [
   { id: 'devuelta', label: 'Devuelta' },
@@ -155,7 +156,7 @@ export default function HerramientasPage() {
           <form className="card w-full max-w-md space-y-3" onSubmit={submit}>
             <h3 className="section-title">Prestar herramienta</h3>
             <div>
-              <label className="text-label">Nombre / descripción *</label>
+              <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
               <input
                 className="input-field"
                 required
@@ -164,7 +165,7 @@ export default function HerramientasPage() {
               />
             </div>
             <div>
-              <label className="text-label">Código</label>
+              <label className="text-label">{fieldLabel('codigo')}</label>
               <input
                 className="input-field"
                 value={form.codigo}
@@ -172,7 +173,7 @@ export default function HerramientasPage() {
               />
             </div>
             <div>
-              <label className="text-label">Operario *</label>
+              <label className="text-label">{fieldLabel('operario', { required: true })}</label>
               <input
                 className="input-field"
                 required
@@ -181,7 +182,7 @@ export default function HerramientasPage() {
               />
             </div>
             <div>
-              <label className="text-label">Caja</label>
+              <label className="text-label">{fieldLabel('caja')}</label>
               <input
                 className="input-field"
                 value={form.caja}

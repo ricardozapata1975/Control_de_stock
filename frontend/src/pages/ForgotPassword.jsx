@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import ThemeToggle from '../components/ThemeToggle';
 import { api } from '../api/client';
+import { fieldLabel } from '../utils/fieldLabels';
 
 export default function ForgotPassword() {
   const [email, setEmail] = useState('');
@@ -45,7 +46,7 @@ export default function ForgotPassword() {
           <form onSubmit={submit} className="space-y-4">
             <div>
               <label className="text-label" htmlFor="forgot-email">
-                Correo electrónico
+                {fieldLabel('email')}
               </label>
               <input
                 id="forgot-email"

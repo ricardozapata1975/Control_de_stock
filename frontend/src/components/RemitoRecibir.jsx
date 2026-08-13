@@ -3,6 +3,7 @@ import { api } from '../api/client';
 import { formatFechaDmy } from '../utils/fecha';
 import UbicacionSelector from './UbicacionSelector';
 import { ALMACEN_DEFAULT, resolveAduanaUbicacion, SEDE_DEFAULT } from '../utils/ubicacion';
+import { fieldLabel } from '../utils/fieldLabels';
 
 function RecibirModal({ remito, catalogo, onClose, onConfirmado }) {
   const ubi = remito.ubicacionDestino || {};
@@ -52,10 +53,12 @@ function RecibirModal({ remito, catalogo, onClose, onConfirmado }) {
 
         <div className="mb-4 space-y-1 text-sm">
           <p>
-            <span className="font-semibold">Origen:</span> {remito.almacenOrigen}
+            <span className="font-semibold">{fieldLabel('almacenOrigen')}:</span>{' '}
+            {remito.almacenOrigen}
           </p>
           <p>
-            <span className="font-semibold">Destino:</span> {remito.almacenDestino}
+            <span className="font-semibold">{fieldLabel('almacenDestino')}:</span>{' '}
+            {remito.almacenDestino}
           </p>
           <p className="text-muted">
             {remito.items?.length || remito.itemsCount || 0} ítem(s) — emitido{' '}
@@ -64,7 +67,7 @@ function RecibirModal({ remito, catalogo, onClose, onConfirmado }) {
         </div>
 
         <div className="mb-4">
-          <h4 className="mb-2 font-bold text-content">Ubicación destino</h4>
+          <h4 className="mb-2 font-bold text-content">{fieldLabel('ubicacionDestino')}</h4>
           <p className="mb-2 text-xs text-muted">
             Por defecto la aduana de la sede (recepción tránsito). Podés confirmar ahí o elegir el
             destino final dentro de la sede.
@@ -166,7 +169,7 @@ export default function RemitoRecibir() {
 
       <div className="card mb-4 flex flex-wrap items-end gap-3">
         <div className="min-w-[180px] flex-1">
-          <label className="text-label">Filtrar por almacén destino</label>
+          <label className="text-label">{fieldLabel('almacenDestino')}</label>
           <select
             className="input-field"
             value={filtroAlmacen}
@@ -212,7 +215,7 @@ export default function RemitoRecibir() {
                 {r.createdBy ? ` · Emitido por ${r.createdBy}` : ''}
               </p>
               <p className="text-xs text-muted">
-                Fecha: {formatFechaDmy(r.fecha || r.createdAt?.slice?.(0, 10))}
+                {fieldLabel('fecha')}: {formatFechaDmy(r.fecha || r.createdAt?.slice?.(0, 10))}
               </p>
             </div>
             <button
