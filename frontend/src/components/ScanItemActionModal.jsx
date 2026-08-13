@@ -1,4 +1,5 @@
 import { formatUbicacionLabel } from '../utils/contenedor';
+import { fieldLabel } from '../utils/fieldLabels';
 
 export default function ScanItemActionModal({ item, onClose, onEgreso, onIngreso }) {
   if (!item) return null;
@@ -15,7 +16,7 @@ export default function ScanItemActionModal({ item, onClose, onEgreso, onIngreso
         role="dialog"
         aria-labelledby="scan-item-action-title"
       >
-        <p className="text-xs font-semibold uppercase tracking-wide text-sky-400">Herramienta seleccionada</p>
+        <p className="text-xs font-semibold uppercase tracking-wide text-sky-400">{fieldLabel('nombre')}</p>
         <h3 id="scan-item-action-title" className="section-title mt-1">
           {item.nombre}
         </h3>
@@ -27,7 +28,7 @@ export default function ScanItemActionModal({ item, onClose, onEgreso, onIngreso
         <p className="mt-2 text-sm text-muted">{formatUbicacionLabel(item)}</p>
         <p className="font-mono text-xs text-accent">{item.contenedorCodigo}</p>
         <p className="mt-1 text-sm">
-          Stock disponible: <strong className="text-accent">{item.cantidad}</strong>
+          {fieldLabel('cantidad')}: <strong className="text-accent">{item.cantidad}</strong>
         </p>
 
         <div className="mt-5 grid gap-3">

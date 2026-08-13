@@ -1,19 +1,12 @@
 import { useEffect } from 'react';
 import { formatUbicacionLabel } from '../utils/contenedor';
+import { fieldLabel } from '../utils/fieldLabels';
 
 function formatFecha(iso) {
   if (!iso) return null;
   const d = String(iso).slice(0, 10);
   const [y, m, day] = d.split('-');
   return day && m && y ? `${day}/${m}/${y}` : iso;
-}
-
-function herramientaLabel(item) {
-  const parts = [item.nombre];
-  if (item.marca) {
-    parts.push(`${item.marca}${item.modelo ? ` ${item.modelo}` : ''}`);
-  }
-  return parts.filter(Boolean).join(' · ') || null;
 }
 
 function display(val) {
@@ -30,15 +23,11 @@ function formatPrecio(item) {
   return `${n}${moneda}`;
 }
 
-function clasificacionLabel(item) {
-  const parts = [item.tema, item.familia, item.subfamilia].filter(Boolean);
-  return parts.length ? parts.join(' · ') : null;
-}
-
-function DetailRow({ label, value, multiline = false }) {
+function DetailRow({ field, label, value, multiline = false }) {
+  const text = label || (field ? fieldLabel(field) : '');
   return (
     <div className="grid gap-1 sm:grid-cols-[7.5rem_1fr] sm:gap-3">
-      <dt className="text-xs font-semibold uppercase tracking-wide text-subtle">{label}</dt>
+      <dt className="text-xs font-semibold uppercase tracking-wide text-subtle">{text}</dt>
       <dd
         className={`text-content ${multiline ? 'break-words whitespace-pre-wrap' : 'break-words'}`}
       >
@@ -89,7 +78,7 @@ export default function ItemDetailModal({
       >
         <div className="mb-5 flex items-start justify-between gap-3">
           <h3 id="item-detail-title" className="section-title leading-snug">
-            Detalle del ítem
+            Detalle
           </h3>
           <button
             type="button"
@@ -112,14 +101,16 @@ export default function ItemDetailModal({
         ) : null}
 
         <dl className="space-y-4 text-sm">
-          <DetailRow label="Herramienta" value={herramientaLabel(item)} />
-          <DetailRow label="Ubicación" value={formatUbicacionLabel(item)} multiline />
+          <DetailRow field="nombre" value={display(item.nombre)} />
+          <DetailRow field="marca" value={display(item.marca)} />
+          <DetailRow field="modelo" value={display(item.modelo)} />
+          <DetailRow field="ubicacion" value={formatUbicacionLabel(item)} multiline />
           {stockBreakdown ? (
             <>
-              <DetailRow label="Físico" value={display(stockBreakdown.fisico)} />
-              <DetailRow label="Reservado" value={display(stockBreakdown.reservado)} />
+              <DetailRow field="fisico" value={display(stockBreakdown.fisico)} />
+              <DetailRow field="reservado" value={display(stockBreakdown.reservado)} />
               <DetailRow
-                label="Neto"
+                field="neto"
                 value={
                   <span
                     className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -137,7 +128,7 @@ export default function ItemDetailModal({
             </>
           ) : (
             <DetailRow
-              label="Stock"
+              field="cantidad"
               value={
                 <span
                   className={`inline-flex rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -153,7 +144,7 @@ export default function ItemDetailModal({
           )}
           {Array.isArray(item.ubicaciones) && item.ubicaciones.length > 0 ? (
             <DetailRow
-              label="Ubicaciones"
+              field="ubicaciones"
               multiline
               value={item.ubicaciones
                 .map(
@@ -163,10 +154,10 @@ export default function ItemDetailModal({
                 .join('\n')}
             />
           ) : null}
-          <DetailRow label="Tipo" value={display(item.tipo)} />
-          <DetailRow label="Detalle" value={display(item.detalle)} multiline />
+          <DetailRow field="tipo" value={display(item.tipo)} />
+          <DetailRow field="detalle" value={display(item.detalle)} multiline />
           <DetailRow
-            label="Cód. fabricante"
+            field="codigoFabricante"
             value={
               item.codigoFabricante ? (
                 <span className="font-mono">{item.codigoFabricante}</span>
@@ -175,29 +166,29 @@ export default function ItemDetailModal({
               )
             }
           />
-          <DetailRow label="Calibración" value={display(item.calibracion)} multiline />
-          <DetailRow label="Comentario" value={display(item.comentario)} multiline />
+          <DetailRow field="calibracion" value={display(item.calibracion)} multiline />
+          <DetailRow field="comentario" value={display(item.comentario)} multiline />
           <DetailRow
-            label="Fecha relev."
+            field="fechaRelevamiento"
             value={formatFecha(item.fechaRelevamiento || item.fecha_relevamiento)}
           />
 
           <div className="border-t border-border pt-4">
             <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Catálogo</p>
           </div>
-          <DetailRow label="Clasificación" value={clasificacionLabel(item)} multiline />
-          <DetailRow label="Tema" value={display(item.tema)} />
-          <DetailRow label="Familia" value={display(item.familia)} />
-          <DetailRow label="Subfamilia" value={display(item.subfamilia)} />
-          <DetailRow label="Unidad" value={display(item.unidad)} />
-          <DetailRow label="Packing / MOQ" value={display(item.packing)} />
-          <DetailRow label="Precio lista" value={formatPrecio(item)} />
+          <DetailRow field="tema" value={display(item.tema)} />
+          <DetailRow field="familia" value={display(item.familia)} />
+          <DetailRow field="subfamilia" value={display(item.subfamilia)} />
+          <DetailRow field="unidad" value={display(item.unidad)} />
+          <DetailRow field="packing" value={display(item.packing)} />
+          <DetailRow field="precioLista" value={formatPrecio(item)} />
+          <DetailRow field="moneda" value={display(item.moneda)} />
           <DetailRow
-            label="Peso"
+            field="pesoKg"
             value={item.pesoKg != null && item.pesoKg !== '' ? `${item.pesoKg} kg` : null}
           />
-          <DetailRow label="Fuente catálogo" value={display(item.catalogoFuente)} />
-          <DetailRow label="Vigencia" value={display(item.catalogoVigencia)} />
+          <DetailRow field="catalogoFuente" value={display(item.catalogoFuente)} />
+          <DetailRow field="catalogoVigencia" value={display(item.catalogoVigencia)} />
         </dl>
 
         {showActions && (

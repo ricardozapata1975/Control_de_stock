@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../api/client';
 import { useAuth } from '../auth/AuthProvider';
 import { formatFechaDmy } from '../utils/fecha';
+import { fieldLabel } from '../utils/fieldLabels';
 
 const ESTADO_CONFIG = {
   completado: {
@@ -235,9 +236,9 @@ export default function Historial() {
         <table className="w-full min-w-[800px] text-left text-sm">
           <thead className="table-head">
             <tr>
-              <th className="px-3 py-3">Herramienta</th>
-              <th className="px-3 py-3">Persona</th>
-              <th className="px-3 py-3">Cant.</th>
+              <th className="px-3 py-3">{fieldLabel('nombre')}</th>
+              <th className="px-3 py-3">{fieldLabel('usuario')}</th>
+              <th className="px-3 py-3">{fieldLabel('cantidad')}</th>
               <th className="px-3 py-3">Egreso</th>
               <th className="px-3 py-3">Ingreso</th>
               <th className="px-3 py-3">Estado</th>

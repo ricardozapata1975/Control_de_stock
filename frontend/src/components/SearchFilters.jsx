@@ -1,5 +1,6 @@
 import { useMemo } from 'react';
 import { ALMACENES, ARMARIOS, ESTANTES, getArmarioNombre, getArmariosForAlmacen } from '../utils/ubicacion';
+import { fieldLabel } from '../utils/fieldLabels';
 
 export default function SearchFilters({
   filters,
@@ -102,7 +103,7 @@ export default function SearchFilters({
         </div>
       )}
       <div className="min-w-0">
-        <label className="text-label">Almacén</label>
+        <label className="text-label">{fieldLabel('almacen')}</label>
         <select
           className="input-field max-w-full"
           value={filters.almacen || ''}
@@ -117,7 +118,7 @@ export default function SearchFilters({
         </select>
       </div>
       <div className="min-w-0">
-        <label className="text-label">Armario / estantería</label>
+        <label className="text-label">{fieldLabel('armario')}</label>
         <select
           className="input-field max-w-full"
           value={filters.armario}
@@ -134,7 +135,7 @@ export default function SearchFilters({
       </div>
       {!ubicacionOnly && (
         <div className="min-w-0">
-          <label className="text-label">Estante</label>
+          <label className="text-label">{fieldLabel('estante')}</label>
           <select
             className="input-field max-w-full"
             value={filters.estante || ''}
@@ -153,7 +154,7 @@ export default function SearchFilters({
       )}
       {!ubicacionOnly && (
         <div className="min-w-0">
-          <label className="text-label">Contenedor</label>
+          <label className="text-label">{fieldLabel('contenedor')}</label>
           <select
             className="input-field max-w-full"
             value={filters.contenedor || ''}
@@ -177,7 +178,7 @@ export default function SearchFilters({
       )}
       {!ubicacionOnly && (
         <div className="min-w-0">
-          <label className="text-label">Tipo</label>
+          <label className="text-label">{fieldLabel('tipo')}</label>
           <select
             className="input-field max-w-full"
             value={filters.tipo}
@@ -194,7 +195,7 @@ export default function SearchFilters({
       )}
       {!ubicacionOnly && (
         <div className="min-w-0">
-          <label className="text-label">Familia</label>
+          <label className="text-label">{fieldLabel('familia')}</label>
           <input
             className="input-field max-w-full"
             placeholder="Ej. Interruptor…"
@@ -205,7 +206,7 @@ export default function SearchFilters({
       )}
       {!ubicacionOnly && (
         <div className="min-w-0">
-          <label className="text-label">Tema</label>
+          <label className="text-label">{fieldLabel('tema')}</label>
           <input
             className="input-field max-w-full"
             placeholder="Catálogo / tema…"

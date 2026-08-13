@@ -1,4 +1,5 @@
 import { formatUbicacionLabel } from '../utils/contenedor';
+import { fieldLabel } from '../utils/fieldLabels';
 import ItemThumb from './ItemThumb';
 
 function StockBadge({ cantidad }) {
@@ -74,9 +75,9 @@ export default function InventoryTable({ items, onRowClick, loading = false }) {
         <table className="inventory-list-table w-full table-fixed text-left text-sm">
           <thead className="table-head">
             <tr>
-              <th className="w-[44%] px-3 py-2">Herramienta</th>
-              <th className="w-[36%] px-3 py-2">Ubicación</th>
-              <th className="w-[20%] px-3 py-2 text-right">Stock</th>
+              <th className="w-[44%] px-3 py-2">{fieldLabel('nombre')}</th>
+              <th className="w-[36%] px-3 py-2">{fieldLabel('ubicacion')}</th>
+              <th className="w-[20%] px-3 py-2 text-right">{fieldLabel('cantidad')}</th>
             </tr>
           </thead>
           <tbody>

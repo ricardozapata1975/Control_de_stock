@@ -13,6 +13,7 @@ import {
   pickDefaultArmario,
 } from '../utils/ubicacion';
 import { CONTENEDOR_HELP } from '../utils/contenedorCodigo';
+import { fieldLabel } from '../utils/fieldLabels';
 
 const DEFAULT_TIPO = 'Herramienta';
 
@@ -449,7 +450,7 @@ export default function AdminEditorStock() {
           </div>
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
             <div>
-              <label className="text-label text-xs">Almacén *</label>
+              <label className="text-label text-xs">{fieldLabel('almacen', { required: true })}</label>
               <select
                 className="input-field py-2 text-sm"
                 value={values.almacen}
@@ -464,11 +465,11 @@ export default function AdminEditorStock() {
               </select>
             </div>
             <div>
-              <label className="text-label text-xs">Armario *</label>
+              <label className="text-label text-xs">{fieldLabel('armario', { required: true })}</label>
               <div className="[&_.input-field]:py-2 [&_.input-field]:text-sm">{armarioSelect}</div>
             </div>
             <div>
-              <label className="text-label text-xs">Estante *</label>
+              <label className="text-label text-xs">{fieldLabel('estante', { required: true })}</label>
               <select
                 className="input-field py-2 text-sm"
                 value={values.estante}
@@ -483,7 +484,7 @@ export default function AdminEditorStock() {
               </select>
             </div>
             <div>
-              <label className="text-label text-xs">Cont.</label>
+              <label className="text-label text-xs">{fieldLabel('contenedor')}</label>
               <input
                 className="input-field py-2 text-sm font-mono"
                 placeholder="C01"
@@ -500,7 +501,7 @@ export default function AdminEditorStock() {
       <div className="rounded-lg border border-border bg-surface-muted p-4 space-y-3">
         <h3 className="section-title text-base">Ubicación física</h3>
         <div>
-          <label className="text-label">Almacén *</label>
+          <label className="text-label">{fieldLabel('almacen', { required: true })}</label>
           <select
             className="input-field"
             value={values.almacen}
@@ -515,11 +516,11 @@ export default function AdminEditorStock() {
           </select>
         </div>
         <div>
-          <label className="text-label">Armario / estantería / gabinete *</label>
+          <label className="text-label">{fieldLabel('armario', { required: true })}</label>
           {armarioSelect}
         </div>
         <div>
-          <label className="text-label">Estante * (E01–E09)</label>
+          <label className="text-label">{fieldLabel('estante', { required: true })}</label>
           <select
             className="input-field"
             value={values.estante}
@@ -532,9 +533,10 @@ export default function AdminEditorStock() {
               </option>
             ))}
           </select>
+          <p className="mt-1 text-xs text-subtle">E01–E09</p>
         </div>
         <div>
-          <label className="text-label">Contenedor (opcional)</label>
+          <label className="text-label">{fieldLabel('contenedor')}</label>
           <input
             className="input-field"
             placeholder="Ej: C05, B12, H01 o SC"
@@ -659,7 +661,7 @@ export default function AdminEditorStock() {
               {modo === 'existente' ? (
                 <>
                   <div>
-                    <label className="text-label">Ítem existente</label>
+                    <label className="text-label">{fieldLabel('nombre')}</label>
                     <p className="mb-2 text-xs text-subtle">Escribí letras para acotar la lista.</p>
                     <FilterableSelect
                       options={itemOptions}
@@ -672,7 +674,7 @@ export default function AdminEditorStock() {
                   </div>
                   {ubicacionesItem.length > 1 && (
                     <div>
-                      <label className="text-label">Ubicación con stock</label>
+                      <label className="text-label">{fieldLabel('ubicacion')}</label>
                       <select
                         className="input-field"
                         value={ubicacionStockId}
@@ -699,7 +701,7 @@ export default function AdminEditorStock() {
               ) : modo === 'editar' ? (
                 <>
                   <div>
-                    <label className="text-label">Ítem a editar *</label>
+                    <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
                     <p className="mb-2 text-xs text-subtle">Escribí letras para acotar la lista.</p>
                     <FilterableSelect
                       options={editItemOptions}
@@ -712,7 +714,7 @@ export default function AdminEditorStock() {
                   </div>
                   {editUbicaciones.length > 1 && (
                     <div>
-                      <label className="text-label">Ubicación de stock</label>
+                      <label className="text-label">{fieldLabel('ubicacion')}</label>
                       <select
                         className="input-field"
                         value={editStockId}
@@ -747,7 +749,7 @@ export default function AdminEditorStock() {
                         { compact: true }
                       )}
                       <div>
-                        <label className="text-label">Cantidad en stock *</label>
+                        <label className="text-label">{fieldLabel('cantidad', { required: true })}</label>
                         <input
                           type="number"
                           min={0}
@@ -761,7 +763,7 @@ export default function AdminEditorStock() {
                       <div className="border-t border-border pt-3 space-y-3">
                         <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Datos del ítem</p>
                         <div>
-                          <label className="text-label">Nombre *</label>
+                          <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
                           <input
                             className="input-field"
                             value={editNombre}
@@ -771,7 +773,7 @@ export default function AdminEditorStock() {
                         </div>
                         <div className="grid grid-cols-2 gap-2">
                           <div>
-                            <label className="text-label text-xs text-subtle">Marca</label>
+                            <label className="text-label text-xs text-subtle">{fieldLabel('marca')}</label>
                             <input
                               className="input-field py-2 text-sm"
                               value={editMarca}
@@ -779,7 +781,7 @@ export default function AdminEditorStock() {
                             />
                           </div>
                           <div>
-                            <label className="text-label text-xs text-subtle">Modelo</label>
+                            <label className="text-label text-xs text-subtle">{fieldLabel('modelo')}</label>
                             <input
                               className="input-field py-2 text-sm"
                               value={editModelo}
@@ -789,7 +791,7 @@ export default function AdminEditorStock() {
                         </div>
                         <div className="grid gap-3 sm:grid-cols-2">
                           <div>
-                            <label className="text-label text-xs text-subtle">Tipo</label>
+                            <label className="text-label text-xs text-subtle">{fieldLabel('tipo')}</label>
                             <select
                               className="input-field py-2 text-sm"
                               value={editTipo}
@@ -803,7 +805,7 @@ export default function AdminEditorStock() {
                             </select>
                           </div>
                           <div>
-                            <label className="text-label text-xs text-subtle">Detalle</label>
+                            <label className="text-label text-xs text-subtle">{fieldLabel('detalle')}</label>
                             <input
                               className="input-field py-2 text-sm"
                               value={editDetalle}
@@ -813,10 +815,12 @@ export default function AdminEditorStock() {
                         </div>
                         <div className="border-t border-border pt-3 space-y-3">
                           <p className="text-xs font-semibold uppercase tracking-wide text-subtle">
-                            Catálogo (Siemens / Sivacon)
+                            Catálogo
                           </p>
                           <div>
-                            <label className="text-label text-xs text-subtle">Código fabricante (MLFB)</label>
+                            <label className="text-label text-xs text-subtle">
+                              {fieldLabel('codigoFabricante')}
+                            </label>
                             <input
                               className="input-field py-2 font-mono text-sm"
                               value={editCodigoFab}
@@ -825,7 +829,7 @@ export default function AdminEditorStock() {
                           </div>
                           <div className="grid grid-cols-2 gap-2">
                             <div>
-                              <label className="text-label text-xs text-subtle">Tema</label>
+                              <label className="text-label text-xs text-subtle">{fieldLabel('tema')}</label>
                               <input
                                 className="input-field py-2 text-sm"
                                 value={editTema}
@@ -833,7 +837,7 @@ export default function AdminEditorStock() {
                               />
                             </div>
                             <div>
-                              <label className="text-label text-xs text-subtle">Familia</label>
+                              <label className="text-label text-xs text-subtle">{fieldLabel('familia')}</label>
                               <input
                                 className="input-field py-2 text-sm"
                                 value={editFamilia}
@@ -841,7 +845,7 @@ export default function AdminEditorStock() {
                               />
                             </div>
                             <div className="col-span-2">
-                              <label className="text-label text-xs text-subtle">Subfamilia</label>
+                              <label className="text-label text-xs text-subtle">{fieldLabel('subfamilia')}</label>
                               <input
                                 className="input-field py-2 text-sm"
                                 value={editSubfamilia}
@@ -849,7 +853,7 @@ export default function AdminEditorStock() {
                               />
                             </div>
                             <div>
-                              <label className="text-label text-xs text-subtle">Unidad</label>
+                              <label className="text-label text-xs text-subtle">{fieldLabel('unidad')}</label>
                               <input
                                 className="input-field py-2 text-sm"
                                 value={editUnidad}
@@ -857,7 +861,7 @@ export default function AdminEditorStock() {
                               />
                             </div>
                             <div>
-                              <label className="text-label text-xs text-subtle">Packing / MOQ</label>
+                              <label className="text-label text-xs text-subtle">{fieldLabel('packing')}</label>
                               <input
                                 className="input-field py-2 text-sm"
                                 value={editPacking}
@@ -865,7 +869,7 @@ export default function AdminEditorStock() {
                               />
                             </div>
                             <div>
-                              <label className="text-label text-xs text-subtle">Precio lista</label>
+                              <label className="text-label text-xs text-subtle">{fieldLabel('precioLista')}</label>
                               <input
                                 className="input-field py-2 text-sm"
                                 value={editPrecioLista}
@@ -873,7 +877,7 @@ export default function AdminEditorStock() {
                               />
                             </div>
                             <div>
-                              <label className="text-label text-xs text-subtle">Moneda</label>
+                              <label className="text-label text-xs text-subtle">{fieldLabel('moneda')}</label>
                               <input
                                 className="input-field py-2 text-sm"
                                 placeholder="EUR / USD"
@@ -882,7 +886,7 @@ export default function AdminEditorStock() {
                               />
                             </div>
                             <div>
-                              <label className="text-label text-xs text-subtle">Peso kg</label>
+                              <label className="text-label text-xs text-subtle">{fieldLabel('pesoKg')}</label>
                               <input
                                 className="input-field py-2 text-sm"
                                 value={editPesoKg}
@@ -890,7 +894,9 @@ export default function AdminEditorStock() {
                               />
                             </div>
                             <div>
-                              <label className="text-label text-xs text-subtle">Vigencia catálogo</label>
+                              <label className="text-label text-xs text-subtle">
+                                {fieldLabel('catalogoVigencia')}
+                              </label>
                               <input
                                 className="input-field py-2 text-sm"
                                 value={editCatalogoVigencia}
@@ -898,7 +904,9 @@ export default function AdminEditorStock() {
                               />
                             </div>
                             <div className="col-span-2">
-                              <label className="text-label text-xs text-subtle">Fuente catálogo</label>
+                              <label className="text-label text-xs text-subtle">
+                                {fieldLabel('catalogoFuente')}
+                              </label>
                               <input
                                 className="input-field py-2 text-sm"
                                 placeholder="sivacon_s8 / siemens_ar"
@@ -915,7 +923,7 @@ export default function AdminEditorStock() {
               ) : (
                 <>
                   <div>
-                    <label className="text-label">Nombre *</label>
+                    <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
                     <input
                       className="input-field"
                       value={nombre}
@@ -925,16 +933,16 @@ export default function AdminEditorStock() {
                   </div>
                   <div className="grid gap-3 sm:grid-cols-2">
                     <div>
-                      <label className="text-label">Marca</label>
+                      <label className="text-label">{fieldLabel('marca')}</label>
                       <input className="input-field" value={marca} onChange={(e) => setMarca(e.target.value)} />
                     </div>
                     <div>
-                      <label className="text-label">Modelo</label>
+                      <label className="text-label">{fieldLabel('modelo')}</label>
                       <input className="input-field" value={modelo} onChange={(e) => setModelo(e.target.value)} />
                     </div>
                   </div>
                   <div>
-                    <label className="text-label">Tipo</label>
+                    <label className="text-label">{fieldLabel('tipo')}</label>
                     <select className="input-field" value={tipo} onChange={(e) => setTipo(e.target.value)}>
                       {tipos.map((t) => (
                         <option key={t} value={t}>
@@ -944,11 +952,11 @@ export default function AdminEditorStock() {
                     </select>
                   </div>
                   <div>
-                    <label className="text-label">Detalle</label>
+                    <label className="text-label">{fieldLabel('detalle')}</label>
                     <input className="input-field" value={detalle} onChange={(e) => setDetalle(e.target.value)} />
                   </div>
                   <div>
-                    <label className="text-label">Calibración</label>
+                    <label className="text-label">{fieldLabel('calibracion')}</label>
                     <input
                       className="input-field"
                       placeholder="No aplica / Sí - vigente..."
@@ -957,7 +965,7 @@ export default function AdminEditorStock() {
                     />
                   </div>
                   <div>
-                    <label className="text-label">Comentario</label>
+                    <label className="text-label">{fieldLabel('comentario')}</label>
                     <input
                       className="input-field"
                       placeholder="Color, forma..."
@@ -966,7 +974,7 @@ export default function AdminEditorStock() {
                     />
                   </div>
                   <div>
-                    <label className="text-label">Fecha relevamiento</label>
+                    <label className="text-label">{fieldLabel('fechaRelevamiento')}</label>
                     <input
                       type="date"
                       className="input-field"
@@ -986,7 +994,7 @@ export default function AdminEditorStock() {
 
               {modo !== 'editar' && (
                 <div>
-                  <label className="text-label">Cantidad a ingresar *</label>
+                  <label className="text-label">{fieldLabel('cantidad', { required: true })}</label>
                   <input
                     type="number"
                     min={1}
@@ -1022,7 +1030,7 @@ export default function AdminEditorStock() {
                 La baja oculta el ítem del inventario. No se permite si hay egresos pendientes.
               </p>
               <div>
-                <label className="text-label">Ítem a dar de baja *</label>
+                <label className="text-label">{fieldLabel('nombre', { required: true })}</label>
                 <select
                   className="input-field"
                   value={bajaItemId}

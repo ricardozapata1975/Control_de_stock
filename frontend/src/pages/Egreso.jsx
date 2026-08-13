@@ -7,6 +7,7 @@ import { api } from '../api/client';
 import FilterableSelect from '../components/FilterableSelect';
 import FocusedPage from '../components/FocusedPage';
 import { filterInventarioByScan, parsedFromCodigoParam } from '../utils/scanMatch';
+import { fieldLabel } from '../utils/fieldLabels';
 
 export default function Egreso() {
   const { user, isAdmin } = useAuth();
@@ -100,7 +101,7 @@ export default function Egreso() {
     () =>
       scopedDisponibles.map((i) => ({
         value: i.id,
-        label: `${i.nombre} — Stock ${i.cantidad} (${i.contenedorCodigo})`,
+        label: `${i.nombre} — ${fieldLabel('cantidad')} ${i.cantidad} (${i.contenedorCodigo})`,
         searchText: `${i.nombre} ${i.marca} ${i.modelo} ${i.tipo} ${i.contenedorCodigo} ${i.itemId}`,
       })),
     [scopedDisponibles]
@@ -175,7 +176,7 @@ export default function Egreso() {
 
       <form onSubmit={handleSubmit} className="card w-full space-y-5">
         <div>
-          <label className="text-label">Herramienta</label>
+          <label className="text-label">{fieldLabel('nombre')}</label>
           <p className="mb-2 text-xs text-subtle">
             Escribí letras para acotar la lista (ej: &quot;ca&quot; → nombres que contengan &quot;ca&quot;).
           </p>
@@ -184,7 +185,7 @@ export default function Egreso() {
             value={stockId}
             onChange={setStockId}
             placeholder="Buscar por nombre, código, tipo…"
-            emptyMessage="Ninguna herramienta coincide"
+            emptyMessage="Ningún resultado coincide"
             disabled={!options.length}
           />
           {!options.length && (
@@ -192,7 +193,7 @@ export default function Egreso() {
           )}
         </div>
         <div>
-          <label className="text-label">Cantidad</label>
+          <label className="text-label">{fieldLabel('cantidad')}</label>
           <input
             type="number"
             min={1}
@@ -205,7 +206,7 @@ export default function Egreso() {
           {selected && <p className="mt-1 text-accent">Disponible: {maxQty}</p>}
         </div>
         <div>
-          <label className="text-label">Usuario</label>
+          <label className="text-label">{fieldLabel('usuario')}</label>
           {isAdmin ? (
             <>
               <FilterableSelect

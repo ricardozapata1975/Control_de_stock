@@ -1,4 +1,15 @@
 import { useEffect, useState } from 'react';
+import { fieldLabel } from '../utils/fieldLabels';
+
+function Field({ field, required, children, hint }) {
+  return (
+    <div>
+      <label className="text-label">{fieldLabel(field, { required })}</label>
+      {children}
+      {hint ? <p className="mt-1 text-xs text-subtle">{hint}</p> : null}
+    </div>
+  );
+}
 
 export default function ItemEditModal({ item, tipos = [], onClose, onSave, saving }) {
   const [form, setForm] = useState({
@@ -67,7 +78,7 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
     <div className="fixed inset-0 z-50 flex items-end justify-center bg-black/70 p-4 sm:items-center">
       <div className="card max-h-[90vh] w-full max-w-lg overflow-y-auto">
         <div className="mb-4 flex items-center justify-between">
-          <h3 className="section-title">Editar herramienta</h3>
+          <h3 className="section-title">Editar</h3>
           <button type="button" onClick={onClose} className="text-2xl text-slate-200 hover:text-white">
             ×
           </button>
@@ -75,22 +86,18 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
         <p className="mb-4 font-mono text-sm text-amber-300">{item.contenedorCodigo}</p>
 
         <form onSubmit={submit} className="space-y-3">
-          <div>
-            <label className="text-label">Nombre *</label>
+          <Field field="nombre" required>
             <input className="input-field" value={form.nombre} onChange={set('nombre')} required />
-          </div>
+          </Field>
           <div className="grid gap-3 sm:grid-cols-2">
-            <div>
-              <label className="text-label">Marca</label>
+            <Field field="marca">
               <input className="input-field" value={form.marca} onChange={set('marca')} />
-            </div>
-            <div>
-              <label className="text-label">Modelo</label>
+            </Field>
+            <Field field="modelo">
               <input className="input-field" value={form.modelo} onChange={set('modelo')} />
-            </div>
+            </Field>
           </div>
-          <div>
-            <label className="text-label">Tipo</label>
+          <Field field="tipo">
             <select className="input-field" value={form.tipo} onChange={set('tipo')}>
               <option value="">—</option>
               {opciones.map((t) => (
@@ -99,31 +106,30 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
                 </option>
               ))}
             </select>
-          </div>
-          <div>
-            <label className="text-label">Detalle</label>
+          </Field>
+          <Field field="detalle">
             <input className="input-field" value={form.detalle} onChange={set('detalle')} />
-          </div>
-          <div>
-            <label className="text-label">Calibración</label>
+          </Field>
+          <Field field="calibracion">
             <input
               className="input-field"
-              placeholder="Ej: No aplica / Sí - vence 2026-05 / Pendiente"
+              placeholder="Ej: No aplica / Si - vence 2026-05 / Pendiente"
               value={form.calibracion}
               onChange={set('calibracion')}
             />
-          </div>
-          <div>
-            <label className="text-label">Comentario</label>
+          </Field>
+          <Field field="comentario">
             <input
               className="input-field"
               placeholder="Color, forma u otro dato distintivo"
               value={form.comentario}
               onChange={set('comentario')}
             />
-          </div>
-          <div>
-            <label className="text-label">Código barras / QR (fabricante)</label>
+          </Field>
+          <Field
+            field="codigoFabricante"
+            hint="Podés editarlo o borrarlo. También se carga con la cámara desde el detalle."
+          >
             <input
               className="input-field font-mono"
               placeholder="Código original del fabricante"
@@ -132,83 +138,67 @@ export default function ItemEditModal({ item, tipos = [], onClose, onSave, savin
               autoComplete="off"
               spellCheck={false}
             />
-            <p className="mt-1 text-xs text-subtle">
-              Podés editarlo o borrarlo. También se carga con la cámara desde el detalle del ítem.
-            </p>
-          </div>
-          <div>
-            <label className="text-label">Fecha relevamiento</label>
+          </Field>
+          <Field field="fechaRelevamiento">
             <input
               type="date"
               className="input-field"
               value={form.fechaRelevamiento}
               onChange={set('fechaRelevamiento')}
             />
-          </div>
+          </Field>
 
           <div className="border-t border-border pt-3">
-            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">
-              Catálogo (Siemens / Sivacon)
-            </p>
+            <p className="mb-2 text-xs font-semibold uppercase tracking-wide text-subtle">Catálogo</p>
             <div className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-label">Tema</label>
+                <Field field="tema">
                   <input className="input-field" value={form.tema} onChange={set('tema')} />
-                </div>
-                <div>
-                  <label className="text-label">Familia</label>
+                </Field>
+                <Field field="familia">
                   <input className="input-field" value={form.familia} onChange={set('familia')} />
-                </div>
+                </Field>
               </div>
-              <div>
-                <label className="text-label">Subfamilia</label>
+              <Field field="subfamilia">
                 <input className="input-field" value={form.subfamilia} onChange={set('subfamilia')} />
-              </div>
+              </Field>
               <div className="grid gap-3 sm:grid-cols-2">
-                <div>
-                  <label className="text-label">Unidad</label>
+                <Field field="unidad">
                   <input className="input-field" value={form.unidad} onChange={set('unidad')} />
-                </div>
-                <div>
-                  <label className="text-label">Packing / MOQ</label>
+                </Field>
+                <Field field="packing">
                   <input className="input-field" value={form.packing} onChange={set('packing')} />
-                </div>
-                <div>
-                  <label className="text-label">Precio lista</label>
+                </Field>
+                <Field field="precioLista">
                   <input className="input-field" value={form.precioLista} onChange={set('precioLista')} />
-                </div>
-                <div>
-                  <label className="text-label">Moneda</label>
+                </Field>
+                <Field field="moneda">
                   <input
                     className="input-field"
                     placeholder="EUR / USD"
                     value={form.moneda}
                     onChange={set('moneda')}
                   />
-                </div>
-                <div>
-                  <label className="text-label">Peso (kg)</label>
+                </Field>
+                <Field field="pesoKg">
                   <input className="input-field" value={form.pesoKg} onChange={set('pesoKg')} />
-                </div>
-                <div>
-                  <label className="text-label">Vigencia</label>
+                </Field>
+                <Field field="catalogoVigencia">
                   <input
                     className="input-field"
                     value={form.catalogoVigencia}
                     onChange={set('catalogoVigencia')}
                   />
-                </div>
+                </Field>
               </div>
-              <div>
-                <label className="text-label">Fuente catálogo</label>
+              <Field field="catalogoFuente">
                 <input
                   className="input-field"
                   placeholder="sivacon_s8 / siemens_ar"
                   value={form.catalogoFuente}
                   onChange={set('catalogoFuente')}
                 />
-              </div>
+              </Field>
             </div>
           </div>
 

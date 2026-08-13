@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { api } from '../api/client';
 import QrScanner from './QrScanner';
+import { fieldLabel } from '../utils/fieldLabels';
 
 /**
  * Flujo: agregar código de barras/QR del fabricante a un ítem.
@@ -65,7 +66,7 @@ export default function AssignBarcodeModal({ item, onClose, onSaved }) {
         <div className="mb-4 flex items-start justify-between gap-3">
           <div>
             <h3 id="assign-barcode-title" className="section-title">
-              Código del fabricante
+              {fieldLabel('codigoFabricante')}
             </h3>
             <p className="mt-1 text-sm text-muted">{item.nombre}</p>
             {item.codigoFabricante && (

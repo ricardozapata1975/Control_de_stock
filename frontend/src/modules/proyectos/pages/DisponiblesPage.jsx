@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import ItemDetailModal from '../../../components/ItemDetailModal';
+import { fieldLabel } from '../../../utils/fieldLabels';
 
 export default function DisponiblesPage() {
   const { sede } = useAuth();
@@ -120,11 +121,11 @@ export default function DisponiblesPage() {
           <table className="w-full text-left text-sm">
             <thead className="bg-surface-2 text-xs uppercase text-content-muted">
               <tr>
-                <th className="px-3 py-2">Artículo</th>
-                <th className="px-3 py-2">Código</th>
-                <th className="px-3 py-2 text-right">Físico</th>
-                <th className="px-3 py-2 text-right">Reservado</th>
-                <th className="px-3 py-2 text-right">Neto</th>
+                <th className="px-3 py-2">{fieldLabel('nombre')}</th>
+                <th className="px-3 py-2">{fieldLabel('codigoFabricante')}</th>
+                <th className="px-3 py-2 text-right">{fieldLabel('fisico')}</th>
+                <th className="px-3 py-2 text-right">{fieldLabel('reservado')}</th>
+                <th className="px-3 py-2 text-right">{fieldLabel('neto')}</th>
               </tr>
             </thead>
             <tbody>
