@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { useAuth } from '../auth/AuthProvider';
-import { api } from '../api/client';
+import { api, readSedesCache } from '../api/client';
 import { isAdminRole } from '../utils/role';
 import ThemeToggle from '../components/ThemeToggle';
 import { fieldLabel } from '../utils/fieldLabels';
@@ -14,7 +14,9 @@ export default function Login() {
   const [username, setUsername] = useState('');
   const [password, setPasswordValue] = useState('');
   const [sede, setSede] = useState('');
-  const [sedes, setSedes] = useState([]);
+  const [sedes, setSedes] = useState(() => readSedesCache());
+  const [sedesLoading, setSedesLoading] = useState(true);
+  const [sedesError, setSedesError] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [setupToken, setSetupToken] = useState('');
@@ -23,16 +25,55 @@ export default function Login() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const applySedes = (list) => {
+    const next = Array.isArray(list) ? list.filter((s) => s?.codigo) : [];
+    setSedes(next);
+    if (next.length === 1) setSede(next[0].codigo);
+    else if (next.some((s) => s.codigo === 'SED001')) {
+      setSede((prev) => prev || 'SED001');
+    }
+    return next;
+  };
+
+  const loadSedes = async () => {
+    setSedesLoading(true);
+    setSedesError('');
+    try {
+      let list = [];
+      try {
+        const data = await api.sedesPublicas();
+        list = data.sedes || [];
+      } catch (err) {
+        if (err?.status === 404) {
+          const cat = await api.catalogoUbicacion();
+          list = cat.sedes || [];
+        } else {
+          throw err;
+        }
+      }
+      const next = applySedes(list.length ? list : readSedesCache());
+      if (!next.length) {
+        setSedesError('No hay sucursales para mostrar. Reintentá en unos segundos.');
+      }
+    } catch (err) {
+      const cached = readSedesCache();
+      if (cached.length) {
+        applySedes(cached);
+        setSedesError('El servidor tardó en responder. Mostramos las sucursales guardadas.');
+      } else {
+        setSedes([]);
+        setSedesError(
+          err.message || 'No se pudieron cargar las sucursales. El servidor puede estar despertando.'
+        );
+      }
+    } finally {
+      setSedesLoading(false);
+    }
+  };
+
   useEffect(() => {
-    api
-      .catalogoUbicacion()
-      .then((cat) => {
-        const list = cat.sedes || [];
-        setSedes(list);
-        if (list.length === 1) setSede(list[0].codigo);
-        else if (list.some((s) => s.codigo === 'SED001')) setSede('SED001');
-      })
-      .catch(() => setSedes([]));
+    loadSedes();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   if (isLoggedIn) {
@@ -156,20 +197,45 @@ export default function Login() {
       <label className="text-label" htmlFor="login-sede">
         {fieldLabel('sede', { required: true })}
       </label>
-      <select
-        id="login-sede"
-        className="input-field"
-        value={sede}
-        onChange={(e) => setSede(e.target.value)}
-        required
-      >
-        <option value="">Elegí tu sucursal…</option>
-        {sedes.map((s) => (
-          <option key={s.codigo} value={s.codigo}>
-            {s.nombre || s.codigo}
-          </option>
-        ))}
-      </select>
+      {sedesLoading && !sedes.length ? (
+        <p className="mt-2 text-sm text-muted">Cargando sucursales…</p>
+      ) : sedes.length ? (
+        <div id="login-sede" className="mt-1 grid gap-2">
+          {sedes.map((s) => {
+            const selected = sede === s.codigo;
+            return (
+              <button
+                key={s.codigo}
+                type="button"
+                onClick={() => setSede(s.codigo)}
+                className={`min-h-[44px] rounded-lg border px-3 py-2 text-left text-sm font-semibold transition ${
+                  selected
+                    ? 'border-accent bg-accent/15 text-content'
+                    : 'border-border bg-surface-muted text-content hover:bg-surface-hover'
+                }`}
+              >
+                {s.nombre || s.codigo}
+                {s.nombre && s.nombre !== s.codigo ? (
+                  <span className="ml-2 font-mono text-xs font-normal text-subtle">{s.codigo}</span>
+                ) : null}
+              </button>
+            );
+          })}
+        </div>
+      ) : (
+        <p className="mt-2 text-sm text-amber-200">Todavía no hay sucursales en la lista.</p>
+      )}
+      {sedesError && <p className="mt-2 text-xs text-amber-200">{sedesError}</p>}
+      <div className="mt-2 flex items-center gap-3">
+        <button
+          type="button"
+          className="text-xs font-semibold text-accent underline hover:text-content"
+          onClick={loadSedes}
+          disabled={sedesLoading}
+        >
+          {sedesLoading ? 'Cargando…' : 'Reintentar sucursales'}
+        </button>
+      </div>
       <p className="mt-1 text-xs text-subtle">
         Inventario y operaciones de esta sucursal. Si sos operario, solo podés entrar a las que el
         admin te haya habilitado.

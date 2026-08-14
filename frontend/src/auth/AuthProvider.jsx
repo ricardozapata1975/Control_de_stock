@@ -58,8 +58,10 @@ export function AuthProvider({ children }) {
         persist(merged, savedToken);
         return merged;
       }
-    } catch {
-      clearSession();
+    } catch (err) {
+      if (err?.status === 401 || err?.status === 403) {
+        clearSession();
+      }
     }
     return null;
   }, [clearSession, persist]);

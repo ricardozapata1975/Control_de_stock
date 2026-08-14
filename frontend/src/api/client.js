@@ -1,6 +1,28 @@
 const API_URL = import.meta.env.VITE_API_URL || '';
+const SEDES_CACHE_KEY = 'inventario_sedes_cache';
 
 let onUnauthorized = null;
+
+function cacheSedes(list) {
+  if (!Array.isArray(list) || !list.length) return;
+  try {
+    localStorage.setItem(
+      SEDES_CACHE_KEY,
+      JSON.stringify(list.map((s) => ({ codigo: s.codigo, nombre: s.nombre || s.codigo })))
+    );
+  } catch {
+    /* ignore quota */
+  }
+}
+
+export function readSedesCache() {
+  try {
+    const list = JSON.parse(localStorage.getItem(SEDES_CACHE_KEY) || '[]');
+    return Array.isArray(list) ? list.filter((s) => s?.codigo) : [];
+  } catch {
+    return [];
+  }
+}
 
 export function setUnauthorizedHandler(handler) {
   onUnauthorized = typeof handler === 'function' ? handler : null;
@@ -46,20 +68,26 @@ async function request(path, options = {}) {
       if (res.status === 401 && onUnauthorized && !skipUnauthorizedHandler) {
         onUnauthorized();
       }
-      if (res.status === 404) {
-        throw new Error(
-          data.error ||
+      const err = new Error(
+        res.status === 404
+          ? data.error ||
             'Ruta no encontrada en el servidor (404). El backend puede no estar actualizado: en Render, abrí el servicio y hacé Manual Deploy desde main.'
-        );
-      }
-      throw new Error(data.error || `Error ${res.status}`);
+          : data.error || `Error ${res.status}`
+      );
+      err.status = res.status;
+      throw err;
+    }
+    if (path.startsWith('/api/ubicacion/catalogo') || path.startsWith('/api/ubicacion/sedes')) {
+      cacheSedes(data.sedes);
     }
     return data;
   } catch (err) {
     if (err.name === 'AbortError') {
-      throw new Error(
-        'La solicitud tardó demasiado. El servidor de correo puede estar mal configurado o inaccesible desde Render.'
+      const timeoutErr = new Error(
+        'La solicitud tardó demasiado. El servidor puede estar despertando. Reintentá en unos segundos.'
       );
+      timeoutErr.status = 0;
+      throw timeoutErr;
     }
     throw err;
   } finally {
@@ -105,6 +133,8 @@ export const api = {
     const qs = new URLSearchParams(clean).toString();
     return request(`/api/ubicacion/catalogo${qs ? `?${qs}` : ''}`);
   },
+  sedesPublicas: () =>
+    request('/api/ubicacion/sedes', { skipUnauthorizedHandler: true, timeoutMs: 20000 }),
   tipos: () => request('/api/tipos'),
   adminCreateAlmacen: (body) =>
     request('/api/admin/catalogo/almacen', { method: 'POST', body: JSON.stringify(body) }),

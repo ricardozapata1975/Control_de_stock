@@ -28,7 +28,7 @@ import {
 } from './controllers/rolesController.js';
 import { ensureSeedAdmin } from './services/userService.js';
 import { getAdminItems, getStockByAlmacen, postAltaStock, postBajaItem, postPurgeAlmacenStock, putUpdateItem, postItemImagen, deleteItemImagen } from './controllers/adminController.js';
-import { getCatalogo, postAlmacen, postArmario, postSede, patchAlmacenSede, patchAlmacenVisibleOtrasSedes } from './controllers/ubicacionController.js';
+import { getCatalogo, getSedesPublic, postAlmacen, postArmario, postSede, patchAlmacenSede, patchAlmacenVisibleOtrasSedes } from './controllers/ubicacionController.js';
 import { getTipos } from './controllers/tiposController.js';
 import docsRouter from './routes/docs.js';
 import {
@@ -200,6 +200,7 @@ app.get('/api/health', (_req, res) => {
 });
 
 // Catálogo de ubicación (almacén / armario / estante / contenedor)
+app.get('/api/ubicacion/sedes', getSedesPublic);
 app.get('/api/ubicacion/catalogo', optionalAuth, getCatalogo);
 
 app.get('/api/inventario', optionalAuth, getInventario);

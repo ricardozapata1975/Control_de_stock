@@ -1,4 +1,5 @@
 import { getCatalogoUbicacion } from '../services/ubicacionService.js';
+import { listSedes, normalizeAlmacen } from '../services/ubicacionUtils.js';
 import {
   addAlmacen,
   addArmario,
@@ -7,12 +8,20 @@ import {
   setAlmacenVisibleOtrasSedes,
 } from '../services/catalogoService.js';
 import { almacenesCodigosDeSede } from '../services/sedeScope.js';
-import { normalizeAlmacen } from '../services/ubicacionUtils.js';
 
 export async function getCatalogo(req, res) {
   const almacen = req.query?.almacen || '';
   const sede = req.query?.sede || req.user?.sede || '';
   res.json(getCatalogoUbicacion(almacen || undefined, sede || undefined));
+}
+
+/** Listado público de sucursales para el login (sin autenticación). */
+export async function getSedesPublic(_req, res) {
+  const sedes = listSedes().map((s) => ({
+    codigo: s.codigo,
+    nombre: s.nombre || s.codigo,
+  }));
+  res.json({ sedes });
 }
 
 export async function postAlmacen(req, res) {
