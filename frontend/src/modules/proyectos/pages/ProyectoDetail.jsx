@@ -144,6 +144,7 @@ export default function ProyectoDetail() {
                 <th>{fieldLabel('descripcion')}</th>
                 <th className="text-right">{fieldLabel('cantidadRequerida')}</th>
                 <th className="text-right">{fieldLabel('cantidadReservada')}</th>
+                <th className="text-right">Entregados</th>
                 <th className="text-right">{fieldLabel('cantidadFaltante')}</th>
                 <th>{fieldLabel('estado')}</th>
               </tr>
@@ -155,6 +156,7 @@ export default function ProyectoDetail() {
                   <td>{m.descripcion || '—'}</td>
                   <td className="text-right">{m.cantidadRequerida}</td>
                   <td className="text-right text-accent">{m.cantidadReservada}</td>
+                  <td className="text-right">{m.cantidadEntregada ?? 0}</td>
                   <td className="text-right text-amber-600">{m.cantidadFaltante}</td>
                   <td>{m.estado}</td>
                 </tr>
