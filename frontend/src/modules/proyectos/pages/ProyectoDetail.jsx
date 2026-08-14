@@ -3,6 +3,7 @@ import { Link, useParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { ESTADOS_TABLERO, PRIORIDADES, prioridadClass } from '../constants';
 import { fieldLabel } from '../../../utils/fieldLabels';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 
 export default function ProyectoDetail() {
   const { id } = useParams();
@@ -152,7 +153,9 @@ export default function ProyectoDetail() {
             <tbody>
               {materiales.map((m) => (
                 <tr key={m.id} className="border-b border-border/60">
-                  <td className="py-1 font-mono">{m.codigoArticulo || '—'}</td>
+                  <td className="py-1">
+                    <CodigoCatalogoLink codigo={m.codigoArticulo} className="text-xs" />
+                  </td>
                   <td>{m.descripcion || '—'}</td>
                   <td className="text-right">{m.cantidadRequerida}</td>
                   <td className="text-right text-accent">{m.cantidadReservada}</td>
@@ -195,7 +198,7 @@ export default function ProyectoDetail() {
             {faltantes.map((f) => (
               <li key={f.id} className="flex justify-between border-b border-border py-1">
                 <span>
-                  {f.codigoArticulo || '—'} · {f.estado}
+                  <CodigoCatalogoLink codigo={f.codigoArticulo} className="text-xs" /> · {f.estado}
                 </span>
                 <span className="font-semibold text-amber-600">{f.cantidad}</span>
               </li>

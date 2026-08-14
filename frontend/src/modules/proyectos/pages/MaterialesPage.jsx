@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { fieldLabel } from '../../../utils/fieldLabels';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 
 export default function MaterialesPage() {
   const { sede } = useAuth();
@@ -155,7 +156,9 @@ export default function MaterialesPage() {
             <tbody>
               {rows.map((m) => (
                 <tr key={m.id} className="border-t border-edge">
-                  <td className="px-3 py-2 font-mono text-xs">{m.codigoArticulo || '—'}</td>
+                  <td className="px-3 py-2 text-xs">
+                    <CodigoCatalogoLink codigo={m.codigoArticulo} className="text-xs" />
+                  </td>
                   <td className="px-3 py-2">{m.descripcion || '—'}</td>
                   <td className="px-3 py-2">
                     <Link className="text-accent underline" to={`/proyectos/${m.proyectoId}`}>

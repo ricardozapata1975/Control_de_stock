@@ -11,6 +11,7 @@ import {
   getUbicacionScanLabel,
 } from '../utils/scanMatch';
 import { fieldLabel } from '../utils/fieldLabels';
+import CodigoCatalogoLink from './CodigoCatalogoLink';
 import ScanItemActionModal from './ScanItemActionModal';
 import ScanLocationList from './ScanLocationList';
 import RemitoEgresoLotePrintModal from './RemitoEgresoLotePrintModal';
@@ -144,7 +145,8 @@ export default function ScanResultPanel({ parsed, contenedor, items = [], onScan
         )}
         {parsed.codigoFabricante && (
           <p className="font-mono text-sm text-subtle">
-            {fieldLabel('codigoFabricante')}: {parsed.codigoFabricante}
+            {fieldLabel('codigoFabricante')}:{' '}
+            <CodigoCatalogoLink codigo={parsed.codigoFabricante} />
           </p>
         )}
         {isUbicacion && (

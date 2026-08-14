@@ -5,6 +5,7 @@ import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { parsePedidoCsv, parsePedidoRows, pedidoLineasToCsv } from '../constants';
 import { fieldLabel } from '../../../utils/fieldLabels';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 
 function sheetToPedidoRows(workbook) {
   const name = workbook.SheetNames?.[0];
@@ -284,7 +285,9 @@ export default function PedidosMasivos() {
                           : 'border-t border-edge bg-red-500/10'
                     }
                   >
-                    <td className="px-2 py-1 font-mono">{l.codigo}</td>
+                    <td className="px-2 py-1">
+                      <CodigoCatalogoLink codigo={l.codigo} className="text-xs" />
+                    </td>
                     <td className="px-2 py-1">{l.nombre || '—'}</td>
                     <td className="px-2 py-1 text-right">{l.cantidad}</td>
                     <td className="px-2 py-1 text-right">{l.disponible}</td>

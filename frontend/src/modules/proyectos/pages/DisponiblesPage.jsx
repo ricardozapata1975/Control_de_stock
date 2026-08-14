@@ -3,6 +3,7 @@ import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import ItemDetailModal from '../../../components/ItemDetailModal';
 import { fieldLabel } from '../../../utils/fieldLabels';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 
 export default function DisponiblesPage() {
   const { sede } = useAuth();
@@ -149,7 +150,9 @@ export default function DisponiblesPage() {
                       {[it.marca, it.modelo, it.tipo].filter(Boolean).join(' · ')}
                     </div>
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs">{it.codigoFabricante || '—'}</td>
+                  <td className="px-3 py-2 text-xs">
+                    <CodigoCatalogoLink codigo={it.codigoFabricante} className="text-xs" />
+                  </td>
                   <td className="px-3 py-2 text-right">{it.cantidadFisica}</td>
                   <td className="px-3 py-2 text-right">{it.cantidadReservada}</td>
                   <td

@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { prioridadClass } from '../constants';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 
 export default function FaltantesPage() {
   const { sede } = useAuth();
@@ -48,7 +49,9 @@ export default function FaltantesPage() {
           <li key={f.id} className="card">
             <div className="flex flex-wrap justify-between gap-2">
               <div>
-                <p className="font-mono font-semibold text-accent">{f.codigoArticulo || '—'}</p>
+                <p className="font-semibold text-accent">
+                  <CodigoCatalogoLink codigo={f.codigoArticulo} />
+                </p>
                 <p className="text-sm text-muted">
                   <Link className="underline" to={`/proyectos/${f.proyectoId}`}>
                     {nombreProyecto(f.proyectoId)}

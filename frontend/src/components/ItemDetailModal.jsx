@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 import { formatUbicacionLabel } from '../utils/contenedor';
 import { fieldLabel } from '../utils/fieldLabels';
+import CodigoCatalogoLink from './CodigoCatalogoLink';
 
 function formatFecha(iso) {
   if (!iso) return null;
@@ -160,7 +161,7 @@ export default function ItemDetailModal({
             field="codigoFabricante"
             value={
               item.codigoFabricante ? (
-                <span className="font-mono">{item.codigoFabricante}</span>
+                <CodigoCatalogoLink codigo={item.codigoFabricante} />
               ) : (
                 'Sin asignar'
               )

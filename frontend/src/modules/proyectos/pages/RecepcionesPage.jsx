@@ -4,6 +4,7 @@ import { useAuth } from '../../../auth/AuthProvider';
 import { parsePedidoCsv, prioridadClass } from '../constants';
 import { todayIsoDate } from '../../../utils/remitoStorage';
 import { fieldLabel } from '../../../utils/fieldLabels';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 
 export default function RecepcionesPage() {
   const { sede, user } = useAuth();
@@ -180,7 +181,7 @@ export default function RecepcionesPage() {
               {(detail.lineas || []).map((l) => (
                 <li key={l.id} className="flex justify-between border-b border-border py-1">
                   <span>
-                    <span className="font-mono">{l.codigoArticulo}</span>{' '}
+                    <CodigoCatalogoLink codigo={l.codigoArticulo} className="text-xs" />{' '}
                     {l.error ? <span className="text-red-500">({l.error})</span> : l.descripcion}
                   </span>
                   <span>
@@ -208,7 +209,12 @@ export default function RecepcionesPage() {
                       <span className={prioridadClass(s.proyectoPrioridad)}>{s.proyectoPrioridad}</span>
                     </p>
                     <p className="text-muted">
-                      {s.codigoArticulo || 'ítem'} · {s.cantidadSugerida} u.
+                      {s.codigoArticulo ? (
+                        <CodigoCatalogoLink codigo={s.codigoArticulo} className="text-xs" />
+                      ) : (
+                        'ítem'
+                      )}{' '}
+                      · {s.cantidadSugerida} u.
                       {s.fechaLimite ? ` · límite ${s.fechaLimite}` : ''} · {s.estado}
                     </p>
                   </div>

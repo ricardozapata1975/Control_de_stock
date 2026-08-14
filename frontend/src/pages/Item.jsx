@@ -5,6 +5,7 @@ import { formatUbicacionLabel } from '../utils/contenedor';
 import ScanResultPanel from '../components/ScanResultPanel';
 import { QR_TYPES } from '../utils/qrPayload';
 import { fieldLabel } from '../utils/fieldLabels';
+import CodigoCatalogoLink from '../components/CodigoCatalogoLink';
 
 export default function Item() {
   const { itemId } = useParams();
@@ -59,7 +60,8 @@ export default function Item() {
         <p className="font-mono text-sm text-accent">item_id: {itemId}</p>
         {item.codigoFabricante && (
           <p className="font-mono text-sm text-muted">
-            {fieldLabel('codigoFabricante')}: {item.codigoFabricante}
+            {fieldLabel('codigoFabricante')}:{' '}
+            <CodigoCatalogoLink codigo={item.codigoFabricante} />
           </p>
         )}
         {item.tipo && <p className="text-muted mt-1">{item.tipo}</p>}

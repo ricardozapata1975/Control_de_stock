@@ -6,6 +6,7 @@ import QrScanner from '../../../components/QrScanner';
 import { formatUbicacionLabel } from '../../../utils/ubicacion';
 import { resolveScanToInventario } from '../../../utils/resolveScan';
 import { fieldLabel } from '../../../utils/fieldLabels';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 
 /**
  * Armado / Producción: elegir tablero, escanear piezas (consume reserva → ALM producción)
@@ -200,7 +201,13 @@ export default function ProduccionPage() {
       {lastOk?.ok && (
         <div className="rounded-lg border border-emerald-500/40 bg-emerald-500/10 px-3 py-2 text-sm">
           Entregado x{lastOk.cantidad}:{' '}
-          <strong>{lastOk.item?.codigoFabricante || lastOk.item?.nombre || lastOk.item?.id}</strong>
+          <strong>
+            {lastOk.item?.codigoFabricante ? (
+              <CodigoCatalogoLink codigo={lastOk.item.codigoFabricante} />
+            ) : (
+              lastOk.item?.nombre || lastOk.item?.id
+            )}
+          </strong>
           {lastOk.destino?.codigo ? ` → ${lastOk.destino.codigo}` : ''}
         </div>
       )}
@@ -351,7 +358,9 @@ export default function ProduccionPage() {
                         l.pendienteEntrega <= 0 ? 'bg-emerald-500/5' : ''
                       }`}
                     >
-                      <td className="px-3 py-2 font-mono text-xs">{l.codigoArticulo || '—'}</td>
+                      <td className="px-3 py-2 text-xs">
+                        <CodigoCatalogoLink codigo={l.codigoArticulo} className="text-xs" />
+                      </td>
                       <td className="px-3 py-2">{l.descripcion || '—'}</td>
                       <td className="px-3 py-2 text-right">{l.cantidadRequerida}</td>
                       <td className="px-3 py-2 text-right">{l.pendienteReserva}</td>
@@ -408,7 +417,9 @@ export default function ProduccionPage() {
                     <td className="px-3 py-2">
                       <div className="font-medium">{it.nombre || it.itemId}</div>
                     </td>
-                    <td className="px-3 py-2 font-mono text-xs">{it.codigoFabricante || '—'}</td>
+                    <td className="px-3 py-2 text-xs">
+                      <CodigoCatalogoLink codigo={it.codigoFabricante} className="text-xs" />
+                    </td>
                     <td className="px-3 py-2 text-xs">{formatUbicacionLabel(it)}</td>
                     <td className="px-3 py-2 text-right font-semibold">{it.cantidad}</td>
                   </tr>

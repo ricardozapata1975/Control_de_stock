@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { fieldLabel } from '../../../utils/fieldLabels';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 
 export default function DevolucionesPage() {
   const { sede, user } = useAuth();
@@ -94,8 +95,12 @@ export default function DevolucionesPage() {
             <div>
               <p className="font-semibold text-content">{d.proyectoNombre || d.proyectoId?.slice?.(0, 8)}</p>
               <p className="text-muted">
-                {d.codigoArticulo || d.itemId?.slice?.(0, 8) || '—'} · {d.motivo || 'Sin motivo'} ·{' '}
-                {d.usuario || '—'}
+                {d.codigoArticulo ? (
+                  <CodigoCatalogoLink codigo={d.codigoArticulo} className="text-xs" />
+                ) : (
+                  d.itemId?.slice?.(0, 8) || '—'
+                )}{' '}
+                · {d.motivo || 'Sin motivo'} · {d.usuario || '—'}
               </p>
               <p className="text-xs text-subtle">{d.createdAt && new Date(d.createdAt).toLocaleString('es-AR')}</p>
             </div>

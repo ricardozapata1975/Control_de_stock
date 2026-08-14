@@ -3,6 +3,7 @@ import { useSearchParams } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
 import { fieldLabel } from '../../../utils/fieldLabels';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 
 function itemTitle(r) {
   return r.nombre || r.codigoArticulo || r.codigoFabricante || 'Ítem sin nombre';
@@ -92,9 +93,10 @@ export default function ReservasPage() {
                 {(r.codigoFabricante || r.codigoArticulo) && (
                   <span>
                     {fieldLabel('codigo')}:{' '}
-                    <span className="font-mono text-content">
-                      {r.codigoFabricante || r.codigoArticulo}
-                    </span>
+                    <CodigoCatalogoLink
+                      codigo={r.codigoFabricante || r.codigoArticulo}
+                      className="text-content"
+                    />
                   </span>
                 )}
                 {r.contenedorCodigo && (
