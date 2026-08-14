@@ -51,10 +51,23 @@ export function exportReportesProyectosExcel(data, meta = {}) {
   if (tiposRows.length === 1) tiposRows.push(['(sin datos)', 0]);
 
   const movRows = [
-    ['Fecha', 'Tipo', 'Cantidad', 'Estado material', 'Usuario', 'Proyecto ID', 'Ítem ID', 'Notas'],
+    [
+      'Fecha',
+      'Tipo',
+      'Elemento',
+      'Descripcion',
+      'Cantidad',
+      'Estado material',
+      'Usuario',
+      'Proyecto ID',
+      'Ítem ID',
+      'Notas',
+    ],
     ...recientes.map((m) => [
       m.createdAt ? new Date(m.createdAt).toLocaleString('es-AR') : '',
       m.tipo || '',
+      m.nombre || m.codigoArticulo || '',
+      m.descripcion || '',
       m.cantidad ?? '',
       m.estadoMaterial || '',
       m.usuario || '',
@@ -63,7 +76,9 @@ export function exportReportesProyectosExcel(data, meta = {}) {
       m.notas || '',
     ]),
   ];
-  if (movRows.length === 1) movRows.push(['', '(sin movimientos en el filtro)', '', '', '', '', '', '']);
+  if (movRows.length === 1) {
+    movRows.push(['', '(sin movimientos en el filtro)', '', '', '', '', '', '', '', '']);
+  }
 
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(filtrosRows), 'Filtros');

@@ -68,6 +68,8 @@ function ReportesPrintDocument({ data, meta }) {
             <tr className="border-b border-zinc-400 text-left">
               <th className="py-1 pr-2">{fieldLabel('fecha')}</th>
               <th className="py-1 pr-2">{fieldLabel('tipo')}</th>
+              <th className="py-1 pr-2">Elemento</th>
+              <th className="py-1 pr-2">{fieldLabel('descripcion')}</th>
               <th className="py-1 pr-2 text-right">{fieldLabel('cantidad')}</th>
               <th className="py-1 pr-2">{fieldLabel('estado')}</th>
               <th className="py-1 pr-2">{fieldLabel('usuario')}</th>
@@ -81,6 +83,8 @@ function ReportesPrintDocument({ data, meta }) {
                   {m.createdAt ? new Date(m.createdAt).toLocaleString('es-AR') : '—'}
                 </td>
                 <td className="py-1 pr-2">{m.tipo}</td>
+                <td className="py-1 pr-2">{m.nombre || m.codigoArticulo || '—'}</td>
+                <td className="py-1 pr-2">{m.descripcion || '—'}</td>
                 <td className="py-1 pr-2 text-right">{m.cantidad ?? '—'}</td>
                 <td className="py-1 pr-2">{m.estadoMaterial || '—'}</td>
                 <td className="py-1 pr-2">{m.usuario || '—'}</td>
@@ -270,6 +274,11 @@ export default function ReportesPage() {
                 <li key={m.id} className="border-b border-border py-1">
                   <strong>{m.tipo}</strong> · {m.cantidad ?? '—'} · {m.estadoMaterial || '—'} ·{' '}
                   {m.usuario || '—'}
+                  <span className="block text-xs text-content">
+                    <strong>Elemento:</strong> {m.nombre || m.codigoArticulo || '—'}
+                    {' · '}
+                    <strong>{fieldLabel('descripcion')}:</strong> {m.descripcion || '—'}
+                  </span>
                   <span className="block text-xs text-muted">
                     {m.createdAt && new Date(m.createdAt).toLocaleString('es-AR')}
                     {m.notas ? ` · ${m.notas}` : ''}

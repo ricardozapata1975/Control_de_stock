@@ -1657,17 +1657,24 @@ export async function demoReporte({ sede, proyectoId, desde, hasta } = {}) {
       proyectosActivos: proyectos.filter((p) => p.estado === 'activo').length,
     },
     porTipo: byTipo,
-    recientes: movs.slice(0, 50).map((m) => ({
-      id: m.id,
-      tipo: m.tipo,
-      cantidad: m.cantidad,
-      proyectoId: m.proyecto_id,
-      itemId: m.item_id,
-      estadoMaterial: m.estado_material,
-      usuario: m.usuario,
-      notas: m.notas,
-      createdAt: m.created_at,
-    })),
+    recientes: movs.slice(0, 50).map((m) => {
+      const mat = db.materiales.find((x) => x.id === m.material_id) || {};
+      const nombre = mat.descripcion || mat.codigo_articulo || null;
+      return {
+        id: m.id,
+        tipo: m.tipo,
+        cantidad: m.cantidad,
+        proyectoId: m.proyecto_id,
+        itemId: m.item_id,
+        nombre,
+        descripcion: mat.descripcion && mat.descripcion !== nombre ? mat.descripcion : null,
+        codigoArticulo: mat.codigo_articulo || null,
+        estadoMaterial: m.estado_material,
+        usuario: m.usuario,
+        notas: m.notas,
+        createdAt: m.created_at,
+      };
+    }),
   };
 }
 

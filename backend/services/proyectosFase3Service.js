@@ -19,6 +19,49 @@ function throwSchemaHint(err) {
   );
 }
 
+function mapMovimientoReporte(m, item, mat) {
+  const it = item || {};
+  const mt = mat || {};
+  const nombre = it.nombre || mt.descripcion || mt.codigo_articulo || it.codigo_fabricante || null;
+  let descripcion = it.detalle || null;
+  if (!descripcion && mt.descripcion && mt.descripcion !== nombre) {
+    descripcion = mt.descripcion;
+  }
+  return {
+    id: m.id,
+    tipo: m.tipo,
+    cantidad: m.cantidad,
+    proyectoId: m.proyecto_id,
+    itemId: m.item_id,
+    nombre,
+    descripcion,
+    codigoArticulo: mt.codigo_articulo || it.codigo_fabricante || null,
+    estadoMaterial: m.estado_material,
+    usuario: m.usuario,
+    notas: m.notas,
+    createdAt: m.created_at,
+  };
+}
+
+async function enrichMovimientosReporte(supabase, rows) {
+  const itemIds = [...new Set(rows.map((r) => r.item_id).filter(Boolean))];
+  const materialIds = [...new Set(rows.map((r) => r.material_id).filter(Boolean))];
+  const [itemsRes, matsRes] = await Promise.all([
+    itemIds.length
+      ? supabase.from('items').select('id, nombre, detalle, codigo_fabricante').in('id', itemIds)
+      : Promise.resolve({ data: [] }),
+    materialIds.length
+      ? supabase
+          .from('proyecto_materiales')
+          .select('id, codigo_articulo, descripcion')
+          .in('id', materialIds)
+      : Promise.resolve({ data: [] }),
+  ]);
+  const itemsById = Object.fromEntries((itemsRes.data || []).map((i) => [i.id, i]));
+  const matsById = Object.fromEntries((matsRes.data || []).map((x) => [x.id, x]));
+  return rows.map((m) => mapMovimientoReporte(m, itemsById[m.item_id], matsById[m.material_id]));
+}
+
 export async function listDevoluciones(filters = {}) {
   if (isDemo()) return pdemo.demoListDevoluciones(filters);
   const supabase = getSupabase();
@@ -599,17 +642,7 @@ export async function getReporte(filters = {}) {
       proyectosActivos: (proyectos || []).filter((p) => p.estado === 'activo').length,
     },
     porTipo: byTipo,
-    recientes: list.slice(0, 50).map((m) => ({
-      id: m.id,
-      tipo: m.tipo,
-      cantidad: m.cantidad,
-      proyectoId: m.proyecto_id,
-      itemId: m.item_id,
-      estadoMaterial: m.estado_material,
-      usuario: m.usuario,
-      notas: m.notas,
-      createdAt: m.created_at,
-    })),
+    recientes: await enrichMovimientosReporte(supabase, list.slice(0, 50)),
   };
 }
 
