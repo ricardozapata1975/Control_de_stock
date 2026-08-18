@@ -103,7 +103,9 @@ function mapReserva(row, itemMeta = {}, extras = {}) {
   };
 }
 
-function mapFaltante(row) {
+function mapFaltante(row, extras = {}) {
+  const cantidad = Number(row.cantidad || 0);
+  const cubierta = Number(row.cantidad_cubierta || 0);
   return {
     id: row.id,
     proyectoId: row.proyecto_id,
@@ -111,13 +113,65 @@ function mapFaltante(row) {
     materialId: row.material_id,
     itemId: row.item_id,
     codigoArticulo: row.codigo_articulo,
-    cantidad: Number(row.cantidad || 0),
-    cantidadCubierta: Number(row.cantidad_cubierta || 0),
+    cantidad,
+    cantidadCubierta: cubierta,
+    cantidadPendiente: Math.max(0, cantidad - cubierta),
     fechaLimite: row.fecha_limite,
     prioridad: row.prioridad,
     estado: row.estado,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    descripcion: extras.descripcion || null,
+    nombre: extras.nombre || null,
+    detalle: extras.detalle || null,
+    marca: extras.marca || null,
+    modelo: extras.modelo || null,
+    tipo: extras.tipo || null,
+    codigoFabricante: extras.codigoFabricante || row.codigo_articulo || null,
+    unidad: extras.unidad || null,
+    packing: extras.packing || null,
+    precioLista: extras.precioLista ?? null,
+    moneda: extras.moneda || null,
+    proyectoNombre: extras.proyectoNombre || null,
+    tableroNombre: extras.tableroNombre || null,
+    proveedor: extras.proveedor || 'Sin proveedor',
+    proveedorId: extras.proveedorId || null,
+  };
+}
+
+function normTxt(s) {
+  return String(s || '')
+    .trim()
+    .toLowerCase();
+}
+
+/** Marca / catálogo del ítem → nombre de proveedor (agenda o la propia marca). */
+function resolveProveedorFromItem(item = {}, proveedores = []) {
+  const marca = String(item.marca || '').trim();
+  const fuente = String(item.catalogo_fuente || item.catalogoFuente || '').trim();
+  const marcaN = normTxt(marca);
+  const list = proveedores || [];
+
+  const match = (pred) =>
+    list.find((p) => pred(normTxt(p.nombre), normTxt(p.razonSocial || p.razon_social)));
+
+  let found = null;
+  if (marcaN.length >= 3) {
+    found = match((nombre, razon) => nombre === marcaN || razon === marcaN);
+    if (!found) {
+      found = match(
+        (nombre, razon) =>
+          (nombre.length >= 4 && (marcaN.includes(nombre) || nombre.includes(marcaN))) ||
+          (razon.length >= 4 && (marcaN.includes(razon) || razon.includes(marcaN)))
+      );
+    }
+  }
+  if (!found && /siemens|sivacon/i.test(`${marca} ${fuente}`)) {
+    found = match((nombre, razon) => /siemens/i.test(`${nombre} ${razon}`));
+  }
+  return {
+    proveedor: found?.nombre || marca || 'Sin proveedor',
+    proveedorId: found?.id || null,
   };
 }
 
@@ -608,7 +662,75 @@ export async function listFaltantes(filters) {
     const ids = new Set((proyectos || []).map((p) => p.id));
     rows = rows.filter((f) => ids.has(f.proyecto_id));
   }
-  return rows.map(mapFaltante);
+
+  const itemIds = [...new Set(rows.map((r) => r.item_id).filter(Boolean))];
+  const materialIds = [...new Set(rows.map((r) => r.material_id).filter(Boolean))];
+  const proyectoIds = [...new Set(rows.map((r) => r.proyecto_id).filter(Boolean))];
+  const tableroIds = [...new Set(rows.map((r) => r.tablero_id).filter(Boolean))];
+
+  const [itemsRes, matsRes, proyRes, tabRes, provRes] = await Promise.all([
+    itemIds.length
+      ? supabase
+          .from('items')
+          .select(
+            'id, nombre, marca, modelo, tipo, detalle, codigo_fabricante, unidad, packing, precio_lista, moneda, catalogo_fuente'
+          )
+          .in('id', itemIds)
+      : Promise.resolve({ data: [] }),
+    materialIds.length
+      ? supabase
+          .from('proyecto_materiales')
+          .select('id, codigo_articulo, descripcion')
+          .in('id', materialIds)
+      : Promise.resolve({ data: [] }),
+    proyectoIds.length
+      ? supabase.from('proyectos').select('id, nombre, codigo').in('id', proyectoIds)
+      : Promise.resolve({ data: [] }),
+    tableroIds.length
+      ? supabase.from('proyecto_tableros').select('id, nombre, codigo').in('id', tableroIds)
+      : Promise.resolve({ data: [] }),
+    supabase.from('proveedores').select('id, nombre, razon_social').or('activo.is.null,activo.eq.true').limit(500),
+  ]);
+
+  let itemsData = itemsRes.data || [];
+  if (itemsRes.error && itemIds.length) {
+    const fallback = await supabase
+      .from('items')
+      .select('id, nombre, marca, modelo, tipo, detalle, codigo_fabricante')
+      .in('id', itemIds);
+    itemsData = fallback.data || [];
+  }
+
+  const itemsById = Object.fromEntries(itemsData.map((i) => [i.id, i]));
+  const matsById = Object.fromEntries((matsRes.data || []).map((m) => [m.id, m]));
+  const proyById = Object.fromEntries((proyRes.data || []).map((p) => [p.id, p]));
+  const tabById = Object.fromEntries((tabRes.data || []).map((t) => [t.id, t]));
+  const proveedores = provRes.error ? [] : provRes.data || [];
+
+  return rows.map((row) => {
+    const item = itemsById[row.item_id] || {};
+    const mat = matsById[row.material_id] || {};
+    const proy = proyById[row.proyecto_id] || {};
+    const tab = tabById[row.tablero_id] || {};
+    const { proveedor, proveedorId } = resolveProveedorFromItem(item, proveedores);
+    return mapFaltante(row, {
+      descripcion: mat.descripcion || item.nombre || null,
+      nombre: item.nombre || mat.descripcion || null,
+      detalle: item.detalle || null,
+      marca: item.marca || null,
+      modelo: item.modelo || null,
+      tipo: item.tipo || null,
+      codigoFabricante: item.codigo_fabricante || mat.codigo_articulo || row.codigo_articulo || null,
+      unidad: item.unidad || null,
+      packing: item.packing || null,
+      precioLista: item.precio_lista ?? null,
+      moneda: item.moneda || null,
+      proyectoNombre: proy.nombre || null,
+      tableroNombre: tab.nombre || tab.codigo || null,
+      proveedor,
+      proveedorId,
+    });
+  });
 }
 
 export async function liberarReserva(id, payload) {

@@ -143,7 +143,9 @@ function mapReserva(row, itemMeta = {}, extras = {}) {
   };
 }
 
-function mapFaltante(row) {
+function mapFaltante(row, extras = {}) {
+  const cantidad = Number(row.cantidad || 0);
+  const cubierta = Number(row.cantidad_cubierta || 0);
   return {
     id: row.id,
     proyectoId: row.proyecto_id,
@@ -151,13 +153,29 @@ function mapFaltante(row) {
     materialId: row.material_id,
     itemId: row.item_id,
     codigoArticulo: row.codigo_articulo,
-    cantidad: Number(row.cantidad || 0),
-    cantidadCubierta: Number(row.cantidad_cubierta || 0),
+    cantidad,
+    cantidadCubierta: cubierta,
+    cantidadPendiente: Math.max(0, cantidad - cubierta),
     fechaLimite: row.fecha_limite,
     prioridad: row.prioridad,
     estado: row.estado,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
+    descripcion: extras.descripcion || null,
+    nombre: extras.nombre || null,
+    detalle: extras.detalle || null,
+    marca: extras.marca || null,
+    modelo: extras.modelo || null,
+    tipo: extras.tipo || null,
+    codigoFabricante: extras.codigoFabricante || row.codigo_articulo || null,
+    unidad: extras.unidad || null,
+    packing: extras.packing || null,
+    precioLista: extras.precioLista ?? null,
+    moneda: extras.moneda || null,
+    proyectoNombre: extras.proyectoNombre || null,
+    tableroNombre: extras.tableroNombre || null,
+    proveedor: extras.proveedor || 'Sin proveedor',
+    proveedorId: extras.proveedorId || null,
   };
 }
 
@@ -363,7 +381,29 @@ export async function demoListFaltantes({ sede, proyectoId, estado } = {}) {
     const ids = new Set(db.proyectos.filter((p) => p.sede === sede).map((p) => p.id));
     rows = rows.filter((f) => ids.has(f.proyecto_id));
   }
-  return rows.map(mapFaltante);
+  return rows.map((f) => {
+    const mat = db.materiales.find((m) => m.id === f.material_id) || {};
+    const proy = db.proyectos.find((p) => p.id === f.proyecto_id) || {};
+    const tab = db.tableros.find((t) => t.id === f.tablero_id) || {};
+    const marca = mat.marca || null;
+    return mapFaltante(f, {
+      descripcion: mat.descripcion || null,
+      nombre: mat.descripcion || mat.nombre || null,
+      detalle: mat.detalle || null,
+      marca,
+      modelo: mat.modelo || null,
+      tipo: mat.tipo || null,
+      codigoFabricante: mat.codigo_articulo || f.codigo_articulo || null,
+      unidad: mat.unidad || null,
+      packing: mat.packing || null,
+      precioLista: mat.precio_lista ?? null,
+      moneda: mat.moneda || null,
+      proyectoNombre: proy.nombre || null,
+      tableroNombre: tab.nombre || tab.codigo || null,
+      proveedor: marca || 'Sin proveedor',
+      proveedorId: null,
+    });
+  });
 }
 
 export async function demoLiberarReserva(id, { usuario, notas } = {}) {
