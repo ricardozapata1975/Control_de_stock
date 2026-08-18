@@ -12,34 +12,56 @@ const TODOS = '';
 export default function FaltantesPage() {
   const { sede } = useAuth();
   const [params] = useSearchParams();
-  const proyectoId = params.get('proyectoId') || '';
+  const [proyectoId, setProyectoId] = useState(params.get('proyectoId') || '');
+  const [tableroId, setTableroId] = useState(params.get('tableroId') || '');
   const [faltantes, setFaltantes] = useState([]);
   const [proyectos, setProyectos] = useState([]);
+  const [tableros, setTableros] = useState([]);
   const [proveedor, setProveedor] = useState(TODOS);
   const [error, setError] = useState('');
   const [exportMsg, setExportMsg] = useState('');
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    api.proyectos(sede ? { sede } : {}).then((d) => setProyectos(d.proyectos || []));
+  }, [sede]);
+
+  useEffect(() => {
+    if (!proyectoId) {
+      setTableros([]);
+      setTableroId('');
+      return;
+    }
+    api.proyecto(proyectoId).then((d) => {
+      const list = d.tableros || [];
+      setTableros(list);
+      setTableroId((cur) => (list.some((t) => t.id === cur) ? cur : ''));
+    });
+  }, [proyectoId]);
+
+  useEffect(() => {
     setLoading(true);
-    Promise.all([
-      api.proyectosFaltantes({
+    api
+      .proyectosFaltantes({
         ...(sede ? { sede } : {}),
         ...(proyectoId ? { proyectoId } : {}),
-      }),
-      api.proyectos(sede ? { sede } : {}),
-    ])
-      .then(([f, p]) => {
+        ...(tableroId ? { tableroId } : {}),
+      })
+      .then((f) => {
         setFaltantes(f.faltantes || []);
-        setProyectos(p.proyectos || []);
         setError('');
       })
       .catch((e) => setError(e.message))
       .finally(() => setLoading(false));
-  }, [sede, proyectoId]);
+  }, [sede, proyectoId, tableroId]);
 
   const nombreProyecto = (id, fallbackNombre) =>
     fallbackNombre || proyectos.find((p) => p.id === id)?.nombre || id?.slice?.(0, 8);
+
+  const proyectoNombreFiltro = proyectoId ? nombreProyecto(proyectoId) : 'Todos';
+  const tableroNombreFiltro = tableroId
+    ? tableros.find((t) => t.id === tableroId)?.nombre || 'Tablero'
+    : 'Todos';
 
   const proveedores = useMemo(() => {
     const set = new Set();
@@ -61,7 +83,8 @@ export default function FaltantesPage() {
       exportFaltantesExcel(filtrados, {
         sede,
         proveedor: proveedor || 'Todos',
-        proyectoNombre: proyectoId ? nombreProyecto(proyectoId) : 'Todos',
+        proyectoNombre: proyectoNombreFiltro,
+        tableroNombre: tableroNombreFiltro,
       });
       setExportMsg('Excel descargado.');
     } catch (e) {
@@ -69,15 +92,56 @@ export default function FaltantesPage() {
     }
   };
 
+  const hayFiltro = Boolean(proveedor || proyectoId || tableroId);
+
   return (
     <div className="space-y-4">
       <h2 className="section-title">Faltantes</h2>
       <p className="text-sm text-muted">
-        Materiales que no se pudieron reservar. Filtrá por proveedor y exportá a Excel para la
-        gestión de compra. Al ingresar stock se sugerirá asignación automática.
+        Materiales que no se pudieron reservar. Filtrá por proyecto, tablero o proveedor y exportá a
+        Excel para la gestión de compra. Al ingresar stock se sugerirá asignación automática.
       </p>
 
-      <div className="card grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+      <div className="card grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <div>
+          <label className="text-label">{fieldLabel('proyecto')}</label>
+          <select
+            className="input-field"
+            value={proyectoId}
+            onChange={(e) => {
+              setProyectoId(e.target.value);
+              setTableroId('');
+              setProveedor(TODOS);
+            }}
+          >
+            <option value={TODOS}>Todos</option>
+            {proyectos.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.nombre}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="text-label">{fieldLabel('tablero')}</label>
+          <select
+            className="input-field"
+            value={tableroId}
+            onChange={(e) => {
+              setTableroId(e.target.value);
+              setProveedor(TODOS);
+            }}
+            disabled={!proyectoId}
+          >
+            <option value={TODOS}>Todos</option>
+            {tableros.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.nombre}
+                {t.codigo ? ` (${t.codigo})` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <label className="text-label">{fieldLabel('proveedor')}</label>
           <select
@@ -99,7 +163,7 @@ export default function FaltantesPage() {
             className="btn-secondary w-full"
             onClick={handleExcel}
             disabled={loading || !filtrados.length}
-            title="Descarga .xlsx con el filtro de proveedor activo"
+            title="Descarga .xlsx con los filtros activos"
           >
             Excel
           </button>
@@ -113,6 +177,8 @@ export default function FaltantesPage() {
       {!loading && (
         <p className="text-sm text-muted">
           {filtrados.length} línea{filtrados.length === 1 ? '' : 's'}
+          {proyectoId ? ` · ${proyectoNombreFiltro}` : ''}
+          {tableroId ? ` · ${tableroNombreFiltro}` : ''}
           {proveedor ? ` · ${proveedor}` : ''}
           {' · '}
           {filtrados.reduce((a, f) => a + Number(f.cantidadPendiente ?? f.cantidad ?? 0), 0)}{' '}
@@ -168,8 +234,8 @@ export default function FaltantesPage() {
         })}
         {!loading && !filtrados.length && (
           <p className="text-muted">
-            {faltantes.length
-              ? 'Ningún faltante para ese proveedor.'
+            {faltantes.length || hayFiltro
+              ? 'Ningún faltante con esos filtros.'
               : 'Sin faltantes pendientes.'}
           </p>
         )}

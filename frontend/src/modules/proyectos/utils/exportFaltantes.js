@@ -17,7 +17,7 @@ function stamp() {
 /**
  * Exporta faltantes (filtro activo) para gestiones de compra.
  * @param {object[]} rows
- * @param {object} meta - { sede, proveedor, proyectoNombre }
+ * @param {object} meta - { sede, proveedor, proyectoNombre, tableroNombre }
  */
 export function exportFaltantesExcel(rows, meta = {}) {
   const list = Array.isArray(rows) ? rows : [];
@@ -28,6 +28,7 @@ export function exportFaltantesExcel(rows, meta = {}) {
     ['Sede', meta.sede || 'Todas'],
     ['Proveedor', meta.proveedor || 'Todos'],
     ['Proyecto', meta.proyectoNombre || 'Todos'],
+    ['Tablero', meta.tableroNombre || 'Todos'],
     ['Exportado', new Date().toLocaleString('es-AR')],
     ['Líneas', list.length],
     [
@@ -87,7 +88,7 @@ export function exportFaltantesExcel(rows, meta = {}) {
   XLSX.utils.book_append_sheet(wb, XLSX.utils.aoa_to_sheet(dataRows), 'Faltantes');
 
   const fileBase = safeName(
-    `faltantes_compra_${meta.proveedor || 'todos'}_${meta.proyectoNombre || 'todos'}_${stamp()}`
+    `faltantes_compra_${meta.proveedor || 'todos'}_${meta.proyectoNombre || 'todos'}_${meta.tableroNombre || 'todos'}_${stamp()}`
   );
   XLSX.writeFile(wb, `${fileBase}.xlsx`);
 }

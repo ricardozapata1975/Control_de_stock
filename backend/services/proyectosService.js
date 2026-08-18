@@ -648,6 +648,7 @@ export async function listFaltantes(filters) {
   const supabase = getSupabase();
   let query = supabase.from('proyecto_faltantes').select('*').order('created_at', { ascending: false });
   if (filters?.proyectoId) query = query.eq('proyecto_id', filters.proyectoId);
+  if (filters?.tableroId) query = query.eq('tablero_id', filters.tableroId);
   if (filters?.estado) query = query.eq('estado', filters.estado);
   else query = query.in('estado', ['pendiente', 'parcial']);
 

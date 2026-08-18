@@ -99,6 +99,7 @@ export async function getFaltantes(req, res) {
     const faltantes = await service.listFaltantes({
       sede: sedeFromReq(req),
       proyectoId: req.query.proyectoId,
+      tableroId: req.query.tableroId,
       estado: req.query.estado,
     });
     res.json({ faltantes });

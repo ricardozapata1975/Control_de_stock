@@ -372,9 +372,10 @@ export async function demoListReservas({ sede, proyectoId, estado = 'activa' } =
   return rows.map(mapReserva);
 }
 
-export async function demoListFaltantes({ sede, proyectoId, estado } = {}) {
+export async function demoListFaltantes({ sede, proyectoId, tableroId, estado } = {}) {
   let rows = [...db.faltantes];
   if (proyectoId) rows = rows.filter((f) => f.proyecto_id === proyectoId);
+  if (tableroId) rows = rows.filter((f) => f.tablero_id === tableroId);
   if (estado) rows = rows.filter((f) => f.estado === estado);
   else rows = rows.filter((f) => f.estado === 'pendiente' || f.estado === 'parcial');
   if (sede) {
