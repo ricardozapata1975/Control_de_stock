@@ -100,6 +100,8 @@ function mapReserva(row, itemMeta = {}, extras = {}) {
     tableroNombre: extras.tableroNombre || null,
     codigoArticulo: extras.codigoArticulo || null,
     contenedorCodigo: extras.contenedorCodigo || null,
+    proveedor: extras.proveedor || 'Sin proveedor',
+    proveedorId: extras.proveedorId || null,
   };
 }
 
@@ -585,6 +587,7 @@ export async function listReservas(filters) {
   if (filters?.estado) query = query.eq('estado', filters.estado);
   else query = query.eq('estado', 'activa');
   if (filters?.proyectoId) query = query.eq('proyecto_id', filters.proyectoId);
+  if (filters?.tableroId) query = query.eq('tablero_id', filters.tableroId);
 
   const { data, error } = await query;
   if (error) {
@@ -603,11 +606,11 @@ export async function listReservas(filters) {
   const materialIds = [...new Set(rows.map((r) => r.material_id).filter(Boolean))];
   const contenedorIds = [...new Set(rows.map((r) => r.contenedor_id).filter(Boolean))];
 
-  const [itemsRes, tablerosRes, matsRes, contRes] = await Promise.all([
+  const [itemsRes, tablerosRes, matsRes, contRes, provRes] = await Promise.all([
     itemIds.length
       ? supabase
           .from('items')
-          .select('id, nombre, marca, modelo, tipo, detalle, codigo_fabricante')
+          .select('id, nombre, marca, modelo, tipo, detalle, codigo_fabricante, catalogo_fuente')
           .in('id', itemIds)
       : Promise.resolve({ data: [] }),
     tableroIds.length
@@ -622,22 +625,37 @@ export async function listReservas(filters) {
     contenedorIds.length
       ? supabase.from('contenedores').select('id, codigo').in('id', contenedorIds)
       : Promise.resolve({ data: [] }),
+    supabase.from('proveedores').select('id, nombre, razon_social').or('activo.is.null,activo.eq.true').limit(500),
   ]);
 
-  const itemsById = Object.fromEntries((itemsRes.data || []).map((i) => [i.id, i]));
+  let itemsData = itemsRes.data || [];
+  if (itemsRes.error && itemIds.length) {
+    const fbItems = await supabase
+      .from('items')
+      .select('id, nombre, marca, modelo, tipo, detalle, codigo_fabricante')
+      .in('id', itemIds);
+    itemsData = fbItems.data || [];
+  }
+
+  const itemsById = Object.fromEntries(itemsData.map((i) => [i.id, i]));
   const tablerosById = Object.fromEntries((tablerosRes.data || []).map((t) => [t.id, t]));
   const matsById = Object.fromEntries((matsRes.data || []).map((m) => [m.id, m]));
   const contById = Object.fromEntries((contRes.data || []).map((c) => [c.id, c]));
+  const proveedores = provRes.error ? [] : provRes.data || [];
 
   return rows.map((row) => {
+    const item = itemsById[row.item_id] || {};
     const tab = tablerosById[row.tablero_id];
     const mat = matsById[row.material_id];
     const cont = contById[row.contenedor_id];
-    return mapReserva(row, itemsById[row.item_id] || {}, {
+    const { proveedor, proveedorId } = resolveProveedorFromItem(item, proveedores);
+    return mapReserva(row, item, {
       tableroNombre: tab ? tab.nombre || tab.codigo || null : null,
       codigoArticulo: mat?.codigo_articulo || null,
       nombre: mat?.descripcion || null,
       contenedorCodigo: cont?.codigo || null,
+      proveedor,
+      proveedorId,
     });
   });
 }

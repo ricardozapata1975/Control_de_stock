@@ -86,6 +86,7 @@ export async function getReservas(req, res) {
     const reservas = await service.listReservas({
       sede: sedeFromReq(req),
       proyectoId: req.query.proyectoId,
+      tableroId: req.query.tableroId,
       estado: req.query.estado,
     });
     res.json({ reservas });

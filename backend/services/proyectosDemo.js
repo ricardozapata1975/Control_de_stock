@@ -140,6 +140,8 @@ function mapReserva(row, itemMeta = {}, extras = {}) {
     tableroNombre: extras.tableroNombre || row.tablero_nombre || null,
     codigoArticulo: extras.codigoArticulo || row.codigo_articulo || null,
     contenedorCodigo: extras.contenedorCodigo || row.contenedor_codigo || null,
+    proveedor: extras.proveedor || row.marca || 'Sin proveedor',
+    proveedorId: extras.proveedorId || null,
   };
 }
 
@@ -361,15 +363,31 @@ export async function demoDashboardKpis({ sede } = {}) {
   };
 }
 
-export async function demoListReservas({ sede, proyectoId, estado = 'activa' } = {}) {
+export async function demoListReservas({ sede, proyectoId, tableroId, estado = 'activa' } = {}) {
   let rows = [...db.reservas];
   if (estado) rows = rows.filter((r) => r.estado === estado);
   if (proyectoId) rows = rows.filter((r) => r.proyecto_id === proyectoId);
+  if (tableroId) rows = rows.filter((r) => r.tablero_id === tableroId);
   if (sede) {
     const ids = new Set(db.proyectos.filter((p) => p.sede === sede).map((p) => p.id));
     rows = rows.filter((r) => ids.has(r.proyecto_id));
   }
-  return rows.map(mapReserva);
+  return rows.map((r) => {
+    const mat = db.materiales.find((m) => m.id === r.material_id) || {};
+    const tab = db.tableros.find((t) => t.id === r.tablero_id) || {};
+    const marca = mat.marca || r.marca || null;
+    return mapReserva(
+      r,
+      { nombre: mat.descripcion, marca, modelo: mat.modelo, tipo: mat.tipo, detalle: mat.detalle },
+      {
+        tableroNombre: tab.nombre || tab.codigo || null,
+        codigoArticulo: mat.codigo_articulo || r.codigo_articulo || null,
+        nombre: mat.descripcion || null,
+        contenedorCodigo: r.contenedor_codigo || null,
+        proveedor: marca || 'Sin proveedor',
+      }
+    );
+  });
 }
 
 export async function demoListFaltantes({ sede, proyectoId, tableroId, estado } = {}) {
