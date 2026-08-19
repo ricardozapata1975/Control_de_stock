@@ -376,12 +376,28 @@ async function createSugerenciasForLinea(supabase, recepcion, linea, sede) {
       .eq('id', f.proyecto_id)
       .maybeSingle();
     if (proy && (proy.prioridad === 'critica' || proy.prioridad === 'alta')) {
+      let tableroNombre = null;
+      if (f.tablero_id) {
+        const { data: tab } = await supabase
+          .from('proyecto_tableros')
+          .select('nombre, codigo')
+          .eq('id', f.tablero_id)
+          .maybeSingle();
+        tableroNombre = tab?.nombre || tab?.codigo || null;
+      }
       await supabase.from('proyecto_alertas').insert({
         proyecto_id: f.proyecto_id,
         tipo: 'material_recibido',
         severidad: proy.prioridad === 'critica' ? 'critical' : 'warning',
         mensaje: `Material recibido (${linea.codigo_articulo}): se sugieren ${qty} u. para ${proy.nombre}`,
-        meta: { recepcionId: recepcion.id, sugerenciaId: sug.id, cantidad: qty },
+        meta: {
+          recepcionId: recepcion.id,
+          sugerenciaId: sug.id,
+          cantidad: qty,
+          codigo: linea.codigo_articulo,
+          tableroId: f.tablero_id || null,
+          tableroNombre,
+        },
       });
     }
   }

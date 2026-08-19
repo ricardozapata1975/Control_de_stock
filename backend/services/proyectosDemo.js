@@ -683,6 +683,7 @@ export async function demoProcesarPedidoMasivo({
         notas: 'Faltante generado por pedido masivo',
       });
       if (proyecto.prioridad === 'critica' || proyecto.prioridad === 'alta') {
+        const tab = db.tableros.find((t) => t.id === tableroId);
         db.alertas.unshift({
           id: uuid(),
           proyecto_id: proyectoId,
@@ -690,7 +691,13 @@ export async function demoProcesarPedidoMasivo({
           severidad: proyecto.prioridad === 'critica' ? 'critical' : 'warning',
           mensaje: `Faltan ${aFaltar} u. de ${codigo} en ${proyecto.nombre}`,
           leida: false,
-          meta: { codigo, cantidad: aFaltar },
+          meta: {
+            codigo,
+            cantidad: aFaltar,
+            descripcion: item.nombre && item.nombre !== codigo ? item.nombre : mat.descripcion || null,
+            tableroId: tableroId || null,
+            tableroNombre: tab?.nombre || tab?.codigo || null,
+          },
           created_at: nowIso(),
         });
       }
@@ -743,16 +750,44 @@ export async function demoListAlertas({ sede, soloNoLeidas = true } = {}) {
     const ids = new Set(db.proyectos.filter((p) => p.sede === sede).map((p) => p.id));
     rows = rows.filter((a) => !a.proyecto_id || ids.has(a.proyecto_id));
   }
-  return rows.map((a) => ({
-    id: a.id,
-    proyectoId: a.proyecto_id,
-    tipo: a.tipo,
-    severidad: a.severidad,
-    mensaje: a.mensaje,
-    leida: a.leida,
-    meta: a.meta,
-    createdAt: a.created_at,
-  }));
+  return rows.map((a) => {
+    const meta = a.meta || {};
+    const codigo = String(meta.codigo || '').trim();
+    const codigoU = codigo.toUpperCase();
+    const cands = db.faltantes.filter((f) => {
+      if (a.proyecto_id && f.proyecto_id !== a.proyecto_id) return false;
+      if (!codigoU && !meta.tableroId) return false;
+      if (codigoU && String(f.codigo_articulo || '').trim().toUpperCase() !== codigoU) return false;
+      return true;
+    });
+    let fal = meta.tableroId ? cands.find((f) => f.tablero_id === meta.tableroId) : null;
+    if (!fal && cands.length === 1) fal = cands[0];
+    if (!fal && meta.cantidad != null) {
+      fal = cands.find((f) => Number(f.cantidad) === Number(meta.cantidad)) || cands[0] || null;
+    }
+    if (!fal) fal = cands[0] || null;
+    const tab = db.tableros.find((t) => t.id === (meta.tableroId || fal?.tablero_id));
+    const mat = db.materiales.find((m) => m.id === fal?.material_id) || {};
+    const proy = db.proyectos.find((p) => p.id === a.proyecto_id);
+    const descRaw = meta.descripcion || mat.descripcion || null;
+    const descripcion =
+      descRaw && String(descRaw).trim().toUpperCase() !== codigoU ? String(descRaw).trim() : null;
+    return {
+      id: a.id,
+      proyectoId: a.proyecto_id,
+      tipo: a.tipo,
+      severidad: a.severidad,
+      mensaje: a.mensaje,
+      leida: a.leida,
+      meta,
+      createdAt: a.created_at,
+      codigo: codigo || fal?.codigo_articulo || null,
+      descripcion,
+      tableroId: meta.tableroId || fal?.tablero_id || null,
+      tableroNombre: meta.tableroNombre || tab?.nombre || tab?.codigo || null,
+      proyectoNombre: proy?.nombre || null,
+    };
+  });
 }
 
 export async function demoListTableros({ sede, q } = {}) {
@@ -1072,7 +1107,14 @@ function buildSugerenciasForLinea(recepcionId, linea, sede) {
         severidad: proy.prioridad === 'critica' ? 'critical' : 'warning',
         mensaje: `Material recibido (${linea.codigo_articulo}): se sugieren ${qty} u. para ${proy.nombre}`,
         leida: false,
-        meta: { recepcionId, sugerenciaId: sug.id, cantidad: qty },
+        meta: {
+          recepcionId,
+          sugerenciaId: sug.id,
+          cantidad: qty,
+          codigo: linea.codigo_articulo,
+          tableroId: f.tablero_id || null,
+          tableroNombre: db.tableros.find((t) => t.id === f.tablero_id)?.nombre || null,
+        },
         created_at: nowIso(),
       });
     }

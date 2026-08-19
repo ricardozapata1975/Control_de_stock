@@ -2,7 +2,38 @@ import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { api } from '../../../api/client';
 import { useAuth } from '../../../auth/AuthProvider';
+import CodigoCatalogoLink from '../../../components/CodigoCatalogoLink';
 import { KPI_DEFS, PROYECTOS_NAV } from '../constants';
+
+function AlertaLinea({ alerta, className }) {
+  const codigo = alerta.codigo || alerta.meta?.codigo;
+  const cantidad = alerta.meta?.cantidad;
+  const extras = [
+    alerta.descripcion,
+    alerta.tableroNombre,
+    alerta.proyectoNombre && alerta.proyectoNombre !== alerta.tableroNombre
+      ? alerta.proyectoNombre
+      : null,
+  ].filter(Boolean);
+
+  if (alerta.tipo === 'faltante_critico' && codigo) {
+    return (
+      <span className={className}>
+        Faltan {cantidad ?? ''} u. de{' '}
+        <CodigoCatalogoLink codigo={codigo} className="font-medium" />
+        {extras.length ? <> — {extras.join(' · ')}</> : null}
+      </span>
+    );
+  }
+
+  const extra = [alerta.descripcion, alerta.tableroNombre].filter(Boolean);
+  return (
+    <span className={className}>
+      {alerta.mensaje}
+      {extra.length ? <> — {extra.join(' · ')}</> : null}
+    </span>
+  );
+}
 
 export default function ProyectosDashboard() {
   const { sede } = useAuth();
@@ -57,18 +88,17 @@ export default function ProyectosDashboard() {
       {alertas.length > 0 && (
         <section className="card border-amber-500/40">
           <h2 className="section-title mb-2">Alertas activas</h2>
-          <ul className="space-y-2 text-sm">
-            {alertas.slice(0, 8).map((a) => (
-              <li key={a.id} className="border-b border-border pb-1">
-                <span
+          <ul className="max-h-96 space-y-2 overflow-y-auto text-sm">
+            {alertas.map((a) => (
+              <li key={a.id} className="border-b border-border pb-1 last:border-0">
+                <AlertaLinea
+                  alerta={a}
                   className={
                     a.severidad === 'critical'
                       ? 'font-semibold text-red-500'
                       : 'text-amber-600 dark:text-amber-300'
                   }
-                >
-                  {a.mensaje}
-                </span>
+                />
               </li>
             ))}
           </ul>

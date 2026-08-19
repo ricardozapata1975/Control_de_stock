@@ -141,6 +141,98 @@ function mapFaltante(row, extras = {}) {
   };
 }
 
+function parseMeta(meta) {
+  if (!meta) return {};
+  if (typeof meta === 'string') {
+    try {
+      return JSON.parse(meta) || {};
+    } catch {
+      return {};
+    }
+  }
+  return typeof meta === 'object' ? meta : {};
+}
+
+function normCode(s) {
+  return String(s || '')
+    .trim()
+    .toUpperCase();
+}
+
+function pickDescripcion(codigo, ...vals) {
+  const codeU = normCode(codigo);
+  for (const v of vals) {
+    const t = String(v || '').trim();
+    if (t && normCode(t) !== codeU) return t;
+  }
+  return null;
+}
+
+function tableroLabel(tab) {
+  if (!tab) return null;
+  const nombre = String(tab.nombre || '').trim();
+  const codigo = String(tab.codigo || '').trim();
+  if (nombre && codigo && nombre !== codigo) return `${nombre} (${codigo})`;
+  return nombre || codigo || null;
+}
+
+function matchFaltanteForAlerta(alerta, meta, falRows) {
+  const codigoU = normCode(meta.codigo);
+  if (!codigoU && !meta.tableroId) return null;
+  const cands = (falRows || []).filter((f) => {
+    if (alerta.proyecto_id && f.proyecto_id !== alerta.proyecto_id) return false;
+    if (codigoU && normCode(f.codigo_articulo) !== codigoU) return false;
+    return true;
+  });
+  if (meta.tableroId) {
+    const byTab = cands.find((f) => f.tablero_id === meta.tableroId);
+    if (byTab) return byTab;
+  }
+  if (cands.length === 1) return cands[0];
+  if (meta.cantidad != null && cands.length) {
+    const qty = Number(meta.cantidad);
+    const byQty = cands.find((f) => Number(f.cantidad) === qty);
+    if (byQty) return byQty;
+  }
+  return cands[0] || null;
+}
+
+function mapAlerta(row, ctx = {}) {
+  const meta = parseMeta(row.meta);
+  const { proyById = {}, tabById = {}, matsById = {}, itemsById = {}, itemsByCodigo = {}, falRows = [] } =
+    ctx;
+  const fal = matchFaltanteForAlerta(row, meta, falRows);
+  const tableroId = meta.tableroId || fal?.tablero_id || null;
+  const tab = tableroId ? tabById[tableroId] : null;
+  const mat = fal?.material_id ? matsById[fal.material_id] : null;
+  const codigo = meta.codigo || fal?.codigo_articulo || null;
+  const item =
+    (fal?.item_id ? itemsById[fal.item_id] : null) || itemsByCodigo[normCode(codigo)] || null;
+  const descripcion = pickDescripcion(
+    codigo,
+    meta.descripcion,
+    mat?.descripcion,
+    item?.nombre,
+    item?.detalle
+  );
+  const proy = row.proyecto_id ? proyById[row.proyecto_id] : null;
+  return {
+    id: row.id,
+    proyectoId: row.proyecto_id,
+    tipo: row.tipo,
+    severidad: row.severidad,
+    mensaje: row.mensaje,
+    leida: row.leida,
+    meta,
+    createdAt: row.created_at,
+    codigo,
+    descripcion,
+    tableroId,
+    tableroNombre: meta.tableroNombre || tableroLabel(tab),
+    proyectoNombre: proy?.nombre || null,
+  };
+}
+
 function normTxt(s) {
   return String(s || '')
     .trim()
@@ -896,9 +988,9 @@ async function resolveItemsAndStock(lineas) {
     let found = null;
     const tries = [
       () =>
-        supabase.from('items').select('id, nombre, codigo_fabricante').eq('codigo_fabricante', code).limit(1),
+        supabase.from('items').select('id, nombre, detalle, codigo_fabricante').eq('codigo_fabricante', code).limit(1),
       () =>
-        supabase.from('items').select('id, nombre, codigo_fabricante').ilike('nombre', code).limit(1),
+        supabase.from('items').select('id, nombre, detalle, codigo_fabricante').ilike('nombre', code).limit(1),
     ];
     for (const tryFn of tries) {
       try {
@@ -1125,6 +1217,16 @@ export async function procesarPedidoMasivo(payload) {
   }
   if (!proyecto) throw Object.assign(new Error('Proyecto no encontrado'), { status: 404 });
 
+  let tableroNombre = null;
+  if (tableroId) {
+    const { data: tablero } = await supabase
+      .from('proyecto_tableros')
+      .select('id, nombre, codigo')
+      .eq('id', tableroId)
+      .maybeSingle();
+    tableroNombre = tableroLabel(tablero);
+  }
+
   const { itemsByCodigo, stockByItem } = await resolveItemsAndStock(lineas);
 
   let itemsCreados = 0;
@@ -1295,12 +1397,19 @@ export async function procesarPedidoMasivo(payload) {
         notas: 'Faltante generado por pedido masivo',
       });
       if (proyecto.prioridad === 'critica' || proyecto.prioridad === 'alta') {
+        const descripcion = pickDescripcion(codigo, item.nombre, item.detalle, mat.descripcion);
         await supabase.from('proyecto_alertas').insert({
           proyecto_id: proyectoId,
           tipo: 'faltante_critico',
           severidad: proyecto.prioridad === 'critica' ? 'critical' : 'warning',
           mensaje: `Faltan ${aFaltar} u. de ${codigo} en ${proyecto.nombre}`,
-          meta: { codigo, cantidad: aFaltar },
+          meta: {
+            codigo,
+            cantidad: aFaltar,
+            descripcion,
+            tableroId: tableroId || null,
+            tableroNombre,
+          },
         });
       }
       totalFaltante += aFaltar;
@@ -1358,16 +1467,79 @@ export async function listAlertas(filters) {
     if (schemaMissing(error)) throwSchemaHint(error);
     throw Object.assign(new Error(error.message), { status: 500 });
   }
-  return (data || []).map((a) => ({
-    id: a.id,
-    proyectoId: a.proyecto_id,
-    tipo: a.tipo,
-    severidad: a.severidad,
-    mensaje: a.mensaje,
-    leida: a.leida,
-    meta: a.meta,
-    createdAt: a.created_at,
-  }));
+  let rows = data || [];
+
+  const allProyectoIds = [...new Set(rows.map((a) => a.proyecto_id).filter(Boolean))];
+  const { data: proyectos } = allProyectoIds.length
+    ? await supabase.from('proyectos').select('id, nombre, sede').in('id', allProyectoIds)
+    : { data: [] };
+  const proyById = Object.fromEntries((proyectos || []).map((p) => [p.id, p]));
+
+  if (filters?.sede) {
+    rows = rows.filter((a) => !a.proyecto_id || proyById[a.proyecto_id]?.sede === filters.sede);
+  }
+
+  const proyectoIds = [...new Set(rows.map((a) => a.proyecto_id).filter(Boolean))];
+
+  const { data: faltantes } =
+    proyectoIds.length
+      ? await supabase
+          .from('proyecto_faltantes')
+          .select('id, proyecto_id, tablero_id, material_id, item_id, codigo_articulo, cantidad')
+          .in('proyecto_id', proyectoIds)
+      : { data: [] };
+  const falRows = faltantes || [];
+
+  const tableroIds = [
+    ...new Set(
+      [
+        ...rows.map((a) => parseMeta(a.meta).tableroId).filter(Boolean),
+        ...falRows.map((f) => f.tablero_id).filter(Boolean),
+      ]
+    ),
+  ];
+  const materialIds = [...new Set(falRows.map((f) => f.material_id).filter(Boolean))];
+  const itemIds = [...new Set(falRows.map((f) => f.item_id).filter(Boolean))];
+  const codes = [
+    ...new Set(rows.map((a) => String(parseMeta(a.meta).codigo || '').trim()).filter(Boolean)),
+  ];
+
+  const [tabRes, matsRes, itemsRes, itemsByCodeRes] = await Promise.all([
+    tableroIds.length
+      ? supabase.from('proyecto_tableros').select('id, nombre, codigo').in('id', tableroIds)
+      : Promise.resolve({ data: [] }),
+    materialIds.length
+      ? supabase.from('proyecto_materiales').select('id, descripcion').in('id', materialIds)
+      : Promise.resolve({ data: [] }),
+    itemIds.length
+      ? supabase.from('items').select('id, nombre, detalle').in('id', itemIds)
+      : Promise.resolve({ data: [] }),
+    codes.length
+      ? supabase.from('items').select('id, nombre, detalle, codigo_fabricante').in('codigo_fabricante', codes)
+      : Promise.resolve({ data: [] }),
+  ]);
+
+  const tabById = Object.fromEntries((tabRes.data || []).map((t) => [t.id, t]));
+  const matsById = Object.fromEntries((matsRes.data || []).map((m) => [m.id, m]));
+  let itemsData = itemsRes.data || [];
+  if (itemsRes.error && itemIds.length) {
+    const fb = await supabase.from('items').select('id, nombre, codigo_fabricante').in('id', itemIds);
+    itemsData = fb.data || [];
+  }
+  const itemsById = Object.fromEntries(itemsData.map((i) => [i.id, i]));
+  const itemsByCodigo = {};
+  let itemsCodeData = itemsByCodeRes.data || [];
+  if (itemsByCodeRes.error && codes.length) {
+    const fb = await supabase.from('items').select('id, nombre, codigo_fabricante').in('codigo_fabricante', codes);
+    itemsCodeData = fb.data || [];
+  }
+  for (const i of itemsCodeData) {
+    itemsById[i.id] = itemsById[i.id] || i;
+    const key = normCode(i.codigo_fabricante);
+    if (key) itemsByCodigo[key] = i;
+  }
+
+  return rows.map((a) => mapAlerta(a, { proyById, tabById, matsById, itemsById, itemsByCodigo, falRows }));
 }
 
 async function loadTableroConProyecto(tableroId) {
