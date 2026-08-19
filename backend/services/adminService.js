@@ -220,10 +220,6 @@ export async function altaStock(body, adminName) {
 }
 
 async function updateItemStock(itemId, { stockId, cantidad, almacen, armario, estante, contenedor, sede }) {
-  if (!stockId) {
-    throw Object.assign(new Error('stockId requerido para editar ubicación/cantidad'), { status: 400 });
-  }
-
   const qty = Number(cantidad);
   if (Number.isNaN(qty) || qty < 0) {
     throw Object.assign(new Error('Cantidad inválida'), { status: 400 });
@@ -232,6 +228,43 @@ async function updateItemStock(itemId, { stockId, cantidad, almacen, armario, es
   if (almacen) assertAlmacenEnSede(almacen, sede);
 
   const supabase = getSupabase();
+
+  if (!stockId) {
+    if (qty === 0) return;
+    if (!armario || !estante) {
+      throw Object.assign(new Error('Armario y estante son obligatorios para crear stock'), { status: 400 });
+    }
+    const ubicacion = await resolveUbicacion({
+      sede: sede || getSedeForAlmacen(almacen),
+      almacen,
+      armario,
+      estante,
+      contenedor,
+    });
+    const { data: destStock, error: edq } = await supabase
+      .from('stock')
+      .select('id, cantidad')
+      .eq('item_id', itemId)
+      .eq('contenedor_id', ubicacion.id)
+      .maybeSingle();
+    if (edq) throw Object.assign(new Error(edq.message), { status: 500 });
+    if (destStock) {
+      const { error: em } = await supabase
+        .from('stock')
+        .update({ cantidad: destStock.cantidad + qty, updated_at: new Date().toISOString() })
+        .eq('id', destStock.id);
+      if (em) throw Object.assign(new Error(em.message), { status: 500 });
+    } else {
+      const { error: ei } = await supabase.from('stock').insert({
+        item_id: itemId,
+        contenedor_id: ubicacion.id,
+        cantidad: qty,
+      });
+      if (ei) throw Object.assign(new Error(ei.message), { status: 500 });
+    }
+    return;
+  }
+
   const { data: stockRow, error: es } = await supabase
     .from('stock')
     .select('id, item_id, contenedor_id, cantidad')
@@ -353,7 +386,12 @@ export async function updateItem(itemId, body) {
   }
 
   if (hasStockUpdate) {
-    await updateItemStock(itemId, { stockId, cantidad, almacen, armario, estante, contenedor, sede });
+    const qty = Number(cantidad);
+    if (!stockId && (cantidad === undefined || Number.isNaN(qty) || qty === 0)) {
+      // Ítem sin fila de stock (p. ej. alta por pedido masivo): solo actualizar ficha.
+    } else {
+      await updateItemStock(itemId, { stockId, cantidad, almacen, armario, estante, contenedor, sede });
+    }
   }
 
   if (!hasItemUpdate && !hasStockUpdate) {

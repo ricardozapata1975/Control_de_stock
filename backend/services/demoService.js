@@ -794,10 +794,11 @@ export async function demoUpdateItem(itemId, body) {
   if (!item) throw Object.assign(new Error('Ítem no encontrado'), { status: 404 });
   if (!isItemActivo(item)) throw Object.assign(new Error('El ítem está dado de baja'), { status: 409 });
 
-  const { stockId, cantidad, armario, estante, contenedor, ...itemBody } = body;
+  const { stockId, cantidad, almacen, armario, estante, contenedor, ...itemBody } = body;
   const hasStockUpdate =
     stockId !== undefined ||
     cantidad !== undefined ||
+    almacen !== undefined ||
     armario !== undefined ||
     estante !== undefined ||
     contenedor !== undefined;
@@ -840,41 +841,58 @@ export async function demoUpdateItem(itemId, body) {
   }
 
   if (hasStockUpdate) {
-    if (!stockId) {
-      throw Object.assign(new Error('stockId requerido para editar ubicación/cantidad'), { status: 400 });
-    }
     const qty = Number(cantidad);
-    if (Number.isNaN(qty) || qty < 0) {
-      throw Object.assign(new Error('Cantidad inválida'), { status: 400 });
-    }
-
-    const stockRow = db.stock.find((s) => s.id === stockId && s.item_id === itemId);
-    if (!stockRow) throw Object.assign(new Error('Registro de stock no encontrado'), { status: 404 });
-
-    let targetContenedorId = stockRow.contenedor_id;
-    if (armario && estante) {
-      const cont = await demoResolveUbicacion({ armario, estante, contenedor });
-      targetContenedorId = cont.id;
-    }
-
-    if (targetContenedorId === stockRow.contenedor_id) {
-      if (qty === 0) {
-        db.stock = db.stock.filter((s) => s.id !== stockId);
-      } else {
-        stockRow.cantidad = qty;
+    if (!stockId && (cantidad === undefined || Number.isNaN(qty) || qty === 0)) {
+      // Ítem sin fila de stock: solo ficha.
+    } else if (!stockId) {
+      if (!armario || !estante) {
+        throw Object.assign(new Error('Armario y estante son obligatorios para crear stock'), { status: 400 });
       }
-    } else if (qty === 0) {
-      db.stock = db.stock.filter((s) => s.id !== stockId);
-    } else {
-      const destStock = db.stock.find(
-        (s) => s.item_id === itemId && s.contenedor_id === targetContenedorId
-      );
+      const cont = await demoResolveUbicacion({ almacen, armario, estante, contenedor });
+      const destStock = db.stock.find((s) => s.item_id === itemId && s.contenedor_id === cont.id);
       if (destStock) {
         destStock.cantidad += qty;
+      } else {
+        db.stock.push({
+          id: `stock-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`,
+          item_id: itemId,
+          contenedor_id: cont.id,
+          cantidad: qty,
+        });
+      }
+    } else {
+      if (Number.isNaN(qty) || qty < 0) {
+        throw Object.assign(new Error('Cantidad inválida'), { status: 400 });
+      }
+
+      const stockRow = db.stock.find((s) => s.id === stockId && s.item_id === itemId);
+      if (!stockRow) throw Object.assign(new Error('Registro de stock no encontrado'), { status: 404 });
+
+      let targetContenedorId = stockRow.contenedor_id;
+      if (armario && estante) {
+        const cont = await demoResolveUbicacion({ almacen, armario, estante, contenedor });
+        targetContenedorId = cont.id;
+      }
+
+      if (targetContenedorId === stockRow.contenedor_id) {
+        if (qty === 0) {
+          db.stock = db.stock.filter((s) => s.id !== stockId);
+        } else {
+          stockRow.cantidad = qty;
+        }
+      } else if (qty === 0) {
         db.stock = db.stock.filter((s) => s.id !== stockId);
       } else {
-        stockRow.contenedor_id = targetContenedorId;
-        stockRow.cantidad = qty;
+        const destStock = db.stock.find(
+          (s) => s.item_id === itemId && s.contenedor_id === targetContenedorId
+        );
+        if (destStock) {
+          destStock.cantidad += qty;
+          db.stock = db.stock.filter((s) => s.id !== stockId);
+        } else {
+          stockRow.contenedor_id = targetContenedorId;
+          stockRow.cantidad = qty;
+        }
       }
     }
   }

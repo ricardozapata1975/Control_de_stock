@@ -208,8 +208,8 @@ export default function AdminEditorStock() {
     setEditCatalogoFuente(item.catalogoFuente || '');
     setEditCatalogoVigencia(item.catalogoVigencia || '');
     const ubi = pickPrincipalUbicacion(item.ubicaciones);
-    if (ubi?.stockId) setEditStockId(ubi.stockId);
-    if (ubi) {
+    if (ubi?.stockId) {
+      setEditStockId(ubi.stockId);
       applyUbicacionToForm(ubi, {
         setAlmacen: setEditAlmacen,
         setArmario: setEditArmario,
@@ -217,6 +217,9 @@ export default function AdminEditorStock() {
         setContenedor: setEditContenedor,
       });
       setEditCantidad(ubi.cantidad ?? 0);
+    } else {
+      setEditStockId('');
+      setEditCantidad(0);
     }
   }, [editItemId, items]);
 
@@ -311,12 +314,13 @@ export default function AdminEditorStock() {
 
   const submitEditar = async (e) => {
     e.preventDefault();
-    if (!editItemId || !editStockId) return;
+    if (!editItemId) return;
     setError('');
     setSuccess('');
     setLoading(true);
     try {
-      await api.adminUpdateItem(editItemId, {
+      const qty = Number(editCantidad);
+      const payload = {
         nombre: editNombre,
         marca: editMarca,
         modelo: editModelo,
@@ -333,14 +337,17 @@ export default function AdminEditorStock() {
         tema: editTema,
         catalogoFuente: editCatalogoFuente,
         catalogoVigencia: editCatalogoVigencia,
-        stockId: editStockId,
-        cantidad: Number(editCantidad),
-        sede: sessionSede || undefined,
-        almacen: editAlmacen,
-        armario: editArmario,
-        estante: editEstante,
-        contenedor: editContenedor.trim() || null,
-      });
+      };
+      if (editStockId || qty > 0) {
+        payload.stockId = editStockId || undefined;
+        payload.cantidad = qty;
+        payload.sede = sessionSede || undefined;
+        payload.almacen = editAlmacen;
+        payload.armario = editArmario;
+        payload.estante = editEstante;
+        payload.contenedor = editContenedor.trim() || null;
+      }
+      await api.adminUpdateItem(editItemId, payload);
       setSuccess(`Ítem "${editNombre}" actualizado.`);
       resetEditForm();
       await load();
@@ -385,7 +392,7 @@ export default function AdminEditorStock() {
       itemsActivos.map((i) => ({
         value: i.id,
         label: `${i.nombre} — stock total ${i.totalStock} u.`,
-        searchText: `${i.nombre} ${i.marca || ''} ${i.modelo || ''} ${i.tipo || ''}`,
+        searchText: `${i.nombre} ${i.marca || ''} ${i.modelo || ''} ${i.tipo || ''} ${i.codigoFabricante || ''}`,
       })),
     [itemsActivos]
   );
@@ -395,7 +402,7 @@ export default function AdminEditorStock() {
       itemsActivos.map((i) => ({
         value: i.id,
         label: `${i.nombre} — ${i.totalStock} u.`,
-        searchText: `${i.nombre} ${i.marca || ''} ${i.modelo || ''} ${i.tipo || ''}`,
+        searchText: `${i.nombre} ${i.marca || ''} ${i.modelo || ''} ${i.tipo || ''} ${i.codigoFabricante || ''}`,
       })),
     [itemsActivos]
   );
@@ -758,7 +765,11 @@ export default function AdminEditorStock() {
                           onChange={(e) => setEditCantidad(e.target.value)}
                           required
                         />
-                        <p className="mt-1 text-xs text-subtle">0 elimina el stock en esa ubicación.</p>
+                        <p className="mt-1 text-xs text-subtle">
+                          {editStockId
+                            ? '0 elimina el stock en esa ubicación.'
+                            : 'Sin stock aún (p. ej. alta por pedido masivo). Dejá 0 para guardar solo los datos, o poné cantidad para crear la ubicación.'}
+                        </p>
                       </div>
                       <div className="border-t border-border pt-3 space-y-3">
                         <p className="text-xs font-semibold uppercase tracking-wide text-subtle">Datos del ítem</p>
@@ -1009,11 +1020,7 @@ export default function AdminEditorStock() {
               <button
                 type="submit"
                 className="btn-primary w-full"
-                disabled={
-                  loading ||
-                  (modo === 'existente' && !itemId) ||
-                  (modo === 'editar' && (!editItemId || !editStockId))
-                }
+                disabled={loading || (modo === 'existente' && !itemId) || (modo === 'editar' && !editItemId)}
               >
                 {loading
                   ? 'GUARDANDO...'
