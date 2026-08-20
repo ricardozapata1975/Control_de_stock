@@ -417,6 +417,38 @@ export const api = {
   proyectoRecepcion: (id) => request(`/api/proyectos/recepciones/${encodeURIComponent(id)}`),
   crearRecepcionProyecto: (body) =>
     request('/api/proyectos/recepciones', { method: 'POST', body: JSON.stringify(body) }),
+  confirmarScanRecepcion: (id, body) =>
+    request(`/api/proyectos/recepciones/${encodeURIComponent(id)}/confirmar-scan`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  marcarLineaRecepcion: (id, body) =>
+    request(`/api/proyectos/recepciones/${encodeURIComponent(id)}/marcar-linea`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  agregarExtraRecepcion: (id, body) =>
+    request(`/api/proyectos/recepciones/${encodeURIComponent(id)}/agregar-extra`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  enviarRecepcionAduana: (id, body) =>
+    request(`/api/proyectos/recepciones/${encodeURIComponent(id)}/enviar-aduana`, {
+      method: 'POST',
+      body: JSON.stringify(body),
+    }),
+  aduanaStock: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/aduana/stock${q ? `?${q}` : ''}`);
+  },
+  aduanaOpcionesAsignacion: (params = {}) => {
+    const q = new URLSearchParams(params).toString();
+    return request(`/api/proyectos/aduana/opciones-asignacion${q ? `?${q}` : ''}`);
+  },
+  aduanaUbicar: (body) =>
+    request('/api/proyectos/aduana/ubicar', { method: 'POST', body: JSON.stringify(body) }),
+  aduanaAsignar: (body) =>
+    request('/api/proyectos/aduana/asignar', { method: 'POST', body: JSON.stringify(body) }),
   aceptarSugerenciaProyecto: (id) =>
     request(`/api/proyectos/sugerencias/${encodeURIComponent(id)}/aceptar`, {
       method: 'POST',

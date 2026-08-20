@@ -32,6 +32,9 @@ import {
   FaltantesPage,
   PrioridadesPage,
   RecepcionesPage,
+  RecepcionCargaPage,
+  RecepcionIngresoPage,
+  RecepcionAduanaPage,
   DevolucionesPage,
   AuditoriasPage,
   HerramientasPage,
@@ -129,6 +132,10 @@ export default function App() {
                 <Route path="faltantes" element={<FaltantesPage />} />
                 <Route path="prioridades" element={<PrioridadesPage />} />
                 <Route path="recepciones" element={<RecepcionesPage />} />
+                <Route path="recepciones/carga" element={<RecepcionCargaPage />} />
+                <Route path="recepciones/ingreso" element={<RecepcionIngresoPage />} />
+                <Route path="recepciones/ingreso/:id" element={<RecepcionIngresoPage />} />
+                <Route path="recepciones/aduana" element={<RecepcionAduanaPage />} />
                 <Route path="devoluciones" element={<DevolucionesPage />} />
                 <Route path="auditorias" element={<AuditoriasPage />} />
                 <Route path="herramientas" element={<HerramientasPage />} />

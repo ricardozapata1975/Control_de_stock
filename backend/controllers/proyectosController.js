@@ -313,6 +313,104 @@ export async function postSugerenciasPorItems(req, res) {
   }
 }
 
+async function recv() {
+  return import('../services/proyectosRecepcionesService.js');
+}
+
+export async function postConfirmarScanRecepcion(req, res) {
+  try {
+    const s = await recv();
+    const result = await s.confirmarScan(req.params.id, req.body || {});
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postMarcarLineaRecepcion(req, res) {
+  try {
+    const s = await recv();
+    const result = await s.marcarLinea(req.params.id, req.body || {});
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postAgregarExtraRecepcion(req, res) {
+  try {
+    const s = await recv();
+    const result = await s.agregarExtra(req.params.id, req.body || {});
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postEnviarAduanaRecepcion(req, res) {
+  try {
+    const s = await recv();
+    const result = await s.enviarAduana(req.params.id, {
+      ...(req.body || {}),
+      operador: req.body?.operador || req.user?.name || req.user?.email,
+    });
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getAduanaStock(req, res) {
+  try {
+    const s = await recv();
+    const data = await s.listAduanaStock({
+      sede: req.query.sede || sedeFromReq(req),
+    });
+    res.json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function getAduanaOpcionesAsignacion(req, res) {
+  try {
+    const s = await recv();
+    const data = await s.opcionesAsignacion({
+      itemId: req.query.itemId,
+      sede: req.query.sede || sedeFromReq(req),
+    });
+    res.json(data);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postAduanaUbicar(req, res) {
+  try {
+    const s = await recv();
+    const result = await s.ubicarDesdeAduana({
+      ...(req.body || {}),
+      usuario: req.body?.usuario || req.user?.name || req.user?.email,
+    });
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
+export async function postAduanaAsignar(req, res) {
+  try {
+    const s = await recv();
+    const result = await s.asignarDesdeAduana({
+      ...(req.body || {}),
+      usuario: req.body?.usuario || req.user?.name || req.user?.email,
+    });
+    res.json(result);
+  } catch (err) {
+    handle(err, res);
+  }
+}
+
 async function f3() {
   return import('../services/proyectosFase3Service.js');
 }

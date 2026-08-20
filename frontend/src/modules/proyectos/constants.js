@@ -45,7 +45,7 @@ export const PROYECTOS_NAV = [
   { to: '/proyectos/pedidos', label: 'Pedidos masivos', desc: 'Importar CSV/Excel', icon: '📥' },
   { to: '/proyectos/reservas', label: 'Reservas', desc: 'Limbo / comprometidos', icon: '🔒' },
   { to: '/proyectos/faltantes', label: 'Faltantes', desc: 'Compras pendientes', icon: '⚠️' },
-  { to: '/proyectos/recepciones', label: 'Recepciones', desc: 'Remito / OC / manual', icon: '📦' },
+  { to: '/proyectos/recepciones', label: 'Recepciones', desc: 'Carga · ingreso · aduana', icon: '📦' },
   { to: '/proyectos/transito', label: 'En tránsito', desc: 'Origen → destino', icon: '🚚' },
   { to: '/proyectos/disponibles', label: 'Disponibles', desc: 'Almacén general (neto)', icon: '✅' },
   { to: '/proyectos/produccion', label: 'Armado / Producción', desc: 'Escanear a tablero', icon: '🔧' },

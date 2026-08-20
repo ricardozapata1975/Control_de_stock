@@ -333,7 +333,15 @@ export async function demoDashboardKpis({ sede } = {}) {
   const recepcionesPend = db.recepciones.filter(
     (r) =>
       (!sede || r.sede === sede) &&
-      (r.estado === 'pendiente_asignacion' || r.estado === 'parcial' || r.estado === 'borrador')
+      [
+        'pendiente_asignacion',
+        'parcial',
+        'borrador',
+        'pendiente_ingreso',
+        'ingreso_en_curso',
+        'pendiente_cierre',
+        'en_aduana',
+      ].includes(r.estado)
   );
   const devolPend = db.devoluciones.filter(
     (d) => (!sede || d.sede === sede) && d.estado === 'pendiente'
@@ -1006,11 +1014,18 @@ function mapRecepcion(row) {
     sede: row.sede,
     tipo: row.tipo,
     proveedor: row.proveedor,
+    proveedorId: row.proveedor_id || null,
+    proveedorCuit: row.proveedor_cuit || null,
+    proveedorDomicilio: row.proveedor_domicilio || null,
+    proveedorLocalidad: row.proveedor_localidad || null,
+    proveedorIva: row.proveedor_iva || null,
     documento: row.documento,
     fecha: row.fecha,
     operador: row.operador,
+    operadorIngreso: row.operador_ingreso || null,
     estado: row.estado,
     notas: row.notas,
+    cierreNotas: row.cierre_notas || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
@@ -1024,7 +1039,13 @@ function mapRecepcionLinea(row) {
     codigoArticulo: row.codigo_articulo,
     descripcion: row.descripcion,
     cantidad: Number(row.cantidad || 0),
+    cantidadConfirmada: Number(row.cantidad_confirmada || 0),
     cantidadAsignada: Number(row.cantidad_asignada || 0),
+    unidad: row.unidad || null,
+    motivo: row.motivo || null,
+    esExtra: Boolean(row.es_extra),
+    stockId: row.stock_id || null,
+    notasIngreso: row.notas_ingreso || null,
     contenedorId: row.contenedor_id,
     validado: row.validado,
     error: row.error,
@@ -1162,75 +1183,344 @@ export async function demoCrearRecepcion({
   sede,
   tipo,
   proveedor,
+  proveedorId,
+  proveedorCuit,
+  proveedorDomicilio,
+  proveedorLocalidad,
+  proveedorIva,
   documento,
   fecha,
   operador,
   notas,
   lineas,
   itemsByCodigo,
+  itemsById,
 }) {
   if (!sede) throw Object.assign(new Error('Sede requerida'), { status: 400 });
   if (!Array.isArray(lineas) || !lineas.length) {
     throw Object.assign(new Error('Se requieren líneas de recepción'), { status: 400 });
   }
 
+  const proveedorNombre =
+    typeof proveedor === 'string' ? proveedor.trim() : String(proveedor?.nombre || '').trim();
+
   const recepcion = {
     id: uuid(),
     sede,
     tipo: tipo || 'manual',
-    proveedor: proveedor || null,
+    proveedor: proveedorNombre || null,
+    proveedor_id: proveedorId || null,
+    proveedor_cuit: proveedorCuit || null,
+    proveedor_domicilio: proveedorDomicilio || null,
+    proveedor_localidad: proveedorLocalidad || null,
+    proveedor_iva: proveedorIva || null,
     documento: documento || null,
     fecha: fecha || nowIso().slice(0, 10),
     operador: operador || null,
-    estado: 'pendiente_asignacion',
+    estado: 'pendiente_ingreso',
     notas: notas || null,
     created_at: nowIso(),
     updated_at: nowIso(),
   };
   db.recepciones.unshift(recepcion);
 
-  const allSugs = [];
   const mappedLineas = [];
 
   for (const line of lineas) {
-    const codigo = String(line.codigo || '').trim();
+    const codigo = String(line.codigo || line.codigoArticulo || '').trim();
     const cantidad = Number(line.cantidad || 0);
-    const item = codigo ? itemsByCodigo?.get(codigo.toUpperCase()) : null;
+    const itemId = line.itemId || line.item_id || null;
+    const item =
+      (itemId && itemsById?.get(itemId)) ||
+      (codigo ? itemsByCodigo?.get(codigo.toUpperCase()) : null) ||
+      null;
     const ln = {
       id: uuid(),
       recepcion_id: recepcion.id,
-      item_id: item?.id || null,
+      item_id: item?.id || itemId || null,
       codigo_articulo: codigo || null,
       descripcion: item?.nombre || line.descripcion || null,
       cantidad,
+      cantidad_confirmada: 0,
       cantidad_asignada: 0,
+      unidad: line.unidad || null,
+      motivo: null,
+      es_extra: false,
+      stock_id: null,
+      notas_ingreso: null,
       contenedor_id: line.contenedorId || null,
       validado: Boolean(item) && cantidad > 0,
-      error: !codigo || cantidad <= 0 ? 'Código o cantidad inválidos' : !item ? 'Artículo no encontrado' : null,
+      error:
+        (!codigo && !itemId) || cantidad <= 0
+          ? 'Código/ítem o cantidad inválidos'
+          : !item
+            ? 'Artículo no encontrado'
+            : null,
       created_at: nowIso(),
     };
     db.recepcionLineas.push(ln);
     mappedLineas.push(ln);
-    if (ln.validado) allSugs.push(...buildSugerenciasForLinea(recepcion.id, ln, sede));
-  }
-
-  if (!allSugs.length) {
-    recepcion.estado = 'cerrada';
   }
 
   pushMovimiento({
     tipo: 'recepcion',
     cantidad: mappedLineas.reduce((s, l) => s + Number(l.cantidad || 0), 0),
-    estado_material: 'Disponible',
+    estado_material: 'Pendiente ingreso',
     usuario: operador,
-    notas: `Recepción ${documento || recepcion.id}`,
-    meta: { recepcion_id: recepcion.id },
+    notas: `Remito ${documento || recepcion.id} — pendiente de ingreso físico`,
+    meta: { recepcion_id: recepcion.id, flujo: 'v2' },
   });
 
   return {
     recepcion: mapRecepcion(recepcion),
     lineas: mappedLineas.map(mapRecepcionLinea),
-    sugerencias: allSugs.map(mapSugerencia),
+    sugerencias: [],
+  };
+}
+
+function demoRecepcionIngresoOrThrow(id) {
+  const row = db.recepciones.find((r) => r.id === id);
+  if (!row) throw Object.assign(new Error('Recepción no encontrada'), { status: 404 });
+  if (!['pendiente_ingreso', 'ingreso_en_curso'].includes(row.estado)) {
+    throw Object.assign(new Error('La recepción no admite ingreso físico en este estado'), {
+      status: 409,
+    });
+  }
+  return row;
+}
+
+export async function demoConfirmarScan(recepcionId, payload = {}) {
+  const recepcion = demoRecepcionIngresoOrThrow(recepcionId);
+  const cantidad = Math.max(1, Number(payload.cantidad || 1));
+  const scan = String(payload.scan || payload.codigo || '').trim().toUpperCase();
+  const itemId = payload.itemId || (/^[0-9A-F-]{36}$/i.test(scan) ? scan.toLowerCase() : null);
+
+  const lineas = db.recepcionLineas.filter((l) => l.recepcion_id === recepcionId);
+  const candidatos = lineas.filter((ln) => {
+    if (ln.es_extra || ln.motivo === 'faltante_fisico') return false;
+    if (Number(ln.cantidad_confirmada || 0) >= Number(ln.cantidad || 0)) return false;
+    if (itemId && ln.item_id === itemId) return true;
+    if (scan && String(ln.codigo_articulo || '').toUpperCase() === scan) return true;
+    return false;
+  });
+  if (!candidatos.length) {
+    throw Object.assign(new Error('Ítem no listado o ya confirmado'), { status: 409 });
+  }
+  const linea = candidatos[0];
+  const pendiente = Number(linea.cantidad) - Number(linea.cantidad_confirmada || 0);
+  const aplicar = Math.min(cantidad, pendiente);
+  linea.cantidad_confirmada = Number(linea.cantidad_confirmada || 0) + aplicar;
+  linea.validado = true;
+  linea.error = null;
+  if (recepcion.estado === 'pendiente_ingreso') recepcion.estado = 'ingreso_en_curso';
+  recepcion.updated_at = nowIso();
+  return { ok: true, aplicado: aplicar, linea: mapRecepcionLinea(linea), recepcion: mapRecepcion(recepcion) };
+}
+
+export async function demoMarcarLinea(recepcionId, payload = {}) {
+  const recepcion = demoRecepcionIngresoOrThrow(recepcionId);
+  const { lineaId, motivo, cantidadConfirmada, notas } = payload;
+  if (!lineaId) throw Object.assign(new Error('lineaId requerido'), { status: 400 });
+  if (!['faltante_fisico', 'diferencia'].includes(motivo)) {
+    throw Object.assign(new Error("motivo debe ser 'faltante_fisico' o 'diferencia'"), { status: 400 });
+  }
+  const linea = db.recepcionLineas.find((l) => l.id === lineaId && l.recepcion_id === recepcionId);
+  if (!linea) throw Object.assign(new Error('Línea no encontrada'), { status: 404 });
+  linea.motivo = motivo;
+  if (notas != null) linea.notas_ingreso = notas;
+  if (motivo === 'faltante_fisico') linea.cantidad_confirmada = 0;
+  else if (cantidadConfirmada != null) linea.cantidad_confirmada = Number(cantidadConfirmada);
+  if (recepcion.estado === 'pendiente_ingreso') recepcion.estado = 'ingreso_en_curso';
+  recepcion.updated_at = nowIso();
+  return { linea: mapRecepcionLinea(linea), recepcion: mapRecepcion(recepcion) };
+}
+
+export async function demoAgregarExtra(recepcionId, payload = {}) {
+  const recepcion = demoRecepcionIngresoOrThrow(recepcionId);
+  const cantidad = Number(payload.cantidad || 0);
+  if (cantidad <= 0) throw Object.assign(new Error('cantidad requerida'), { status: 400 });
+  const ln = {
+    id: uuid(),
+    recepcion_id: recepcionId,
+    item_id: payload.itemId || null,
+    codigo_articulo: payload.codigo || null,
+    descripcion: payload.descripcion || 'Extra no listado',
+    cantidad,
+    cantidad_confirmada: cantidad,
+    cantidad_asignada: 0,
+    unidad: payload.unidad || null,
+    motivo: 'extra',
+    es_extra: true,
+    stock_id: null,
+    validado: Boolean(payload.itemId),
+    error: payload.itemId ? null : 'Artículo no encontrado en catálogo',
+    created_at: nowIso(),
+  };
+  db.recepcionLineas.push(ln);
+  if (recepcion.estado === 'pendiente_ingreso') recepcion.estado = 'ingreso_en_curso';
+  recepcion.updated_at = nowIso();
+  return { linea: mapRecepcionLinea(ln), recepcion: mapRecepcion(recepcion) };
+}
+
+export async function demoEnviarAduana(recepcionId, payload = {}) {
+  const recepcion = db.recepciones.find((r) => r.id === recepcionId);
+  if (!recepcion) throw Object.assign(new Error('Recepción no encontrada'), { status: 404 });
+  if (!['pendiente_ingreso', 'ingreso_en_curso', 'pendiente_cierre'].includes(recepcion.estado)) {
+    throw Object.assign(new Error('La recepción no puede enviarse a aduana en este estado'), {
+      status: 409,
+    });
+  }
+  const lineas = db.recepcionLineas.filter((l) => l.recepcion_id === recepcionId);
+  const stockCreados = [];
+  for (const ln of lineas) {
+    const conf = Number(ln.cantidad_confirmada || 0);
+    if (conf <= 0 || ln.stock_id) continue;
+    ln.stock_id = uuid();
+    stockCreados.push({ lineaId: ln.id, stockId: ln.stock_id, cantidad: conf });
+  }
+  const tieneDisc = lineas.some(
+    (ln) =>
+      ln.es_extra ||
+      ln.motivo === 'faltante_fisico' ||
+      ln.motivo === 'diferencia' ||
+      ln.motivo === 'extra' ||
+      Number(ln.cantidad_confirmada || 0) !== Number(ln.cantidad || 0)
+  );
+  recepcion.estado = payload.cierrePendiente || tieneDisc ? 'pendiente_cierre' : 'en_aduana';
+  recepcion.operador_ingreso = payload.operador || recepcion.operador;
+  if (payload.notas != null) recepcion.cierre_notas = payload.notas;
+  recepcion.updated_at = nowIso();
+  return {
+    recepcion: mapRecepcion(recepcion),
+    lineas: lineas.map(mapRecepcionLinea),
+    stockCreados,
+    aduana: { sede: recepcion.sede, almacen: 'DEMO-ADUANA' },
+  };
+}
+
+export async function demoListAduanaStock({ sede } = {}) {
+  if (!sede) throw Object.assign(new Error('sede requerida'), { status: 400 });
+  const items = db.recepcionLineas
+    .filter((l) => l.stock_id && Number(l.cantidad_confirmada || 0) > 0)
+    .map((l) => {
+      const rec = db.recepciones.find((r) => r.id === l.recepcion_id);
+      if (sede && rec?.sede !== sede) return null;
+      if (!rec || !['en_aduana', 'pendiente_cierre'].includes(rec.estado)) return null;
+      return {
+        stockId: l.stock_id,
+        itemId: l.item_id,
+        cantidad: Number(l.cantidad_confirmada || 0),
+        nombre: l.descripcion,
+        codigoFabricante: l.codigo_articulo,
+        unidad: l.unidad,
+        contenedorId: l.contenedor_id,
+        ubicacion: { sede, almacen: 'DEMO-ADUANA' },
+        recepciones: [
+          {
+            lineaId: l.id,
+            recepcionId: rec.id,
+            documento: rec.documento,
+            proveedor: rec.proveedor,
+            estadoRecepcion: rec.estado,
+            esExtra: Boolean(l.es_extra),
+            motivo: l.motivo,
+          },
+        ],
+      };
+    })
+    .filter(Boolean);
+  return { sede, aduana: { almacen: 'DEMO-ADUANA' }, items };
+}
+
+export async function demoOpcionesAsignacion({ itemId, sede } = {}) {
+  if (!itemId) throw Object.assign(new Error('itemId requerido'), { status: 400 });
+  const map = new Map([[itemId, Number.POSITIVE_INFINITY]]);
+  const opciones = await demoSugerirPorItems({ itemIds: [itemId], sede, cantidadPorItem: map });
+  return { opciones };
+}
+
+export async function demoUbicarDesdeAduana(payload = {}) {
+  if (!payload.stockId) throw Object.assign(new Error('stockId requerido'), { status: 400 });
+  if (!payload.almacen || !payload.armario || !payload.estante) {
+    throw Object.assign(new Error('almacen, armario y estante son requeridos'), { status: 400 });
+  }
+  return {
+    ok: true,
+    stockId: payload.stockId,
+    cantidad: 0,
+    ubicacion: {
+      sede: payload.sede || null,
+      almacen: payload.almacen,
+      armario: payload.armario,
+      estante: payload.estante,
+      contenedor: payload.contenedor || null,
+    },
+  };
+}
+
+export async function demoAsignarDesdeAduana(payload = {}) {
+  if (!payload.stockId) throw Object.assign(new Error('stockId requerido'), { status: 400 });
+  const linea = db.recepcionLineas.find((l) => l.stock_id === payload.stockId);
+  const itemId = linea?.item_id;
+  if (!itemId) throw Object.assign(new Error('Stock demo sin ítem'), { status: 404 });
+
+  let faltante = payload.faltanteId
+    ? db.faltantes.find((f) => f.id === payload.faltanteId)
+    : null;
+  if (!faltante && (payload.autoFifo || !payload.proyectoId)) {
+    const opts = await demoOpcionesAsignacion({ itemId, sede: payload.sede });
+    const first = opts.opciones?.[0];
+    if (!first) throw Object.assign(new Error('No hay faltantes pendientes para este ítem'), { status: 404 });
+    faltante = db.faltantes.find((f) => f.id === first.faltanteId);
+  }
+  const proyectoId = payload.proyectoId || faltante?.proyecto_id;
+  if (!proyectoId) throw Object.assign(new Error('Indicá faltanteId, proyectoId o autoFifo'), { status: 400 });
+  const proy = db.proyectos.find((p) => p.id === proyectoId);
+  if (!proy) throw Object.assign(new Error('Proyecto no encontrado'), { status: 404 });
+
+  let qty = payload.cantidad != null ? Number(payload.cantidad) : Number(linea?.cantidad_confirmada || 1);
+  if (faltante) {
+    const pend = Number(faltante.cantidad) - Number(faltante.cantidad_cubierta || 0);
+    qty = Math.min(qty, pend);
+    faltante.cantidad_cubierta = Number(faltante.cantidad_cubierta || 0) + qty;
+    faltante.estado =
+      Number(faltante.cantidad) - faltante.cantidad_cubierta <= 0 ? 'cubierto' : 'parcial';
+  }
+
+  const reserva = {
+    id: uuid(),
+    proyecto_id: proyectoId,
+    tablero_id: faltante?.tablero_id || null,
+    material_id: faltante?.material_id || null,
+    item_id: itemId,
+    stock_id: payload.stockId,
+    contenedor_id: linea?.contenedor_id || null,
+    cantidad: qty,
+    estado: 'activa',
+    sede: proy.sede,
+    notas: `Asignado desde aduana (stock ${payload.stockId})`,
+    created_by: payload.usuario || null,
+    created_at: nowIso(),
+    updated_at: nowIso(),
+  };
+  db.reservas.push(reserva);
+  return {
+    ok: true,
+    reserva: {
+      id: reserva.id,
+      proyectoId: reserva.proyecto_id,
+      tableroId: reserva.tablero_id,
+      materialId: reserva.material_id,
+      itemId: reserva.item_id,
+      stockId: reserva.stock_id,
+      contenedorId: reserva.contenedor_id,
+      cantidad: Number(reserva.cantidad),
+      estado: reserva.estado,
+      sede: reserva.sede,
+      notas: reserva.notas,
+    },
+    faltanteId: faltante?.id || null,
+    proyectoNombre: proy.nombre,
   };
 }
 

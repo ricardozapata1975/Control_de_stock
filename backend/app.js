@@ -89,6 +89,14 @@ import {
   postAceptarSugerencia,
   postRechazarSugerencia,
   postSugerenciasPorItems,
+  postConfirmarScanRecepcion,
+  postMarcarLineaRecepcion,
+  postAgregarExtraRecepcion,
+  postEnviarAduanaRecepcion,
+  getAduanaStock,
+  getAduanaOpcionesAsignacion,
+  postAduanaUbicar,
+  postAduanaAsignar,
   getDevoluciones,
   postDevolucion,
   getAuditorias,
@@ -278,7 +286,12 @@ app.get('/api/clientes', requireAuth, getClientes);
 app.post('/api/clientes', requireAuth, postClientes);
 app.put('/api/clientes/:id', requireAuth, putCliente);
 app.delete('/api/clientes/:id', requireAuth, deleteClienteHandler);
-app.get('/api/proveedores', requireAuth, requirePermission('agenda.proveedores'), getProveedores);
+app.get(
+  '/api/proveedores',
+  requireAuth,
+  requirePermission('agenda.proveedores', 'proyectos.recepciones'),
+  getProveedores
+);
 app.post('/api/proveedores', requireAuth, requirePermission('agenda.proveedores'), postProveedor);
 app.put('/api/proveedores/:id', requireAuth, requirePermission('agenda.proveedores'), putProveedor);
 app.delete(
@@ -308,6 +321,14 @@ app.get('/api/proyectos/alertas', requireAuth, getAlertas);
 app.get('/api/proyectos/recepciones', requireAuth, getRecepciones);
 app.post('/api/proyectos/recepciones', requireAuth, postRecepcion);
 app.get('/api/proyectos/recepciones/:id', requireAuth, getRecepcionById);
+app.post('/api/proyectos/recepciones/:id/confirmar-scan', requireAuth, postConfirmarScanRecepcion);
+app.post('/api/proyectos/recepciones/:id/marcar-linea', requireAuth, postMarcarLineaRecepcion);
+app.post('/api/proyectos/recepciones/:id/agregar-extra', requireAuth, postAgregarExtraRecepcion);
+app.post('/api/proyectos/recepciones/:id/enviar-aduana', requireAuth, postEnviarAduanaRecepcion);
+app.get('/api/proyectos/aduana/stock', requireAuth, getAduanaStock);
+app.get('/api/proyectos/aduana/opciones-asignacion', requireAuth, getAduanaOpcionesAsignacion);
+app.post('/api/proyectos/aduana/ubicar', requireAuth, postAduanaUbicar);
+app.post('/api/proyectos/aduana/asignar', requireAuth, postAduanaAsignar);
 app.post('/api/proyectos/sugerencias/:id/aceptar', requireAuth, postAceptarSugerencia);
 app.post('/api/proyectos/sugerencias/:id/rechazar', requireAuth, postRechazarSugerencia);
 app.post('/api/proyectos/sugerencias/por-items', requireAuth, postSugerenciasPorItems);
